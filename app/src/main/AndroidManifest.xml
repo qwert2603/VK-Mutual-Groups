@@ -1,0 +1,48 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.alex.vkcommonpublics">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".VKCommonGroupsApplication"
+        android:allowBackup="true"
+        android:icon="@drawable/icon"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme">
+        <activity android:name=".LoadingFriendsListActivity"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".UserGroupListActivity"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".LoadingFriendsListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".LoadingFriendsListActivity" />
+        </activity>
+
+        <activity android:name=".GroupsListActivity"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".LoadingFriendsListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".LoadingFriendsListActivity" />
+        </activity>
+
+        <activity android:name=".FriendsListActivity"
+            android:screenOrientation="portrait"
+            android:parentActivityName=".LoadingFriendsListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".LoadingFriendsListActivity" />
+        </activity>
+    </application>
+
+</manifest>

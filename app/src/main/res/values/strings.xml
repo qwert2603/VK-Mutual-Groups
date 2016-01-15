@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">VK Common Groups</string>
+    <string name="login_failed">Login failed!</string>
+    <string name="log_out">Log out</string>
+    <string name="friend_name" translatable="false">"%1$s %2$s"</string>
+    <string name="commons">%d cmn.</string>
+    <string name="refresh">Refresh</string>
+    <string name="error_message">Loading failed!\nYou can try again.</string>
+    <string name="friends">%d frn.</string>
+    <string name="sort_alphabetically">Sort: alphabetically</string>
+    <string name="sort_by_commons">Sort: by commons</string>
+    <string name="no_common_groups">No common groups.</string>
+    <string name="no_friends_in_group">No friends in group.</string>
+    <string name="sort">Sort</string>
+    <string name="group_list">Group list</string>
+    <string name="to_the_begin">To the begin</string>
+    <string name="sort_by_default">Sort: by default</string>
+    <string name="sort_by_friends">Sort: by friends</string>
+    <string name="my_groups">My groups</string>
+</resources>

@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">VK Общие группы</string>
+    <string name="login_failed">Ошибка авторизации!</string>
+    <string name="log_out">Выйти</string>
+    <string name="commons">%d общ.</string>
+    <string name="refresh">Обновить</string>
+    <string name="error_message">Ошибка загрузки!\nВы можете попытаться снова.</string>
+    <string name="friends">%d дрг.</string>
+    <string name="sort_alphabetically">Сортировка: по алфавиту</string>
+    <string name="sort_by_commons">Сортировка: по общим</string>
+    <string name="no_common_groups">Нет общих групп.</string>
+    <string name="sort">Сортировка</string>
+    <string name="no_friends_in_group">Нет друзей в группе.</string>
+    <string name="group_list">Список групп</string>
+    <string name="to_the_begin">В начало</string>
+    <string name="sort_by_default">Сортировка: по умолчанию</string>
+    <string name="sort_by_friends">Сортировка: по друзьям</string>
+    <string name="my_groups">Мои группы</string>
+</resources>

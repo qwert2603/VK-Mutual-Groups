@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item android:id="@+id/menu_sort"
+        android:title="@string/sort_by_commons"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/menu_refresh"
+        android:title="@string/refresh"
+        android:icon="@android:drawable/ic_menu_revert"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/menu_groups_list"
+        android:title="@string/group_list"
+        app:showAsAction="never"/>
+
+    <item android:id="@+id/menu_logout"
+        android:title="@string/log_out"
+        android:icon="@android:drawable/ic_input_get"
+        app:showAsAction="never"/>
+
+</menu>
