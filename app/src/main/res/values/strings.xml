@@ -17,4 +17,5 @@
     <string name="sort_by_default">Sort: by default</string>
     <string name="sort_by_friends">Sort: by friends</string>
     <string name="my_groups">My groups</string>
+    <string name="loading_completed">Loading completed!</string>
 </resources>

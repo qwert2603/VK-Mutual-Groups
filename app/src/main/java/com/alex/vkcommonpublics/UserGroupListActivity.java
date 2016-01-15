@@ -59,6 +59,6 @@ public class UserGroupListActivity extends AbstractVkListActivity {
 
     private void refreshGroupsListFragment() {
         FragmentManager fm = getFragmentManager();
-        fm.beginTransaction().replace(R.id.fragment_container, getListFragment()).commit();
+        fm.beginTransaction().replace(R.id.fragment_container, getListFragment()).commitAllowingStateLoss();
     }
 }

@@ -16,4 +16,5 @@
     <string name="sort_by_default">Сортировка: по умолчанию</string>
     <string name="sort_by_friends">Сортировка: по друзьям</string>
     <string name="my_groups">Мои группы</string>
+    <string name="loading_completed">Загрузка завершена!</string>
 </resources>

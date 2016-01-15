@@ -44,12 +44,12 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
+        updateUI();
 
         if (VKSdk.isLoggedIn()) {
             if (mDataManager.getFetchingState() == notStarted) {
                 fetch();
             }
-            updateUI();
         } else {
             VKSdk.login(this, LOGIN_SCOPE);
         }
@@ -63,7 +63,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 if (mDataManager.getFetchingState() == notStarted) {
                     fetch();
                 }
-                updateUI();
             }
 
             @Override
@@ -80,9 +79,12 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         invalidateOptionsMenu();
         mProgressBar.setVisibility(View.INVISIBLE);
         mErrorTextView.setVisibility(View.INVISIBLE);
-        if (mIsFetchingErrorHappened) {
+        if (! VKSdk.isLoggedIn()) {
             removeFriendsListFragment();
-            mErrorTextView.setVisibility(View.VISIBLE);
+            return;
+        }
+        if (mIsFetchingErrorHappened) {
+            onFetchingErrorUI();
         }
         else {
             switch (mDataManager.getFetchingState()) {
@@ -93,11 +95,11 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                     mProgressBar.setVisibility(View.VISIBLE);
                     break;
                 case calculatingCommons:
-                    refreshFriendsListFragment();
+                    notifyDataSetChanged();
                     mProgressBar.setVisibility(View.VISIBLE);
                     break;
                 case finished:
-                    refreshFriendsListFragment();
+                    notifyDataSetChanged();
                     break;
             }
         }
@@ -109,11 +111,18 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         mDataManager.fetch(new DataManager.Listener() {
             @Override
             public void onFriendsFetched() {
+                refreshFriendsListFragment();
                 updateUI();
             }
 
             @Override
             public void onCommonsCalculated() {
+                updateUI();
+                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onProgress() {
                 updateUI();
             }
 
@@ -126,17 +135,37 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         });
     }
 
+    public void onFetchingErrorUI() {
+        FragmentManager fm = getFragmentManager();
+        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
+        if(fragment != null) {
+            fragment.notifyDataSetChanged();
+            Toast.makeText(this, R.string.error_message, Toast.LENGTH_SHORT).show();
+        }
+        else {
+            mErrorTextView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void notifyDataSetChanged() {
+        FragmentManager fm = getFragmentManager();
+        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
+        if(fragment != null) {
+            fragment.notifyDataSetChanged();
+        }
+    }
+
     private void removeFriendsListFragment() {
         FragmentManager fm = getFragmentManager();
         Fragment fragment = fm.findFragmentById(R.id.fragment_container);
         if(fragment != null) {
-            fm.beginTransaction().remove(fragment).commit();
+            fm.beginTransaction().remove(fragment).commitAllowingStateLoss();
         }
     }
 
     private void refreshFriendsListFragment() {
         FragmentManager fm = getFragmentManager();
-        fm.beginTransaction().replace(R.id.fragment_container, FriendsListFragment.newInstance(0)).commit();
+        fm.beginTransaction().replace(R.id.fragment_container, FriendsListFragment.newInstance(0)).commitAllowingStateLoss();
     }
 
     @Override
@@ -196,9 +225,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 return true;
             case R.id.menu_logout:
                 if (VKSdk.isLoggedIn()) {
+                    VKSdk.logout();
                     mDataManager.clear();
                     updateUI();
-                    VKSdk.logout();
                     VKSdk.login(this, LOGIN_SCOPE);
                 }
                 return true;

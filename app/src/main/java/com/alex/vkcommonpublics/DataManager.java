@@ -132,8 +132,14 @@ public class DataManager {
     public interface Listener {
         void onFriendsFetched();
         void onCommonsCalculated();
+        void onProgress();
         void onError(String e);
     }
+
+    /**
+     * Надо ли прервать скачивание.
+     */
+    private boolean mNeedCancelFetching;
 
     /**
      * Последовательно:
@@ -150,12 +156,20 @@ public class DataManager {
         loadFriends(listener);
     }
 
+    private void checkNeedCancelFetching() {
+        if (mNeedCancelFetching) {
+            mFetchingState = FetchingState.notStarted;
+            clear();
+        }
+    }
+
     public void loadFriends(final Listener listener) {
         mFetchingState = FetchingState.loadingFriends;
         VKRequest request = VKApi.friends().get(VKParameters.from("fields", "nickname"));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
+                checkNeedCancelFetching();
                 mUsersFriendsByAlphabet = (VKUsersArray) response.parsedModel;
                 // Отсортировать друзей в алфавитном порядке.
                 Collections.sort(mUsersFriendsByAlphabet, new Comparator<VKApiUserFull>() {
@@ -180,6 +194,7 @@ public class DataManager {
 
             @Override
             public void onError(VKError error) {
+                mFetchingState = FetchingState.notStarted;
                 clear();
                 listener.onError(String.valueOf(error));
             }
@@ -191,6 +206,7 @@ public class DataManager {
         requestIds.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
+                checkNeedCancelFetching();
                 mUsersGroupsByDefault = (VKApiCommunityArray) response.parsedModel;
                 mGroupsSortState = GroupsSortState.byDefault;
                 for (VKApiCommunityFull group : mUsersGroupsByDefault) {
@@ -202,6 +218,7 @@ public class DataManager {
 
             @Override
             public void onError(VKError error) {
+                mFetchingState = FetchingState.notStarted;
                 clear();
                 listener.onError(String.valueOf(error));
             }
@@ -209,7 +226,7 @@ public class DataManager {
     }
 
     /**
-     * Для сообщений об ошибках, котоорые могут произойти в фотонов режиме, используем следующие переменные.
+     * Для сообщений об ошибках, котоорые могут произойти в фоновом режиме, используем следующие переменные.
      */
     private boolean is_calculating_error_happened;
     private String calculating_error;
@@ -226,7 +243,7 @@ public class DataManager {
         @Override
         protected Void doInBackground(Void... params) {
             calculateCommonGroups();
-            if (is_calculating_error_happened) {
+            if (mNeedCancelFetching || is_calculating_error_happened) {
                 return null;
             }
 
@@ -264,81 +281,92 @@ public class DataManager {
         protected void onPostExecute(Void aVoid) {
             if (is_calculating_error_happened) {
                 // во время выполнения подсчета общих групп произошла ошибка, сообщаем о ней.
-                clear();
                 mListener.onError(calculating_error);
             }
-            else {
+            if (mNeedCancelFetching || is_calculating_error_happened) {
+                mFetchingState = FetchingState.notStarted;
+                clear();
+            } else {
                 // сообщаем о завершении подсчета общих групп.
                 mFetchingState = FetchingState.finished;
                 mListener.onCommonsCalculated();
             }
         }
-    }
 
-    public void calculateCommonGroups() {
-        String friendIds = getFriendsIds();
-        final int groupPerRequest = 24;
-        for (int i = 0; i < mUsersGroupsByDefault.size(); i += groupPerRequest) {
-            final int groupStart = i;
-            String code = getCodeToExecute(groupStart, groupPerRequest, friendIds);
-            VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
-            request.executeSyncWithListener(new VKRequest.VKRequestListener() {
-                @Override
-                public void onComplete(VKResponse response) {
-                    if (is_calculating_error_happened) {
-                        return;
-                    }
-                    int currentFriendNumber = 0;
-                    int currentGroupNumber = groupStart;
-                    try {
-                        JSONArray jsonArray = response.json.getJSONArray("response");
-                        for (int j = 0; j != jsonArray.length(); ++j) {
-                            JSONObject jsonObject = jsonArray.getJSONObject(j);
-                            if (jsonObject.getInt("member") == 1) {
-                                VKApiUserFull user = mUserFriendsMap.get(jsonObject.getInt("user_id"));
-                                VKApiCommunityFull group = mUsersGroupsByDefault.get(currentGroupNumber);
-                                mGroupsCommonWithFriendMap.get(user).add(group);
-                                mFriendsInGroupMap.get(group).add(user);
-                            }
-                            ++currentFriendNumber;
-                            if (currentFriendNumber == getUsersFriends().size()) {
-                                currentFriendNumber = 0;
-                                ++currentGroupNumber;
-                            }
+        @Override
+        protected void onProgressUpdate(Void... values) {
+            mListener.onProgress();
+        }
+
+        private void calculateCommonGroups() {
+            String friendIds = getFriendsIds();
+            final int groupPerRequest = 24;
+            for (int i = 0; i < mUsersGroupsByDefault.size(); i += groupPerRequest) {
+                if (mNeedCancelFetching || is_calculating_error_happened) {
+                    return;
+                }
+                final int groupStart = i;
+                String code = getCodeToExecute(groupStart, groupPerRequest, friendIds);
+                VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
+                request.executeSyncWithListener(new VKRequest.VKRequestListener() {
+                    @Override
+                    public void onComplete(VKResponse response) {
+                        if (mNeedCancelFetching || is_calculating_error_happened) {
+                            return;
                         }
-                    } catch (JSONException e) {
-                        is_calculating_error_happened = true;
-                        calculating_error = String.valueOf(e);
+                        int currentFriendNumber = 0;
+                        int currentGroupNumber = groupStart;
+                        try {
+                            JSONArray jsonArray = response.json.getJSONArray("response");
+                            for (int j = 0; j != jsonArray.length(); ++j) {
+                                JSONObject jsonObject = jsonArray.getJSONObject(j);
+                                if (jsonObject.getInt("member") == 1) {
+                                    VKApiUserFull user = mUserFriendsMap.get(jsonObject.getInt("user_id"));
+                                    VKApiCommunityFull group = mUsersGroupsByDefault.get(currentGroupNumber);
+                                    mGroupsCommonWithFriendMap.get(user).add(group);
+                                    mFriendsInGroupMap.get(group).add(user);
+                                }
+                                ++currentFriendNumber;
+                                if (currentFriendNumber == getUsersFriends().size()) {
+                                    currentFriendNumber = 0;
+                                    ++currentGroupNumber;
+                                }
+                            }
+                        } catch (JSONException e) {
+                            is_calculating_error_happened = true;
+                            calculating_error = String.valueOf(e);
+                        }
+                        publishProgress();
                     }
-                }
 
-                @Override
-                public void onError(VKError error) {
-                    is_calculating_error_happened = true;
-                    calculating_error = String.valueOf(error);
-                }
-            });
+                    @Override
+                    public void onError(VKError error) {
+                        is_calculating_error_happened = true;
+                        calculating_error = String.valueOf(error);
+                    }
+                });
+            }
         }
-    }
 
-    private String getFriendsIds() {
-        StringBuilder s = new StringBuilder();
-        for (VKApiUserFull friend : getUsersFriends()) {
-            s.append(friend.id).append(',');
+        private String getFriendsIds() {
+            StringBuilder s = new StringBuilder();
+            for (VKApiUserFull friend : getUsersFriends()) {
+                s.append(friend.id).append(',');
+            }
+            return s.toString();
         }
-        return s.toString();
-    }
 
-    private String getCodeToExecute(int groupStart, int groupPerRequest, String friendIds) {
-        return "var ids = \"" + friendIds + "\";" +
-                "var g = API.groups.get();" +
-                "var res = API.groups.isMember({\"group_id\": g.items[" + groupStart + "],\"user_ids\":ids});" +
-                ((groupStart + 1 < mUsersGroupsByDefault.size()) ?
-                        "int i = " + (groupStart+1) + ";" +
-                                "while(i<" + Math.min(groupStart + groupPerRequest, mUsersGroupsByDefault.size()) + ")" +
-                                "{res=res+API.groups.isMember({\"group_id\": g.items[i],\"user_ids\":ids});i=i+1;}"
-                        : "") +
-                "return  res;";
+        private String getCodeToExecute(int groupStart, int groupPerRequest, String friendIds) {
+            return "var ids = \"" + friendIds + "\";" +
+                    "var g = API.groups.get();" +
+                    "var res = API.groups.isMember({\"group_id\": g.items[" + groupStart + "],\"user_ids\":ids});" +
+                    ((groupStart + 1 < mUsersGroupsByDefault.size()) ?
+                            "int i = " + (groupStart+1) + ";" +
+                                    "while(i<" + Math.min(groupStart + groupPerRequest, mUsersGroupsByDefault.size()) + ")" +
+                                    "{res=res+API.groups.isMember({\"group_id\": g.items[i],\"user_ids\":ids});i=i+1;}"
+                            : "") +
+                    "return  res;";
+        }
     }
 
     /**
@@ -347,7 +375,7 @@ public class DataManager {
     public VKUsersArray getUsersFriends() {
         switch (mFriendsSortState) {
             case notSorted:
-                return null;
+                return new VKUsersArray();
             case byAlphabet:
                 return mUsersFriendsByAlphabet;
             case byCommons:
@@ -362,7 +390,7 @@ public class DataManager {
     public VKApiCommunityArray getUsersGroups() {
         switch (mGroupsSortState) {
             case notSorted:
-                return null;
+                return new VKApiCommunityArray();
             case byDefault:
                 return mUsersGroupsByDefault;
             case byFriends:
@@ -453,22 +481,31 @@ public class DataManager {
 
     /**
      * Очистить все поля.
+     * Если эта функция вызвана во время за грузки, то mNeedCancelFetching присваивается true;
+     * и функция будет вызвана заново после завершения загрузки, которая завершится скоро,
+     * так как mNeedCancelFetching будет равно true.
      */
     public void clear() {
-        mUsersFriendsByAlphabet = null;
-        mUsersFriendsByCommons = null;
-        mUserFriendsMap = new HashMap<>();
+        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingCommons) {
+            mNeedCancelFetching = true;
+        }
+        else {
+            mUsersFriendsByAlphabet = null;
+            mUsersFriendsByCommons = null;
+            mUserFriendsMap = new HashMap<>();
 
-        mUsersGroupsByDefault = null;
-        mUsersGroupsByFriends = null;
-        mUserGroupsMap = new HashMap<>();
+            mUsersGroupsByDefault = null;
+            mUsersGroupsByFriends = null;
+            mUserGroupsMap = new HashMap<>();
 
-        mGroupsCommonWithFriendMap = new HashMap<>();
-        mFriendsInGroupMap = new HashMap<>();
+            mGroupsCommonWithFriendMap = new HashMap<>();
+            mFriendsInGroupMap = new HashMap<>();
 
-        mFriendsSortState = FriendsSortState.notSorted;
-        mGroupsSortState = GroupsSortState.notSorted;
-        mFetchingState = FetchingState.notStarted;
+            mFriendsSortState = FriendsSortState.notSorted;
+            mGroupsSortState = GroupsSortState.notSorted;
+            mFetchingState = FetchingState.notStarted;
+            mNeedCancelFetching = false;
+        }
     }
 
     /**

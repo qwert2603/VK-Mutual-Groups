@@ -25,7 +25,7 @@ public class FriendsListFragment extends Fragment {
 
     /**
      * groupId - id группы. В списке будут выведены друзья в этой группе.
-     * Если groupId == 0, будут выведены друзья позьвателя в текущем порядке сортировки из mDataManager.
+     * Если groupId == 0, будут выведены друзья пользователя в текущем порядке сортировки из mDataManager.
      */
     public static FriendsListFragment newInstance(int groupId) {
         FriendsListFragment result = new FriendsListFragment();
@@ -37,6 +37,7 @@ public class FriendsListFragment extends Fragment {
 
     private int mGroupId;
     private DataManager mDataManager = DataManager.get();
+    private ListView mListView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -49,13 +50,13 @@ public class FriendsListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
-        final ListView listView = (ListView) view.findViewById(android.R.id.list);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mListView = (ListView) view.findViewById(android.R.id.list);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (mDataManager.getFetchingState() == DataManager.FetchingState.finished) {
                     Intent intent = new Intent(getActivity(), GroupsListActivity.class);
-                    VKApiUserFull friend = (VKApiUserFull) listView.getAdapter().getItem(position);
+                    VKApiUserFull friend = (VKApiUserFull) mListView.getAdapter().getItem(position);
                     intent.putExtra(GroupsListActivity.EXTRA_FRIEND_ID, friend.id);
                     startActivity(intent);
                 }
@@ -75,14 +76,21 @@ public class FriendsListFragment extends Fragment {
         }
 
         if (users.isEmpty()) {
-            listView.setVisibility(View.INVISIBLE);
+            mListView.setVisibility(View.INVISIBLE);
         }
         else {
             no_friends_text_view.setVisibility(View.INVISIBLE);
             FriendAdapter adapter = new FriendAdapter(users);
-            listView.setAdapter(adapter);
+            mListView.setAdapter(adapter);
         }
         return view;
+    }
+
+    /**
+     * Обновить адаптер ListView.
+     */
+    public void notifyDataSetChanged() {
+        ((FriendAdapter) mListView.getAdapter()).notifyDataSetChanged();
     }
 
     private class FriendAdapter extends ArrayAdapter<VKApiUserFull> {
