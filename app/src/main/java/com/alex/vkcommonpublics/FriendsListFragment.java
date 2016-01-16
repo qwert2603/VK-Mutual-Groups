@@ -38,6 +38,7 @@ public class FriendsListFragment extends Fragment {
     private int mGroupId;
     private DataManager mDataManager = DataManager.get();
     private ListView mListView;
+    private FriendAdapter mFriendAdapter = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -80,8 +81,8 @@ public class FriendsListFragment extends Fragment {
         }
         else {
             no_friends_text_view.setVisibility(View.INVISIBLE);
-            FriendAdapter adapter = new FriendAdapter(users);
-            mListView.setAdapter(adapter);
+            mFriendAdapter = new FriendAdapter(users);
+            mListView.setAdapter(mFriendAdapter);
         }
         return view;
     }
@@ -90,7 +91,9 @@ public class FriendsListFragment extends Fragment {
      * Обновить адаптер ListView.
      */
     public void notifyDataSetChanged() {
-        ((FriendAdapter) mListView.getAdapter()).notifyDataSetChanged();
+        if (mFriendAdapter != null) {
+            mFriendAdapter.notifyDataSetChanged();
+        }
     }
 
     private class FriendAdapter extends ArrayAdapter<VKApiUserFull> {

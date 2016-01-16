@@ -44,7 +44,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
-        updateUI();
 
         if (VKSdk.isLoggedIn()) {
             if (mDataManager.getFetchingState() == notStarted) {
@@ -53,6 +52,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         } else {
             VKSdk.login(this, LOGIN_SCOPE);
         }
+
+        updateUI();
     }
 
     @Override
@@ -62,6 +63,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             public void onResult(VKAccessToken res) {
                 if (mDataManager.getFetchingState() == notStarted) {
                     fetch();
+                    updateUI();
                 }
             }
 
@@ -105,6 +107,26 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         }
     }
 
+    private void onFetchingErrorUI() {
+        FragmentManager fm = getFragmentManager();
+        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
+        if(fragment != null) {
+            fragment.notifyDataSetChanged();
+            Toast.makeText(this, R.string.error_message, Toast.LENGTH_SHORT).show();
+        }
+        else {
+            mErrorTextView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void notifyDataSetChanged() {
+        FragmentManager fm = getFragmentManager();
+        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
+        if(fragment != null) {
+            fragment.notifyDataSetChanged();
+        }
+    }
+
     private void fetch() {
         mIsFetchingErrorHappened = false;
         mDataManager.clear();
@@ -133,26 +155,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 Log.e("AASSDD", e);
             }
         });
-    }
-
-    public void onFetchingErrorUI() {
-        FragmentManager fm = getFragmentManager();
-        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
-        if(fragment != null) {
-            fragment.notifyDataSetChanged();
-            Toast.makeText(this, R.string.error_message, Toast.LENGTH_SHORT).show();
-        }
-        else {
-            mErrorTextView.setVisibility(View.VISIBLE);
-        }
-    }
-
-    public void notifyDataSetChanged() {
-        FragmentManager fm = getFragmentManager();
-        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
-        if(fragment != null) {
-            fragment.notifyDataSetChanged();
-        }
     }
 
     private void removeFriendsListFragment() {
