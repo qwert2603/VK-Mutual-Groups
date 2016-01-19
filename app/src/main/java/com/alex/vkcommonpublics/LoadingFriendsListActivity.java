@@ -45,6 +45,32 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
 
+        mDataManager.setDataManagerListener(new DataManager.DataManagerListener() {
+            @Override
+            public void onFriendsFetched() {
+                refreshFriendsListFragment();
+                updateUI();
+            }
+
+            @Override
+            public void onCompleted(Void v) {
+                updateUI();
+                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onProgress() {
+                updateUI();
+            }
+
+            @Override
+            public void onError(String e) {
+                mIsFetchingErrorHappened = true;
+                updateUI();
+                Log.e("AASSDD", e);
+            }
+        });
+
         if (VKSdk.isLoggedIn()) {
             if (mDataManager.getFetchingState() == notStarted) {
                 fetch();
@@ -54,6 +80,13 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         }
 
         updateUI();
+    }
+
+    @Override
+    protected void onDestroy() {
+        PhotoManager.get().quitDownloadingThread();
+        DataManager.get().quitProcessingThread();
+        super.onDestroy();
     }
 
     @Override
@@ -129,32 +162,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     private void fetch() {
         mIsFetchingErrorHappened = false;
-        mDataManager.clear();
-        mDataManager.fetch(new DataManager.Listener() {
-            @Override
-            public void onFriendsFetched() {
-                refreshFriendsListFragment();
-                updateUI();
-            }
-
-            @Override
-            public void onCommonsCalculated() {
-                updateUI();
-                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onProgress() {
-                updateUI();
-            }
-
-            @Override
-            public void onError(String e) {
-                mIsFetchingErrorHappened = true;
-                updateUI();
-                Log.e("AASSDD", e);
-            }
-        });
+        mDataManager.fetch();
     }
 
     private void removeFriendsListFragment() {

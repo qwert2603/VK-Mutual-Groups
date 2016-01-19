@@ -2,13 +2,16 @@ package com.alex.vkcommonpublics;
 
 import android.app.Fragment;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -37,6 +40,7 @@ public class FriendsListFragment extends Fragment {
 
     private int mGroupId;
     private DataManager mDataManager = DataManager.get();
+    private PhotoManager mPhotoManager = PhotoManager.get();
     private ListView mListView;
     private FriendAdapter mFriendAdapter = null;
 
@@ -76,7 +80,7 @@ public class FriendsListFragment extends Fragment {
             users =  mDataManager.getUsersFriends();
         }
 
-        if (users.isEmpty()) {
+        if (users == null || users.isEmpty()) {
             mListView.setVisibility(View.INVISIBLE);
         }
         else {
@@ -97,8 +101,14 @@ public class FriendsListFragment extends Fragment {
     }
 
     private class FriendAdapter extends ArrayAdapter<VKApiUserFull> {
+        /**
+         * Ссылка на фото последнего друга.
+         */
+        private String mLastUserPhotoUrl;
+
         public FriendAdapter(VKUsersArray users) {
             super(getActivity(),0, users);
+            mLastUserPhotoUrl = users.get(users.size() - 1).photo_100;
         }
 
         @Override
@@ -107,12 +117,43 @@ public class FriendsListFragment extends Fragment {
                 convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item, parent, false);
             }
             VKApiUserFull friend = getItem(position);
+
+            final ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
+            Bitmap photoBitmap = mPhotoManager.getPhoto(friend.photo_100);
+            if (photoBitmap != null) {
+                photoImageView.setImageBitmap(photoBitmap);
+            }
+            else {
+                photoImageView.setImageResource(R.drawable.camera_100);
+                mPhotoManager.fetchOnePhoto(friend.photo_100, mFetchingListener);
+            }
+
             TextView nameTextView = (TextView) convertView.findViewById(R.id.item_title);
             nameTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
             TextView commonTextView = (TextView) convertView.findViewById(R.id.common_count);
             commonTextView.setText(getString(R.string.commons, mDataManager.getGroupsCommonWithFriend(friend).size()));
             return convertView;
         }
+
+        private Listener<Bitmap> mFetchingListener = new Listener<Bitmap>() {
+            private int i = 0;
+
+            @Override
+            public void onCompleted(Bitmap bitmap) {
+                // FIXME: 19.01.2016 
+                // Чтобы не обновлять адаптер слишком часто, но точно обновить его после загрузки последнего фото.
+                /*++i;
+                if (i == 8 || bitmap == mPhotoManager.getPhoto(mLastUserPhotoUrl)) {
+                    i = 0;*/
+                    notifyDataSetChanged();
+                //}
+            }
+
+            @Override
+            public void onError(String e) {
+                Log.e("AASSDD", e);
+            }
+        };
     }
 
 }

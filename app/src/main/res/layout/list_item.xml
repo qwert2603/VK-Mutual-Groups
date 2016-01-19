@@ -1,15 +1,22 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="6dp">
+    android:padding="2dp">
+
+    <ImageView android:id="@+id/photoImageView"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:src="@drawable/camera_100"/>
 
     <TextView android:id="@+id/item_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="2dp"
+        android:layout_marginLeft="2dp"
         android:layout_weight="1"
         android:textSize="18sp"
         android:textColor="@color/title"
-        android:text="Ночная Птица Ночная Птица"/>
+        android:text="Ночная Птица Ночная Птица Ночная"/>
 
     <TextView android:id="@+id/common_count"
         android:layout_width="wrap_content"
@@ -19,6 +26,6 @@
         android:layout_marginLeft="12dp"
         android:textSize="18sp"
         android:textColor="@color/commons"
-        android:text="2673446 frn"/>
+        android:text="26 frn"/>
 
 </LinearLayout>
