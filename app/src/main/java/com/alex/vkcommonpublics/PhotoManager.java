@@ -9,6 +9,11 @@ import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.LruCache;
 
+import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.vk.sdk.api.model.VKApiCommunityFull;
+import com.vk.sdk.api.model.VKApiUserFull;
+import com.vk.sdk.api.model.VKUsersArray;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -43,19 +48,8 @@ public class PhotoManager {
     /**
      * Аватарки друзей и групп.
      */
-    //private Map<String, Bitmap> mPhotos = new PhotosMap();
-    // FIXME: 20.01.2016
     private LruCache<String, Bitmap> mPhotos = new LruCache<>(2048);
-    /*private static class PhotosMap extends HashMap<String, Bitmap> {
-        @Override
-        public Bitmap put(String key, Bitmap value) {
-            // Чтобы не хранилось слишком много.
-            if (size() >= 2048) {
-                clear();
-            }
-            return super.put(key, value);
-        }
-    }*/
+
 
     @Nullable
     public Bitmap getPhoto(String url) {
@@ -67,6 +61,7 @@ public class PhotoManager {
      * Результат будет передан в listener.
      * Также загруженное фото будет сохранено в mPhotos.
      */
+    @SuppressWarnings("unused")
     public void fetchPhoto(final String url, final Listener<Bitmap> listener) {
         if (mPhotos.get(url) != null) {
             listener.onCompleted(mPhotos.get(url));
@@ -84,6 +79,56 @@ public class PhotoManager {
                 listener.onError(e);
             }
         });
+    }
+
+    /**
+     * Загрузить фото друзей.
+     * listener будет уведомляться о каждом загруженном фото.
+     */
+    public void fetchFriendsPhotos(VKUsersArray users, int offset, int count, final Listener<Bitmap> listener) {
+        int end = Math.min(offset + count, users.size());
+        for (int i = offset; i < end; ++i) {
+            final VKApiUserFull friend = users.get(i);
+            if (mPhotos.get(friend.photo_100) == null) {
+                mPhotoDownloadingThread.downloadPhoto(friend.photo_100, new Listener<Bitmap>() {
+                    @Override
+                    public void onCompleted(Bitmap bitmap) {
+                        mPhotos.put(friend.photo_100, bitmap);
+                        listener.onCompleted(bitmap);
+                    }
+
+                    @Override
+                    public void onError(String e) {
+                        listener.onError(e);
+                    }
+                });
+            }
+        }
+    }
+
+    /**
+     * Загрузить фото групп.
+     * listener будет уведомляться о каждом загруженном фото.
+     */
+    public void fetchGroupsPhotos(VKApiCommunityArray groups, int offset, int count, final Listener<Bitmap> listener) {
+        int end = Math.min(offset + count, groups.size());
+        for (int i = offset; i < end; ++i) {
+            final VKApiCommunityFull group = groups.get(i);
+            if (mPhotos.get(group.photo_100) == null) {
+                mPhotoDownloadingThread.downloadPhoto(group.photo_100, new Listener<Bitmap>() {
+                    @Override
+                    public void onCompleted(Bitmap bitmap) {
+                        mPhotos.put(group.photo_100, bitmap);
+                        listener.onCompleted(bitmap);
+                    }
+
+                    @Override
+                    public void onError(String e) {
+                        listener.onError(e);
+                    }
+                });
+            }
+        }
     }
 
     /**

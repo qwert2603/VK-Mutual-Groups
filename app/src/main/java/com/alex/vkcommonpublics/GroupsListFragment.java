@@ -38,15 +38,30 @@ public class GroupsListFragment extends Fragment {
         return result;
     }
 
-    private int mFriendId;
+    /**
+     * Кол-во фото загружаемое за 1 раз.
+     */
+    private static final int PHOTO_FETCH_PER_TIME = 15;
+
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager = PhotoManager.get();
+    private VKApiCommunityArray mGroups;
+    private GroupAdapter mGroupsAdapter;
+    private int mPhotoFetchingBound = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        mFriendId = getArguments().getInt(friendIdKey);
+        int friendId = getArguments().getInt(friendIdKey);
+        if (friendId != 0) {
+            VKApiUserFull friend = mDataManager.getFriendById(friendId);
+            mGroups = mDataManager.getGroupsCommonWithFriend(friend);
+        }
+        else {
+            mGroups = mDataManager.getUsersGroups();
+        }
+
     }
 
     @Nullable
@@ -69,42 +84,50 @@ public class GroupsListFragment extends Fragment {
         TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
         no_commons_text_view.setText(R.string.no_common_groups);
 
-        VKApiCommunityArray groups;
-        if (mFriendId != 0) {
-            VKApiUserFull friend = mDataManager.getFriendById(mFriendId);
-            groups = mDataManager.getGroupsCommonWithFriend(friend);
-        }
-        else {
-            groups = mDataManager.getUsersGroups();
-        }
-
-        if (groups == null || groups.isEmpty()) {
+        if (mGroups == null || mGroups.isEmpty()) {
             listView.setVisibility(View.INVISIBLE);
         }
         else {
             no_commons_text_view.setVisibility(View.INVISIBLE);
-            GroupAdapter adapter = new GroupAdapter(groups);
-            listView.setAdapter(adapter);
+            mGroupsAdapter = new GroupAdapter(mGroups);
+            listView.setAdapter(mGroupsAdapter);
 
-            // загружаем фото групп.
-            Listener<Bitmap> bitmapListener = new Listener<Bitmap>() {
-                @Override
-                public void onCompleted(Bitmap bitmap) {
-                    // nth
-                }
-
-                @Override
-                public void onError(String e) {
-                    Log.e("AASSDD", e);
-                }
-            };
-            for (VKApiCommunityFull group : groups) {
-                if (mPhotoManager.getPhoto(group.photo_100) == null) {
-                    mPhotoManager.fetchPhoto(group.photo_100, bitmapListener);
-                }
-            }
+            // загружаем первую порцию фото.
+            fetchElsePhotos();
         }
         return view;
+    }
+
+    /**
+     * Загрузить еще одну порцию фото.
+     */
+    private void fetchElsePhotos() {
+        mPhotoManager.fetchGroupsPhotos(mGroups, mPhotoFetchingBound, PHOTO_FETCH_PER_TIME, mPhotoFetchingListener);
+        mPhotoFetchingBound += PHOTO_FETCH_PER_TIME;
+    }
+
+    /**
+     * Слушатель загрузки фото.
+     */
+    private Listener<Bitmap> mPhotoFetchingListener = new Listener<Bitmap>() {
+        @Override
+        public void onCompleted(Bitmap bitmap) {
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void onError(String e) {
+            Log.e("AASSDD", e);
+        }
+    };
+
+    /**
+     * Обновить адаптер ListView.
+     */
+    public void notifyDataSetChanged() {
+        if (mGroupsAdapter != null) {
+            mGroupsAdapter.notifyDataSetChanged();
+        }
     }
 
     private class GroupAdapter extends ArrayAdapter<VKApiCommunityFull> {
@@ -126,7 +149,11 @@ public class GroupsListFragment extends Fragment {
             }
             else {
                 photoImageView.setImageResource(R.drawable.community_100);
-                mPhotoManager.fetchPhoto(group.photo_100, mFetchingListener);
+            }
+
+            // Если пролистали до нужного места, загружаем новую порцию фото.
+            if (position == mPhotoFetchingBound - PHOTO_FETCH_PER_TIME /2.5) {
+                fetchElsePhotos();
             }
 
             TextView titleTextView = (TextView) convertView.findViewById(R.id.item_title);
@@ -135,18 +162,6 @@ public class GroupsListFragment extends Fragment {
             friendsTextView.setText(getString(R.string.friends, mDataManager.getFriendsInGroup(group).size()));
             return convertView;
         }
-
-        private Listener<Bitmap> mFetchingListener = new Listener<Bitmap>() {
-            @Override
-            public void onCompleted(Bitmap bitmap) {
-                notifyDataSetChanged();
-            }
-
-            @Override
-            public void onError(String e) {
-                Log.e("AASSDD", e);
-            }
-        };
     }
 
 }
