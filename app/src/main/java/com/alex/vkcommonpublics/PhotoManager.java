@@ -4,8 +4,10 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.Nullable;
+import android.util.LruCache;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,6 +18,7 @@ import java.util.Map;
 
 /**
  * Загружает и хранит фотографии - аватарки друзей и групп.
+ *
  * При закрытии приложения надо обязательно вызвать {@link #quitDownloadingThread()} для завершения потока загрузки фото.
  */
 public class PhotoManager {
@@ -23,7 +26,7 @@ public class PhotoManager {
     private static PhotoManager sPhotoManager = new PhotoManager();
 
     private PhotoManager() {
-        mPhotoDownloadingThread = new PhotoDownloadingThread(new Handler());
+        mPhotoDownloadingThread = new PhotoDownloadingThread(new Handler(Looper.getMainLooper()));
         mPhotoDownloadingThread.start();
         mPhotoDownloadingThread.getLooper();
     }
@@ -40,9 +43,10 @@ public class PhotoManager {
     /**
      * Аватарки друзей и групп.
      */
-    private Map<String, Bitmap> mPhotos = new PhotosMap();
-
-    private static class PhotosMap extends HashMap<String, Bitmap> {
+    //private Map<String, Bitmap> mPhotos = new PhotosMap();
+    // FIXME: 20.01.2016
+    private LruCache<String, Bitmap> mPhotos = new LruCache<>(2048);
+    /*private static class PhotosMap extends HashMap<String, Bitmap> {
         @Override
         public Bitmap put(String key, Bitmap value) {
             // Чтобы не хранилось слишком много.
@@ -51,7 +55,7 @@ public class PhotoManager {
             }
             return super.put(key, value);
         }
-    }
+    }*/
 
     @Nullable
     public Bitmap getPhoto(String url) {
@@ -59,11 +63,15 @@ public class PhotoManager {
     }
 
     /**
-     * Загрузить одно фото по url.
+     * Загрузить фото по url.
      * Результат будет передан в listener.
      * Также загруженное фото будет сохранено в mPhotos.
      */
-    public void fetchOnePhoto(final String url, final Listener<Bitmap> listener) {
+    public void fetchPhoto(final String url, final Listener<Bitmap> listener) {
+        if (mPhotos.get(url) != null) {
+            listener.onCompleted(mPhotos.get(url));
+        }
+
         mPhotoDownloadingThread.downloadPhoto(url, new Listener<Bitmap>() {
             @Override
             public void onCompleted(Bitmap bitmap) {
@@ -108,7 +116,6 @@ public class PhotoManager {
          */
         private Handler mResponseHandler;
 
-
         public PhotoDownloadingThread(Handler responseHandler) {
             super("PhotoDownloadingThread");
             mResponseHandler = responseHandler;
@@ -146,6 +153,16 @@ public class PhotoManager {
             final Listener<Bitmap> listener = mListenerMap.get(urlString);
             if (listener == null) {
                 return;
+            }
+
+            if (mPhotos.get(urlString) != null) {
+                mResponseHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        listener.onCompleted(mPhotos.get(urlString));
+                        mListenerMap.remove(urlString);
+                    }
+                });
             }
 
             try {

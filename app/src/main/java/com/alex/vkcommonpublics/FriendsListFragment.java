@@ -19,6 +19,9 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
+import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
+import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
+
 /**
  * Отображает список друзей из DataManager в соответствии с id группы, переданным в {@link #newInstance(int)}.
  */
@@ -59,7 +62,7 @@ public class FriendsListFragment extends Fragment {
         mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (mDataManager.getFetchingState() == DataManager.FetchingState.finished) {
+                if (mDataManager.getFetchingState() == finished) {
                     Intent intent = new Intent(getActivity(), GroupsListActivity.class);
                     VKApiUserFull friend = (VKApiUserFull) mListView.getAdapter().getItem(position);
                     intent.putExtra(GroupsListActivity.EXTRA_FRIEND_ID, friend.id);
@@ -87,6 +90,26 @@ public class FriendsListFragment extends Fragment {
             no_friends_text_view.setVisibility(View.INVISIBLE);
             mFriendAdapter = new FriendAdapter(users);
             mListView.setAdapter(mFriendAdapter);
+
+            // загружаем фото первых 256 друзей.
+            Listener<Bitmap> bitmapListener = new Listener<Bitmap>() {
+                @Override
+                public void onCompleted(Bitmap bitmap) {
+                    // nth
+                }
+
+                @Override
+                public void onError(String e) {
+                    Log.e("AASSDD", e);
+                }
+            };
+            int count = Math.min(256, users.size());
+            for (int i = 0; i < count; ++i) {
+                VKApiUserFull friend = users.get(i);
+                if (mPhotoManager.getPhoto(friend.photo_100) == null) {
+                    mPhotoManager.fetchPhoto(friend.photo_100, bitmapListener);
+                }
+            }
         }
         return view;
     }
@@ -101,14 +124,8 @@ public class FriendsListFragment extends Fragment {
     }
 
     private class FriendAdapter extends ArrayAdapter<VKApiUserFull> {
-        /**
-         * Ссылка на фото последнего друга.
-         */
-        private String mLastUserPhotoUrl;
-
         public FriendAdapter(VKUsersArray users) {
             super(getActivity(),0, users);
-            mLastUserPhotoUrl = users.get(users.size() - 1).photo_100;
         }
 
         @Override
@@ -125,28 +142,25 @@ public class FriendsListFragment extends Fragment {
             }
             else {
                 photoImageView.setImageResource(R.drawable.camera_100);
-                mPhotoManager.fetchOnePhoto(friend.photo_100, mFetchingListener);
+                mPhotoManager.fetchPhoto(friend.photo_100, mPhotoFetchingListener);
             }
 
             TextView nameTextView = (TextView) convertView.findViewById(R.id.item_title);
             nameTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
             TextView commonTextView = (TextView) convertView.findViewById(R.id.common_count);
-            commonTextView.setText(getString(R.string.commons, mDataManager.getGroupsCommonWithFriend(friend).size()));
+            if (mDataManager.getFetchingState() == calculatingCommons || mDataManager.getFetchingState() == finished) {
+                commonTextView.setText(getString(R.string.commons, mDataManager.getGroupsCommonWithFriend(friend).size()));
+            }
+            else {
+                commonTextView.setText("");
+            }
             return convertView;
         }
 
-        private Listener<Bitmap> mFetchingListener = new Listener<Bitmap>() {
-            private int i = 0;
-
+        Listener<Bitmap> mPhotoFetchingListener = new Listener<Bitmap>() {
             @Override
             public void onCompleted(Bitmap bitmap) {
-                // FIXME: 19.01.2016 
-                // Чтобы не обновлять адаптер слишком часто, но точно обновить его после загрузки последнего фото.
-                /*++i;
-                if (i == 8 || bitmap == mPhotoManager.getPhoto(mLastUserPhotoUrl)) {
-                    i = 0;*/
-                    notifyDataSetChanged();
-                //}
+                notifyDataSetChanged();
             }
 
             @Override

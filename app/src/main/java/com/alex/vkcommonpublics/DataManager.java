@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.NonNull;
 import android.util.Log;
@@ -34,7 +35,9 @@ import java.util.Map;
  * Также подсчитывает кол-во общих групп.
  * Для загрузки и подсчета надо вызвать {@link #fetch()}.
  * Перед загрузкой надо назначить слушателя {@link #setDataManagerListener(DataManagerListener)}.
- * При закрытии приложения надо обязательно вызвать {@link #quitProcessingThread()} для завершения потока загрузки.
+ *
+ * При закрытии приложения надо обязательно вызвать {@link #quitProcessingThread()}
+ * для завершения потока обработки результатов загрузки.
  */
 public class DataManager {
 
@@ -301,7 +304,7 @@ public class DataManager {
         }
         else {
             if (mDataProcessingThread == null) {
-                mDataProcessingThread = new DataProcessingThread(new Handler());
+                mDataProcessingThread = new DataProcessingThread(new Handler(Looper.getMainLooper()));
                 mDataProcessingThread.start();
                 mDataProcessingThread.getLooper();
             }
@@ -332,6 +335,9 @@ public class DataManager {
         return mFetchingState;
     }
 
+    /**
+     * Завершить поток обработки результатов запросов.
+     */
     public void quitProcessingThread() {
         mDataProcessingThread.clearMessages();
         mDataProcessingThread.quit();
@@ -367,6 +373,7 @@ public class DataManager {
      * Загрузить друзей пользователя.
      */
     private void loadFriends() {
+        Log.v("AASSDD", "loadFriends");
         mFetchingState = FetchingState.loadingFriends;
         VKRequest request = VKApi.friends().get(VKParameters.from("fields", "name, photo_100"));
         request.executeWithListener(new DataManagerVKRequestListener() {
@@ -396,6 +403,7 @@ public class DataManager {
      * Загрузить группы пользователя.
      */
     private void loadGroups() {
+        Log.v("AASSDD", "loadGroups");
         if (mNeedClearing) {
             mFetchingState = FetchingState.notStarted;
             clear();
@@ -450,7 +458,7 @@ public class DataManager {
          * Кол-во групп, обрабатываемое в 1 запросе.
          * Не больше 25. (ограничение в 25 запросов к api в vkapi.execute).
          */
-        private static final int groupPerRequest = 20;
+        private static final int groupPerRequest = 25;
 
         public CalculateCommonsTask() {
             int partsOfFriends = mUsersFriendsByAlphabet.size() / friendsPerRequest;
@@ -470,11 +478,15 @@ public class DataManager {
                 return null;
             }
 
+            Log.v("AASSDD", "doInBackground ## 1");
+
             calculateCommonGroups();
 
             if (mNeedClearing || mIsCalculatingErrorHappened) {
                 return null;
             }
+
+            Log.v("AASSDD", "doInBackground ## 2");
 
             // Копируем друзей в mUsersFriendsByCommons и сортируем их по убыванию кол-ва общих групп.
             mUsersFriendsByCommons = new VKUsersArray();
@@ -494,6 +506,8 @@ public class DataManager {
                 return null;
             }
 
+            Log.v("AASSDD", "doInBackground ## 3");
+
             // Копируем группы в mUsersGroupsByFriends и сортируем их по убыванию кол-ва друзей.
             mUsersGroupsByFriends = new VKApiCommunityArray();
             for (VKApiCommunityFull group : mUsersGroupsByDefault) {
@@ -507,11 +521,15 @@ public class DataManager {
                     return (l == r) ? 0 : ((l > r) ? 1 : -1);
                 }
             }));
+
+            Log.v("AASSDD", "doInBackground ## 4");
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
+            Log.v("AASSDD", "onPostExecute ##");
+
             if (mIsCalculatingErrorHappened) {
                 // во время выполнения подсчета общих групп произошла ошибка, сообщаем о ней.
                 mDataManagerListener.onError(mCalculatingErrorString);
@@ -524,6 +542,7 @@ public class DataManager {
             // если не надо было вызвать {#clear} и не было ошибок, сообщаем о завершении подсчета общих групп.
             mFetchingState = FetchingState.finished;
             mDataManagerListener.onCompleted(null);
+            Log.v("AASSDD", "onPostExecute ## finish");
         }
 
         @Override
@@ -537,11 +556,13 @@ public class DataManager {
                 for (int groupNumber = 0; groupNumber < mUsersGroupsByDefault.size(); groupNumber += groupPerRequest) {
                     if (mNeedClearing || mIsCalculatingErrorHappened) {
                         --mRequestsRemain;
+                        Log.v("AASSDD", "calculateCommonGroups ## continue");
                         continue;
                     }
                     String varGroups = getVarGroups(groupNumber);
                     String code = getCodeToExecute(varFriends, varGroups);
                     VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
+                    Log.v("AASSDD", "calculateCommonGroups ## executeWithListener");
                     request.executeWithListener(mExecuteRequestListener);
                     try {
                         // Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
@@ -553,18 +574,17 @@ public class DataManager {
                 }
             }
 
-            // FIXME: 19.01.2016
-            //int i = 0;
+            Log.v("AASSDD", "calculateCommonGroups ## waiting");
             // Ждем, пока не выполнятся все запросы.
             while (mRequestsRemain > 0) {
-                Thread.yield();
-                /*++i;
-                if (i == 5000) {
-                    i = 0;
-                    Log.v("AASSDD", "mRequestsRemain == " + mRequestsRemain);
-                }*/
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    //nth
+                }
+                Log.v("AASSDD", "calculateCommonGroups ## waiting ## mRequestsRemain == " + mRequestsRemain);
             }
-            Log.d("AASSDD", "calculateCommonGroups ## finish");
+            Log.v("AASSDD", "calculateCommonGroups ## finish");
         }
 
         /**
@@ -606,10 +626,10 @@ public class DataManager {
                     "var res = [];" +
                     "var i = 0;" +
                     "while(i<groups.count)" +
-                        "{var group_id = groups.items[i];\n" +
-                        "res=res+[{\"group_id\":group_id," +
-                            "\"members\":API.groups.isMember({\"group_id\": group_id,\"user_ids\":friends})}];\n" +
-                        "i=i+1;}" +
+                    "{var group_id = groups.items[i];\n" +
+                    "res=res+[{\"group_id\":group_id," +
+                    "\"members\":API.groups.isMember({\"group_id\": group_id,\"user_ids\":friends})}];\n" +
+                    "i=i+1;}" +
                     "return res;";
         }
 
@@ -619,6 +639,7 @@ public class DataManager {
         private VKRequest.VKRequestListener mExecuteRequestListener = new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
+                Log.v("AASSDD", "mExecuteRequestListener ## onComplete()");
                 if (!mNeedClearing && !mIsCalculatingErrorHappened) {
                     mDataProcessingThread.parseJSON(response.json, mParseJSONDataProcessingThreadListener);
                 }
@@ -629,6 +650,7 @@ public class DataManager {
 
             @Override
             public void onError(VKError error) {
+                Log.v("AASSDD", "mExecuteRequestListener ## onError()");
                 mIsCalculatingErrorHappened = true;
                 mCalculatingErrorString = String.valueOf(error);
                 --mRequestsRemain;
@@ -641,6 +663,7 @@ public class DataManager {
         private Listener<Void> mParseJSONDataProcessingThreadListener = new Listener<Void>() {
             @Override
             public void onCompleted(Void aVoid) {
+                Log.v("AASSDD", "mParseJSONDataProcessingThreadListener ## onCompleted()");
                 if (!mNeedClearing && !mIsCalculatingErrorHappened) {
                     publishProgress();
                 }
@@ -649,6 +672,7 @@ public class DataManager {
 
             @Override
             public void onError(String e) {
+                Log.v("AASSDD", "mParseJSONDataProcessingThreadListener ## onError()");
                 mIsCalculatingErrorHappened = true;
                 mCalculatingErrorString = String.valueOf(e);
                 --mRequestsRemain;
@@ -712,6 +736,7 @@ public class DataManager {
             while (mHandler == null) {
                 Thread.yield();
             }
+            Log.v("AASSDD", "processFriendsLoaded ##");
             mHandler.obtainMessage(MESSAGE_PROCESS_FRIENDS_LOADED_RESULT, listener).sendToTarget();
         }
 
@@ -719,6 +744,7 @@ public class DataManager {
             while (mHandler == null) {
                 Thread.yield();
             }
+            Log.v("AASSDD", "processGroupsLoaded ##");
             mHandler.obtainMessage(MESSAGE_PROCESS_GROUPS_LOADED_RESULT, listener).sendToTarget();
         }
 
@@ -726,6 +752,7 @@ public class DataManager {
             while (mHandler == null) {
                 Thread.yield();
             }
+            Log.v("AASSDD", "parseJSON ##");
             mListenerMap.put(jsonObject, listener);
             mHandler.obtainMessage(MESSAGE_PARSE_JSON, jsonObject).sendToTarget();
         }
@@ -741,6 +768,7 @@ public class DataManager {
         }
 
         private void handleProcessFriendsLoaded(final Listener<Void> listener) {
+            Log.v("AASSDD", "handleProcessFriendsLoaded ##");
             // Отсортировать друзей в алфавитном порядке.
             Collections.sort(mUsersFriendsByAlphabet, new Comparator<VKApiUserFull>() {
                 @Override
@@ -752,6 +780,7 @@ public class DataManager {
                     return lhs.last_name.compareTo(rhs.last_name);
                 }
             });
+            Log.v("AASSDD", "handleProcessFriendsLoaded ## after_sort ##");
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
                 mGroupsCommonWithFriend.put(friend, new VKApiCommunityArray());
                 mUserFriendsMap.put(friend.id, friend);
@@ -760,11 +789,13 @@ public class DataManager {
                 @Override
                 public void run() {
                     listener.onCompleted(null);
+                    Log.v("AASSDD", "handleProcessFriendsLoaded ## listener.onCompleted();");
                 }
             });
         }
 
         private void handleProcessGroupsLoaded(final Listener<Void> listener) {
+            Log.v("AASSDD", "handleProcessGroupsLoaded ##");
             for (VKApiCommunityFull group : mUsersGroupsByDefault) {
                 mFriendsInGroup.put(group, new VKUsersArray());
                 mUserGroupsMap.put(group.id, group);
@@ -773,6 +804,7 @@ public class DataManager {
                 @Override
                 public void run() {
                     listener.onCompleted(null);
+                    Log.v("AASSDD", "handleProcessGroupsLoaded ## listener.onCompleted(); ##");
                 }
             });
         }
@@ -780,9 +812,11 @@ public class DataManager {
         /**
          * Разобрать и сохранить результат запроса.
          */
-        private void handleParseJSON(JSONObject resultedJSONObject) {
+        private void handleParseJSON(final JSONObject resultedJSONObject) {
+            Log.v("AASSDD", "handleParseJSON ##");
             final Listener<Void> listener = mListenerMap.get(resultedJSONObject);
             if (listener == null) {
+                Log.v("AASSDD", "handleParseJSON ## returning!!!");
                 return;
             }
             try {
@@ -808,6 +842,8 @@ public class DataManager {
                     @Override
                     public void run() {
                         listener.onCompleted(null);
+                        mListenerMap.remove(resultedJSONObject);
+                        Log.v("AASSDD", "handleParseJSON ## listener.onCompleted(); ##");
                     }
                 });
             } catch (final JSONException e) {
@@ -815,6 +851,8 @@ public class DataManager {
                     @Override
                     public void run() {
                         listener.onError(String.valueOf(e));
+                        mListenerMap.remove(resultedJSONObject);
+                        Log.v("AASSDD", "handleParseJSON ## listener.onError(); ##");
                     }
                 });
             }

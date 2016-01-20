@@ -85,19 +85,31 @@ public class GroupsListFragment extends Fragment {
             no_commons_text_view.setVisibility(View.INVISIBLE);
             GroupAdapter adapter = new GroupAdapter(groups);
             listView.setAdapter(adapter);
+
+            // загружаем фото групп.
+            Listener<Bitmap> bitmapListener = new Listener<Bitmap>() {
+                @Override
+                public void onCompleted(Bitmap bitmap) {
+                    // nth
+                }
+
+                @Override
+                public void onError(String e) {
+                    Log.e("AASSDD", e);
+                }
+            };
+            for (VKApiCommunityFull group : groups) {
+                if (mPhotoManager.getPhoto(group.photo_100) == null) {
+                    mPhotoManager.fetchPhoto(group.photo_100, bitmapListener);
+                }
+            }
         }
         return view;
     }
 
     private class GroupAdapter extends ArrayAdapter<VKApiCommunityFull> {
-        /**
-         * Ссылка на фото последней группы.
-         */
-        private String mLastGroupPhotoUrl;
-
         public GroupAdapter(VKApiCommunityArray groups) {
             super(getActivity(), 0, groups);
-            mLastGroupPhotoUrl = groups.get(groups.size() - 1).photo_100;
         }
 
         @Override
@@ -113,8 +125,8 @@ public class GroupsListFragment extends Fragment {
                 photoImageView.setImageBitmap(photoBitmap);
             }
             else {
-                photoImageView.setImageResource(R.drawable.camera_100);
-                mPhotoManager.fetchOnePhoto(group.photo_100, mFetchingListener);
+                photoImageView.setImageResource(R.drawable.community_100);
+                mPhotoManager.fetchPhoto(group.photo_100, mFetchingListener);
             }
 
             TextView titleTextView = (TextView) convertView.findViewById(R.id.item_title);
@@ -125,17 +137,9 @@ public class GroupsListFragment extends Fragment {
         }
 
         private Listener<Bitmap> mFetchingListener = new Listener<Bitmap>() {
-            private int i = 0;
-
             @Override
             public void onCompleted(Bitmap bitmap) {
-                // FIXME: 19.01.2016 
-                // Чтобы не обновлять адаптер слишком часто, но точно обновить его после загрузки последнего фото.
-                /*++i;
-                if (i == 8 || bitmap == mPhotoManager.getPhoto(mLastGroupPhotoUrl)) {
-                    i = 0;*/
-                    notifyDataSetChanged();
-                //}
+                notifyDataSetChanged();
             }
 
             @Override

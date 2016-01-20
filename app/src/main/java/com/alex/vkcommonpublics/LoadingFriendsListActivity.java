@@ -2,7 +2,9 @@ package com.alex.vkcommonpublics;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -188,6 +190,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             case notSorted:
                 sortMenuItem.setTitle(R.string.sort);
                 sortMenuItem.setEnabled(false);
+                break;
             case byAlphabet:
                 sortMenuItem.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
                 sortMenuItem.setTitle(R.string.sort_alphabetically);
@@ -227,7 +230,13 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 invalidateOptionsMenu();
                 return true;
             case R.id.menu_refresh:
-                fetch();
+                if (isInternetConnected()) {
+                    fetch();
+                    invalidateOptionsMenu();
+                }
+                else {
+                    Toast.makeText(LoadingFriendsListActivity.this, R.string.no_internet_connection, Toast.LENGTH_SHORT).show();
+                }
                 return true;
             case R.id.menu_groups_list:
                 Intent intent = new Intent(this, UserGroupListActivity.class);
@@ -244,5 +253,10 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private boolean isInternetConnected() {
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
     }
 }
