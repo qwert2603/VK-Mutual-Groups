@@ -44,7 +44,7 @@ public class FriendsListFragment extends Fragment {
     /**
      * Кол-во фото загружаемое за 1 раз.
      */
-    private static final int PHOTO_FETCH_PER_TIME = 15;
+    private static final int PHOTO_FETCH_PER_TIME = 100;
 
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager;

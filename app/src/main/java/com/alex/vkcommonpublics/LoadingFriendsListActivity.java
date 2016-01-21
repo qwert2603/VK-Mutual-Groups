@@ -27,6 +27,7 @@ import com.vk.sdk.api.VKResponse;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
+import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
 import static com.alex.vkcommonpublics.DataManager.FetchingState.loadingFriends;
 import static com.alex.vkcommonpublics.DataManager.FetchingState.notStarted;
 
@@ -38,6 +39,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS };
 
     private DataManager mDataManager = DataManager.get();
+    private PhotoManager mPhotoManager;
 
     private ProgressBar mProgressBar;
     private TextView mErrorTextView;
@@ -49,6 +51,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fetching_friends_list);
+
+        mPhotoManager = PhotoManager.get(this);
 
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
@@ -93,8 +97,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        PhotoManager.get(this).quitDownloadingThread();
-        DataManager.get().quitProcessingThread();
+        mPhotoManager.quitDownloadingThread();
+        mDataManager.quitProcessingThread();
         super.onDestroy();
     }
 
@@ -207,7 +211,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 sortMenuItem.setTitle(R.string.sort_by_commons);
                 break;
         }
-        if (mDataManager.getFetchingState() != DataManager.FetchingState.finished) {
+        if (mDataManager.getFetchingState() != finished) {
             sortMenuItem.setEnabled(false);
             groupsListMenuItem.setEnabled(false);
         }
@@ -253,6 +257,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 if (VKSdk.isLoggedIn()) {
                     VKSdk.logout();
                     mDataManager.clear();
+                    mPhotoManager.clearPhotosOnDevice();
                     updateUI();
                     VKSdk.login(this, LOGIN_SCOPE);
                 }

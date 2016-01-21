@@ -16,16 +16,10 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,11 +32,14 @@ import java.util.Map;
  */
 public class PhotoManager {
 
+    private static final String TAG = "PhotoManager";
+
     private static PhotoManager sPhotoManager;
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private PhotoManager(Context context) {
-        mContext = context.getApplicationContext();
-        loadPhotosFromDevice();
+        mPhotoFolder = new File(context.getApplicationContext().getFilesDir(), PHOTOS_FOLDER);
+        mPhotoFolder.mkdirs();
 
         mPhotoDownloadingThread = new PhotoDownloadingThread(new Handler(Looper.getMainLooper()));
         mPhotoDownloadingThread.start();
@@ -56,14 +53,12 @@ public class PhotoManager {
         return sPhotoManager;
     }
 
-    private static final String JSON_FILENAME = "photos.json";
-    private static final String JSON_URL = "url";
-    private static final String JSON_BITMAP_BYTES_STRING = "bitmap_bytes_string";
+    private static final String PHOTOS_FOLDER = "photos";
 
     /**
-     * Нужен для сохранения фото в память телефона.
+     * Папка с сохраненными фото на устройстве.
      */
-    private Context mContext;
+    private File mPhotoFolder;
 
     /**
      * Поток для загрузки фото.
@@ -74,10 +69,20 @@ public class PhotoManager {
      * Аватарки друзей и групп.
      */
     private LruCache<String, Bitmap> mPhotos = new LruCache<>(2048);
+    //private Map<String, Bitmap> mPhotos = Collections.synchronizedMap(new HashMap<String, Bitmap>());
 
-
+    /**
+     * Получить фото по указанному url.
+     * Если фото есть в {@link #mPhotos} или в памяти устройства, оно будет возвращеною
+     */
     @Nullable
     public Bitmap getPhoto(String url) {
+        if (mPhotos.get(url) == null) {
+            Bitmap bitmap = loadPhotoFromDevice(url);
+            if (bitmap != null) {
+                mPhotos.put(url, bitmap);
+            }
+        }
         return mPhotos.get(url);
     }
 
@@ -88,14 +93,15 @@ public class PhotoManager {
      */
     @SuppressWarnings("unused")
     public void fetchPhoto(final String url, final Listener<Bitmap> listener) {
-        if (mPhotos.get(url) != null) {
-            listener.onCompleted(mPhotos.get(url));
+        if (getPhoto(url) != null) {
+            listener.onCompleted(getPhoto(url));
         }
 
         mPhotoDownloadingThread.downloadPhoto(url, new Listener<Bitmap>() {
             @Override
             public void onCompleted(Bitmap bitmap) {
                 mPhotos.put(url, bitmap);
+                savePhotoToDevice(url, bitmap);
                 listener.onCompleted(bitmap);
             }
 
@@ -114,11 +120,12 @@ public class PhotoManager {
         int end = Math.min(offset + count, users.size());
         for (int i = offset; i < end; ++i) {
             final VKApiUserFull friend = users.get(i);
-            if (mPhotos.get(friend.photo_100) == null) {
+            if (getPhoto(friend.photo_100) == null) {
                 mPhotoDownloadingThread.downloadPhoto(friend.photo_100, new Listener<Bitmap>() {
                     @Override
                     public void onCompleted(Bitmap bitmap) {
                         mPhotos.put(friend.photo_100, bitmap);
+                        savePhotoToDevice(friend.photo_100, bitmap);
                         listener.onCompleted(bitmap);
                     }
 
@@ -139,11 +146,12 @@ public class PhotoManager {
         int end = Math.min(offset + count, groups.size());
         for (int i = offset; i < end; ++i) {
             final VKApiCommunityFull group = groups.get(i);
-            if (mPhotos.get(group.photo_100) == null) {
+            if (getPhoto(group.photo_100) == null) {
                 mPhotoDownloadingThread.downloadPhoto(group.photo_100, new Listener<Bitmap>() {
                     @Override
                     public void onCompleted(Bitmap bitmap) {
                         mPhotos.put(group.photo_100, bitmap);
+                        savePhotoToDevice(group.photo_100, bitmap);
                         listener.onCompleted(bitmap);
                     }
 
@@ -156,56 +164,44 @@ public class PhotoManager {
         }
     }
 
-    private void savePhotosToDevice() {
-        try {
-            JSONArray jsonArray = new JSONArray();
-            for (String url : mPhotos.snapshot().keySet()) {
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put(JSON_URL, url);
-                Bitmap bitmap = mPhotos.get(url);
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-                jsonObject.put(JSON_BITMAP_BYTES_STRING, outputStream.toString());
-                jsonArray.put(jsonObject);
-            }
-            FileOutputStream fileOutputStream = mContext.openFileOutput(JSON_FILENAME, Context.MODE_PRIVATE);
-            fileOutputStream.write(jsonArray.toString().getBytes());
-            fileOutputStream.close();
-        }
-        catch (JSONException | IOException e) {
-            Log.e("AASSDD", e.toString(), e);
+    /**
+     * Удалить сохраненные на устройстве фото.
+     */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void clearPhotosOnDevice() {
+        for (File f : mPhotoFolder.listFiles()) {
+            f.delete();
         }
     }
 
-    private void loadPhotosFromDevice() {
+    /**
+     * Сохранить фото в память устройства.
+     */
+    private void savePhotoToDevice(String url, Bitmap bitmap) {
+        File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
         try {
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(mContext.openFileInput(JSON_FILENAME)));
-            StringBuilder jsonStringBuilder = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                jsonStringBuilder.append(line);
-            }
-            bufferedReader.close();
-            JSONArray jsonArray = new JSONArray(jsonStringBuilder.toString());
-            int jsonArraySize = jsonArray.length();
-            for (int i = 0; i < jsonArraySize; ++i) {
-                JSONObject jsonObject = jsonArray.getJSONObject(i);
-                String url = jsonObject.getString(JSON_URL);
-                String bitmapBytesString = jsonObject.getString(JSON_BITMAP_BYTES_STRING);
-                Bitmap bitmap = BitmapFactory.decodeByteArray(bitmapBytesString.getBytes(), 0, bitmapBytesString.length());
-                mPhotos.put(url, bitmap);
-            }
+            FileOutputStream outputStream = new FileOutputStream(f);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            outputStream.close();
         }
-        catch (JSONException | IOException e) {
-            Log.e("AASSDD", e.toString(), e);
+        catch (IOException e) {
+            Log.e(TAG, e.toString(), e);
         }
+    }
+
+    /**
+     * Загрузить фото из памяти устройства (если оно там было).
+     */
+    @Nullable
+    private Bitmap loadPhotoFromDevice(String url) {
+        File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
+        return BitmapFactory.decodeFile(f.getAbsolutePath());
     }
 
     /**
      * Завершить поток загрузки фото.
      */
     public void quitDownloadingThread() {
-        savePhotosToDevice();
         mPhotoDownloadingThread.quit();
     }
 
@@ -271,11 +267,11 @@ public class PhotoManager {
                 return;
             }
 
-            if (mPhotos.get(urlString) != null) {
+            if (getPhoto(urlString) != null) {
                 mResponseHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        listener.onCompleted(mPhotos.get(urlString));
+                        listener.onCompleted(getPhoto(urlString));
                         mListenerMap.remove(urlString);
                     }
                 });
