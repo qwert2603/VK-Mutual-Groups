@@ -47,15 +47,20 @@ public class FriendsListFragment extends Fragment {
     private static final int PHOTO_FETCH_PER_TIME = 15;
 
     private DataManager mDataManager = DataManager.get();
-    private PhotoManager mPhotoManager = PhotoManager.get();
+    private PhotoManager mPhotoManager;
     private FriendAdapter mFriendAdapter = null;
     private VKUsersArray mFriends;
+
+    /**
+     * До какого фото выполнена загрузка.
+     */
     private int mPhotoFetchingBound = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        mPhotoManager = PhotoManager.get(getActivity());
         int groupId = getArguments().getInt(groupIdKey);
         if (groupId != 0) {
             VKApiCommunityFull group = mDataManager.getGroupById(groupId);

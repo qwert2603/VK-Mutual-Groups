@@ -19,7 +19,12 @@ import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
+import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKError;
+import com.vk.sdk.api.VKParameters;
+import com.vk.sdk.api.VKRequest;
+import com.vk.sdk.api.VKResponse;
+import com.vk.sdk.api.model.VKUsersArray;
 
 import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
 import static com.alex.vkcommonpublics.DataManager.FetchingState.loadingFriends;
@@ -38,6 +43,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
     private TextView mErrorTextView;
 
     private boolean mIsFetchingErrorHappened = false;
+    private String mLastFetchingError = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +74,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             @Override
             public void onError(String e) {
                 mIsFetchingErrorHappened = true;
+                mLastFetchingError = e;
                 updateUI();
                 Log.e("AASSDD", e);
             }
@@ -86,7 +93,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        PhotoManager.get().quitDownloadingThread();
+        PhotoManager.get(this).quitDownloadingThread();
         DataManager.get().quitProcessingThread();
         super.onDestroy();
     }
@@ -249,6 +256,32 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                     updateUI();
                     VKSdk.login(this, LOGIN_SCOPE);
                 }
+                return true;
+            // FIXME: 21.01.2016 удалить тестовые пункты меню и mLastFetchingError.
+            case R.id.menu_test_check_api:
+                VKApi.friends().get(VKParameters.from("fields", "name")).executeWithListener(new VKRequest.VKRequestListener() {
+                    @Override
+                    public void onComplete(VKResponse response) {
+                        Toast.makeText(LoadingFriendsListActivity.this,
+                                "_check_api onComplete\n" + ((VKUsersArray) response.parsedModel).size(), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void attemptFailed(VKRequest request, int attemptNumber, int totalAttempts) {
+                        Toast.makeText(LoadingFriendsListActivity.this,
+                                "_check_api attemptFailed\n" + attemptNumber, Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(VKError error) {
+                        Toast.makeText(LoadingFriendsListActivity.this,
+                                "_check_api onError\n" + error, Toast.LENGTH_SHORT).show();
+                    }
+                });
+                return true;
+            case R.id.menu_test_last_error:
+                Toast.makeText(LoadingFriendsListActivity.this,
+                        "_last_error\n" + mLastFetchingError, Toast.LENGTH_SHORT).show();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
