@@ -97,7 +97,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
-        mPhotoManager.quitDownloadingThread();
+        mPhotoManager.quitLoadingThread();
         mDataManager.quitProcessingThread();
         super.onDestroy();
     }

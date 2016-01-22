@@ -2,10 +2,8 @@ package com.alex.vkcommonpublics;
 
 import android.app.Fragment;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,6 +22,9 @@ import com.vk.sdk.api.model.VKApiUserFull;
  */
 public class GroupsListFragment extends Fragment {
 
+    @SuppressWarnings("unused")
+    private static final String TAG = "GroupsListFragment";
+
     private static final String friendIdKey = "friendIdKey";
 
     /**
@@ -38,20 +39,10 @@ public class GroupsListFragment extends Fragment {
         return result;
     }
 
-    /**
-     * Кол-во фото загружаемое за 1 раз.
-     */
-    private static final int PHOTO_FETCH_PER_TIME = 100;
-
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager;
     private VKApiCommunityArray mGroups;
-    private GroupAdapter mGroupsAdapter;
-
-    /**
-     * До какого фото выполнена загрузка.
-     */
-    private int mPhotoFetchingBound = 0;
+    private ListView mListView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -66,20 +57,19 @@ public class GroupsListFragment extends Fragment {
         else {
             mGroups = mDataManager.getUsersGroups();
         }
-
     }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
-        final ListView listView = (ListView) view.findViewById(android.R.id.list);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mListView = (ListView) view.findViewById(android.R.id.list);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (mDataManager.getFetchingState() == DataManager.FetchingState.finished) {
                     Intent intent = new Intent(getActivity(), FriendsListActivity.class);
-                    VKApiCommunityFull group = (VKApiCommunityFull) listView.getAdapter().getItem(position);
+                    VKApiCommunityFull group = (VKApiCommunityFull) mListView.getAdapter().getItem(position);
                     intent.putExtra(FriendsListActivity.EXTRA_GROUP_ID, group.id);
                     startActivity(intent);
                 }
@@ -90,50 +80,16 @@ public class GroupsListFragment extends Fragment {
         no_commons_text_view.setText(R.string.no_common_groups);
 
         if (mGroups == null || mGroups.isEmpty()) {
-            listView.setVisibility(View.INVISIBLE);
+            mListView.setVisibility(View.INVISIBLE);
         }
         else {
             no_commons_text_view.setVisibility(View.INVISIBLE);
-            mGroupsAdapter = new GroupAdapter(mGroups);
-            listView.setAdapter(mGroupsAdapter);
-
-            // загружаем первую порцию фото.
-            fetchElsePhotos();
+            GroupAdapter groupAdapter = new GroupAdapter(mGroups);
+            mListView.setAdapter(groupAdapter);
         }
         return view;
     }
 
-    /**
-     * Загрузить еще одну порцию фото.
-     */
-    private void fetchElsePhotos() {
-        mPhotoManager.fetchGroupsPhotos(mGroups, mPhotoFetchingBound, PHOTO_FETCH_PER_TIME, mPhotoFetchingListener);
-        mPhotoFetchingBound += PHOTO_FETCH_PER_TIME;
-    }
-
-    /**
-     * Слушатель загрузки фото.
-     */
-    private Listener<Bitmap> mPhotoFetchingListener = new Listener<Bitmap>() {
-        @Override
-        public void onCompleted(Bitmap bitmap) {
-            notifyDataSetChanged();
-        }
-
-        @Override
-        public void onError(String e) {
-            Log.e("AASSDD", e);
-        }
-    };
-
-    /**
-     * Обновить адаптер ListView.
-     */
-    public void notifyDataSetChanged() {
-        if (mGroupsAdapter != null) {
-            mGroupsAdapter.notifyDataSetChanged();
-        }
-    }
 
     private class GroupAdapter extends ArrayAdapter<VKApiCommunityFull> {
         public GroupAdapter(VKApiCommunityArray groups) {
@@ -145,21 +101,11 @@ public class GroupsListFragment extends Fragment {
             if (convertView == null) {
                 convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item, parent, false);
             }
+
             VKApiCommunityFull group = getItem(position);
 
-            final ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
-            Bitmap photoBitmap = mPhotoManager.getPhoto(group.photo_100);
-            if (photoBitmap != null) {
-                photoImageView.setImageBitmap(photoBitmap);
-            }
-            else {
-                photoImageView.setImageResource(R.drawable.community_100);
-            }
-
-            // Если пролистали до нужного места, загружаем новую порцию фото.
-            if (position == mPhotoFetchingBound - PHOTO_FETCH_PER_TIME /2.5) {
-                fetchElsePhotos();
-            }
+            ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
+            mPhotoManager.setPhotoToImageView(photoImageView, group.photo_100);
 
             TextView titleTextView = (TextView) convertView.findViewById(R.id.item_title);
             titleTextView.setText(group.name);

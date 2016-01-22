@@ -2,10 +2,8 @@ package com.alex.vkcommonpublics;
 
 import android.app.Fragment;
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,6 +25,9 @@ import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
  */
 public class FriendsListFragment extends Fragment {
 
+    @SuppressWarnings("unused")
+    private static final String TAG = "FriendsListFragment";
+
     private static final String groupIdKey = "groupIdKey";
 
     /**
@@ -41,20 +42,11 @@ public class FriendsListFragment extends Fragment {
         return result;
     }
 
-    /**
-     * Кол-во фото загружаемое за 1 раз.
-     */
-    private static final int PHOTO_FETCH_PER_TIME = 100;
-
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager;
+    private ListView mListView;
     private FriendAdapter mFriendAdapter = null;
     private VKUsersArray mFriends;
-
-    /**
-     * До какого фото выполнена загрузка.
-     */
-    private int mPhotoFetchingBound = 0;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -75,13 +67,13 @@ public class FriendsListFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
-        final ListView listView = (ListView) view.findViewById(android.R.id.list);
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        mListView = (ListView) view.findViewById(android.R.id.list);
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if (mDataManager.getFetchingState() == finished) {
                     Intent intent = new Intent(getActivity(), GroupsListActivity.class);
-                    VKApiUserFull friend = (VKApiUserFull) listView.getAdapter().getItem(position);
+                    VKApiUserFull friend = (VKApiUserFull) mListView.getAdapter().getItem(position);
                     intent.putExtra(GroupsListActivity.EXTRA_FRIEND_ID, friend.id);
                     startActivity(intent);
                 }
@@ -92,41 +84,15 @@ public class FriendsListFragment extends Fragment {
         no_friends_text_view.setText(R.string.no_friends_in_group);
 
         if (mFriends == null || mFriends.isEmpty()) {
-            listView.setVisibility(View.INVISIBLE);
+            mListView.setVisibility(View.INVISIBLE);
         }
         else {
             no_friends_text_view.setVisibility(View.INVISIBLE);
             mFriendAdapter = new FriendAdapter(mFriends);
-            listView.setAdapter(mFriendAdapter);
-
-            // загружаем первую порцию фото.
-            fetchElsePhotos();
+            mListView.setAdapter(mFriendAdapter);
         }
         return view;
     }
-
-    /**
-     * Загрузить еще одну порцию фото.
-     */
-    private void fetchElsePhotos() {
-        mPhotoManager.fetchFriendsPhotos(mFriends, mPhotoFetchingBound, PHOTO_FETCH_PER_TIME, mPhotoFetchingListener);
-        mPhotoFetchingBound += PHOTO_FETCH_PER_TIME;
-    }
-
-    /**
-     * Слушатель загрузки фото.
-     */
-    private Listener<Bitmap> mPhotoFetchingListener = new Listener<Bitmap>() {
-        @Override
-        public void onCompleted(Bitmap bitmap) {
-            notifyDataSetChanged();
-        }
-
-        @Override
-        public void onError(String e) {
-            Log.e("AASSDD", e);
-        }
-    };
 
     /**
      * Обновить адаптер ListView.
@@ -147,21 +113,11 @@ public class FriendsListFragment extends Fragment {
             if (convertView == null) {
                 convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item, parent, false);
             }
+
             VKApiUserFull friend = getItem(position);
 
-            final ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
-            Bitmap photoBitmap = mPhotoManager.getPhoto(friend.photo_100);
-            if (photoBitmap != null) {
-                photoImageView.setImageBitmap(photoBitmap);
-            }
-            else {
-                photoImageView.setImageResource(R.drawable.camera_100);
-            }
-
-            // Если пролистали до нужного места, загружаем новую порцию фото.
-            if (position == mPhotoFetchingBound - PHOTO_FETCH_PER_TIME /2.5) {
-                fetchElsePhotos();
-            }
+            ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
+            mPhotoManager.setPhotoToImageView(photoImageView, friend.photo_100);
 
             TextView nameTextView = (TextView) convertView.findViewById(R.id.item_title);
             nameTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));

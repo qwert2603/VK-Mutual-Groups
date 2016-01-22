@@ -13,7 +13,7 @@ public class VKCommonGroupsApplication extends Application {
         super.onCreate();
         VKSdk.initialize(this);
         for (String s : VKUtil.getCertificateFingerprint(this, "com.alex.vkcommonpublics")) {
-            Log.d("AASSDD", "CertificateFingerprint == " + s);
+            Log.d("CertificateFingerprint", "CertificateFingerprint == " + s);
         }
     }
 
