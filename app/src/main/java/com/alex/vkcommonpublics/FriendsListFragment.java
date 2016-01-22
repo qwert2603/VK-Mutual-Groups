@@ -112,24 +112,34 @@ public class FriendsListFragment extends Fragment {
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item, parent, false);
+                ViewHolder viewHolder = new ViewHolder();
+                viewHolder.mPhotoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
+                viewHolder.mTitleTextView = (TextView) convertView.findViewById(R.id.item_title);
+                viewHolder.mCommonsTextView = (TextView) convertView.findViewById(R.id.common_count);
+                convertView.setTag(viewHolder);
             }
 
             VKApiUserFull friend = getItem(position);
+            ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 
-            ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
-            mPhotoManager.setPhotoToImageView(photoImageView, friend.photo_100);
+            mPhotoManager.setPhotoToImageView(viewHolder.mPhotoImageView, friend.photo_100);
 
-            TextView nameTextView = (TextView) convertView.findViewById(R.id.item_title);
-            nameTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
-            TextView commonTextView = (TextView) convertView.findViewById(R.id.common_count);
+            viewHolder.mTitleTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
             if (mDataManager.getFetchingState() == calculatingCommons || mDataManager.getFetchingState() == finished) {
-                commonTextView.setText(getString(R.string.commons, mDataManager.getGroupsCommonWithFriend(friend).size()));
+                int commons = mDataManager.getGroupsCommonWithFriend(friend).size();
+                viewHolder.mCommonsTextView.setText(getString(R.string.commons, commons));
             }
             else {
-                commonTextView.setText("");
+                viewHolder.mCommonsTextView.setText("");
             }
             return convertView;
         }
+    }
+
+    private static class ViewHolder {
+        ImageView mPhotoImageView;
+        TextView mTitleTextView;
+        TextView mCommonsTextView;
     }
 
 }

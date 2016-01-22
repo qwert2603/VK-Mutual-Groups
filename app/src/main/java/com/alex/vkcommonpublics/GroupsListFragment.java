@@ -100,19 +100,27 @@ public class GroupsListFragment extends Fragment {
         public View getView(int position, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item, parent, false);
+                ViewHolder viewHolder = new ViewHolder();
+                viewHolder.mPhotoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
+                viewHolder.mTitleTextView = (TextView) convertView.findViewById(R.id.item_title);
+                viewHolder.mCommonsTextView = (TextView) convertView.findViewById(R.id.common_count);
+                convertView.setTag(viewHolder);
             }
 
             VKApiCommunityFull group = getItem(position);
+            ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 
-            ImageView photoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
-            mPhotoManager.setPhotoToImageView(photoImageView, group.photo_100);
-
-            TextView titleTextView = (TextView) convertView.findViewById(R.id.item_title);
-            titleTextView.setText(group.name);
-            TextView friendsTextView = (TextView) convertView.findViewById(R.id.common_count);
-            friendsTextView.setText(getString(R.string.friends, mDataManager.getFriendsInGroup(group).size()));
+            mPhotoManager.setPhotoToImageView(viewHolder.mPhotoImageView, group.photo_100);
+            viewHolder.mTitleTextView.setText(group.name);
+            viewHolder.mCommonsTextView.setText(getString(R.string.friends, mDataManager.getFriendsInGroup(group).size()));
             return convertView;
         }
+    }
+
+    private static class ViewHolder {
+        ImageView mPhotoImageView;
+        TextView mTitleTextView;
+        TextView mCommonsTextView;
     }
 
 }

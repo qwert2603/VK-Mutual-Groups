@@ -125,7 +125,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     private void updateUI() {
         invalidateOptionsMenu();
-        mProgressBar.setVisibility(View.INVISIBLE);
+        mProgressBar.setVisibility(View.GONE);
         mErrorTextView.setVisibility(View.INVISIBLE);
         if (! VKSdk.isLoggedIn()) {
             removeFriendsListFragment();
