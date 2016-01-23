@@ -4,7 +4,6 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,8 +17,6 @@ import android.widget.TextView;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
-
-import java.util.ArrayList;
 
 import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
 import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
@@ -87,7 +84,18 @@ public class FriendsListFragment extends Fragment {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
                 if (scrollState == SCROLL_STATE_IDLE) {
-                    fetchVisibleFriendsPhotos(4);
+                    // загружаем фото для друзей, ближайших к отображаемым.
+                    int padding = 3;
+                    int b = mListView.getFirstVisiblePosition();
+                    int e = mListView.getLastVisiblePosition() + 1;
+                    int pb = Math.max(0, b - padding);
+                    int pe = Math.min(mFriends.size(), e + padding);
+                    for (int i = e; i < pe; ++i) {
+                        mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
+                    }
+                    for (int i = pb; i < b; ++i) {
+                        mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
+                    }
                 }
             }
 
@@ -108,58 +116,6 @@ public class FriendsListFragment extends Fragment {
             mListView.setAdapter(mFriendAdapter);
         }
         return view;
-    }
-
-
-    /**
-     * Загрузить фото для друзей отображаемых сейчас.
-     * @param padding - для скольких друзей сверху и снизу в списке будет также загружено фото.
-     */
-    private void fetchVisibleFriendsPhotos(int padding) {
-        int b = mListView.getFirstVisiblePosition();
-        int e = mListView.getLastVisiblePosition();
-        fetchFriendsPhotos(b, e, new Listener() {
-            @Override
-            public void onCompleted() {
-                notifyDataSetChanged();
-            }
-
-            @Override
-            public void onError(String e) {
-                Log.e(TAG, e);
-            }
-        });
-        
-        Listener noUpdateListener = new Listener() {
-            @Override
-            public void onCompleted() {
-            }
-
-            @Override
-            public void onError(String e) {
-                Log.e(TAG, e);
-            }
-        };
-        if (padding > 0) {
-            fetchFriendsPhotos(e, Math.min(e + padding, mFriends.size()), noUpdateListener);
-            fetchFriendsPhotos(Math.max(b - padding, 0), b, noUpdateListener);
-        }
-    }
-
-    /**
-     * Загрузить фото друзей с 'b' по 'е'.
-     * Будут загружены только те фото, что не были загружены ранее.
-     */
-    private void fetchFriendsPhotos(int b, int e, Listener listener) {
-        ArrayList<String> urlsArrayList = new ArrayList<>();
-        for (int i = b; i < e; ++i) {
-            if (mPhotoManager.getPhoto(mFriends.get(i).photo_100) == null) {
-                urlsArrayList.add(mFriends.get(i).photo_100);
-            }
-        }
-        String[] urls = new String[urlsArrayList.size()];
-        urlsArrayList.toArray(urls);
-        mPhotoManager.fetchPhotos(urls, listener);
     }
 
     /**
@@ -190,7 +146,15 @@ public class FriendsListFragment extends Fragment {
             VKApiUserFull friend = getItem(position);
             ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 
-            viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(friend.photo_100));
+            viewHolder.mPosition = position;
+            if (mPhotoManager.getPhoto(friend.photo_50) != null) {
+                viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(friend.photo_50));
+            }
+            else {
+                viewHolder.mPhotoImageView.setImageBitmap(null);
+                mPhotoManager.setPhotoToImageViewHolder(viewHolder, friend.photo_50);
+            }
+
             viewHolder.mTitleTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
             if (mDataManager.getFetchingState() == calculatingCommons || mDataManager.getFetchingState() == finished) {
                 int commons = mDataManager.getGroupsCommonWithFriend(friend).size();
@@ -204,10 +168,21 @@ public class FriendsListFragment extends Fragment {
         }
     }
 
-    private static class ViewHolder {
+    private static class ViewHolder implements ImageViewHolder {
+        int mPosition;
         ImageView mPhotoImageView;
         TextView mTitleTextView;
         TextView mCommonsTextView;
+
+        @Override
+        public int getPosition() {
+            return mPosition;
+        }
+
+        @Override
+        public ImageView getImageView() {
+            return mPhotoImageView;
+        }
     }
 
 }

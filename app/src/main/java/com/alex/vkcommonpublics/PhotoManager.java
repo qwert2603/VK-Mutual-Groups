@@ -3,10 +3,7 @@ package com.alex.vkcommonpublics;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.os.Message;
+import android.os.AsyncTask;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.util.LruCache;
@@ -16,13 +13,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Загружает и хранит фотографии - аватарки друзей и групп.
- *
- * При закрытии приложения надо обязательно вызвать {@link #quitLoadingThread()} для завершения потока загрузки фото.
  */
 public class PhotoManager {
 
@@ -30,10 +23,10 @@ public class PhotoManager {
 
     private static PhotoManager sPhotoManager;
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private PhotoManager(Context context) {
-        mPhotoProcessingThread = new PhotoProcessingThread(new Handler(Looper.getMainLooper()), context);
-        mPhotoProcessingThread.start();
-        mPhotoProcessingThread.getLooper();
+        mPhotoFolder = new File(context.getApplicationContext().getFilesDir(), PHOTOS_FOLDER);
+        mPhotoFolder.mkdirs();
     }
 
     public static PhotoManager get(Context context) {
@@ -44,9 +37,14 @@ public class PhotoManager {
     }
 
     /**
-     * Поток для загрузки фото.
+     * Название папки с сохраненными фото на устройстве.
      */
-    private PhotoProcessingThread mPhotoProcessingThread;
+    private static final String PHOTOS_FOLDER = "VK_Common_Groups_Photos";
+
+    /**
+     * Папка с сохраненными фото на устройстве.
+     */
+    private File mPhotoFolder;
 
     /**
      * Аватарки друзей и групп.
@@ -63,208 +61,157 @@ public class PhotoManager {
 
     /**
      * Загрузить фото по url, если его нет в {@link #mPhotos}.
-     * Результат будет передан в listener, если он есть.
      */
     @SuppressWarnings("unused")
-    public void fetchPhotos(final String[] urls, @Nullable final Listener listener) {
-        mPhotoProcessingThread.loadPhotos(urls, listener);
+    public void fetchPhoto(final String url, @Nullable final Listener listener) {
+        if (mPhotos.get(url) != null) {
+            if (listener != null) {
+                listener.onCompleted();
+            }
+            return;
+        }
+        new AsyncTask<String, Void, Bitmap>() {
+            @Override
+            protected Bitmap doInBackground(String... params) {
+                return getBitmap(params[0]);
+            }
+
+            @Override
+            protected void onPostExecute(Bitmap bitmap) {
+                if (bitmap != null) {
+                    mPhotos.put(url, bitmap);
+                    if (listener != null) {
+                        listener.onCompleted();
+                    }
+                }
+                else {
+                    if (listener != null) {
+                        listener.onError("Fetching photo failed!");
+                    }
+                }
+            }
+        }.execute(url);
+    }
+
+    /**
+     * Установить фото в {@link ImageViewHolder}.
+     */
+    public void setPhotoToImageViewHolder(ImageViewHolder imageViewHolder, String url) {
+        new PhotoSettingTask(imageViewHolder).execute(url);
+    }
+
+    /**
+     * Класс для установки фото в {@link ImageViewHolder}.
+     */
+    private class PhotoSettingTask extends AsyncTask<String, Void, Bitmap> {
+        private ImageViewHolder mImageViewHolder;
+        private String mUrl;
+        private int mPosition;
+
+        public PhotoSettingTask(ImageViewHolder imageViewHolder) {
+            mImageViewHolder = imageViewHolder;
+            mPosition = mImageViewHolder.getPosition();
+        }
+
+        @Override
+        protected Bitmap doInBackground(String... params) {
+            if (mImageViewHolder.getPosition() == mPosition) {
+                mUrl = params[0];
+                return getBitmap(mUrl);
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap bitmap) {
+            if (bitmap != null) {
+                mPhotos.put(mUrl, bitmap);
+                if (mImageViewHolder.getPosition() == mPosition) {
+                    mImageViewHolder.getImageView().setImageBitmap(bitmap);
+                }
+            }
+        }
     }
 
     /**
      * Удалить сохраненные на устройстве фото.
      */
     public void clearPhotosOnDevice() {
-        mPhotoProcessingThread.clearPhotosOnDevice();
-    }
-
-    /**
-     * Завершить поток загрузки фото.
-     */
-    public void quitLoadingThread() {
-        mPhotoProcessingThread.quit();
-    }
-
-    /**
-     * Класс-поток-загрузчик фото.
-     */
-    private class PhotoProcessingThread extends HandlerThread {
-
-        private static final int MESSAGE_LOAD_PHOTOS = 1;
-        private static final int MESSAGE_CLEAR_PHOTOS_ON_DEVICE = 2;
-
-        /**
-         * Название папки с сохраненными фото на устройстве.
-         */
-        private static final String PHOTOS_FOLDER = "photos";
-
-        /**
-         * Папка с сохраненными фото на устройстве.
-         */
-        private File mPhotoFolder;
-
-        /**
-         * Обработчик сообщений.
-         */
-        private Handler mProcessingHandler;
-
-        /**
-         * Для соотнесения загружаемых фото и слушателей их загрузки.
-         */
-        private Map<String[], Listener> mListenerMap = new HashMap<>();
-
-        /**
-         * Обработчик для результатов загрузки (и ошибок тоже).
-         */
-        private Handler mResponseHandler;
-
-        @SuppressWarnings("ResultOfMethodCallIgnored")
-        public PhotoProcessingThread(Handler responseHandler, Context context) {
-            super("PhotoProcessingThread");
-            mResponseHandler = responseHandler;
-
-            mPhotoFolder = new File(context.getApplicationContext().getFilesDir(), PHOTOS_FOLDER);
-            mPhotoFolder.mkdirs();
-        }
-
-        @SuppressWarnings("HandlerLeak")
-        @Override
-        protected void onLooperPrepared() {
-            mProcessingHandler = new Handler() {
-                @Override
-                public void handleMessage(Message msg) {
-                    switch (msg.what) {
-                        case MESSAGE_LOAD_PHOTOS:
-                            handleLoadingPhotos((String[]) msg.obj);
-                            break;
-                        case MESSAGE_CLEAR_PHOTOS_ON_DEVICE:
-                            handleClearPhotosOnDevice();
-                            break;
-                    }
+        new AsyncTask<Void, Void, Void>() {
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            @Override
+            protected Void doInBackground(Void... params) {
+                for (File f : mPhotoFolder.listFiles()) {
+                    f.delete();
                 }
-            };
-        }
-
-        /**
-         * Загрузить фото по url.
-         * Результат будет передан в listener. (если он есть).
-         */
-        public void loadPhotos(String[] urls, @Nullable Listener listener) {
-            while (mProcessingHandler == null) {
-                Thread.yield();
-            }
-            if (listener != null) {
-                mListenerMap.put(urls, listener);
-            }
-            mProcessingHandler.obtainMessage(MESSAGE_LOAD_PHOTOS, urls).sendToTarget();
-        }
-
-        /**
-         * Удалить сохраненные на устройстве фото.
-         */
-        public void clearPhotosOnDevice() {
-            while (mProcessingHandler == null) {
-                Thread.yield();
-            }
-            mProcessingHandler.obtainMessage(MESSAGE_CLEAR_PHOTOS_ON_DEVICE).sendToTarget();
-        }
-
-        /**
-         * Выполнить загрузку и передать результат. (Если есть куда передавать).
-         */
-        private void handleLoadingPhotos(final String[] urls) {
-            for (String url : urls) {
-                getBitmap(url);
-            }
-            final Listener listener = mListenerMap.get(urls);
-            if (listener != null) {
-                mListenerMap.remove(urls);
-                mResponseHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        listener.onCompleted();
-                    }
-                });
-            }
-        }
-
-        /**
-         * Поочередно искать фото:
-         * - в {@link #mPhotos};
-         * - в памяти устройства;
-         * - в интернете.
-         * Будет возвращено как только будет найдено.
-         * Также оно будет сохранено в {@link #mPhotos} и в памяти телефона, если его там не было.
-         */
-        private Bitmap getBitmap(String url) {
-            Bitmap result = mPhotos.get(url);
-            if (result != null) {
-                return result;
-            }
-
-            result = loadBitmapFromDevice(url);
-            if (result != null) {
-                mPhotos.put(url, result);
-                return result;
-            }
-
-            try {
-                result = downloadBitmap(url);
-            }
-            catch (IOException e) {
-                Log.e(TAG, e.toString(), e);
                 return null;
             }
-            if (result != null) {
-                mPhotos.put(url, result);
-                saveBitmapToDevice(url, result);
-            }
+        }.execute();
+    }
+
+    /**
+     * Поочередно искать фото:
+     * - в {@link #mPhotos};
+     * - в памяти устройства;
+     * - в интернете.
+     * Будет возвращено как только будет найдено.
+     * Также оно будет сохранено в памяти телефона, если его там не было.
+     */
+    private Bitmap getBitmap(String url) {
+        Bitmap result = mPhotos.get(url);
+        if (result != null) {
             return result;
         }
 
-        /**
-         * Сохранить фото в память устройства.
-         */
-        private void saveBitmapToDevice(String url, Bitmap bitmap) {
-            File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
-            try {
-                FileOutputStream outputStream = new FileOutputStream(f);
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-                outputStream.close();
-            }
-            catch (IOException e) {
-                Log.e(TAG, e.toString(), e);
-            }
+        result = loadBitmapFromDevice(url);
+        if (result != null) {
+            return result;
         }
 
-        /**
-         * Загрузить фото из памяти устройства (если оно там было).
-         */
-        @Nullable
-        private Bitmap loadBitmapFromDevice(String url) {
-            File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
-            return BitmapFactory.decodeFile(f.getAbsolutePath());
+        try {
+            result = downloadBitmap(url);
+        } catch (IOException e) {
+            Log.e(TAG, e.toString(), e);
+            return null;
         }
+        if (result != null) {
+            saveBitmapToDevice(url, result);
+        }
+        return result;
+    }
 
-        /**
-         * Загрузить изображение по переданному адресу из интернета.
-         */
-        private Bitmap downloadBitmap(String urlString) throws IOException {
-            URL url = new URL(urlString);
-            InputStream inputStream = url.openStream();
-            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-            inputStream.close();
-            return bitmap;
+    /**
+     * Сохранить фото в память устройства.
+     */
+    private void saveBitmapToDevice(String url, Bitmap bitmap) {
+        File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
+        try {
+            FileOutputStream outputStream = new FileOutputStream(f);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            outputStream.close();
+        } catch (IOException e) {
+            Log.e(TAG, e.toString(), e);
         }
+    }
 
-        /**
-         * Выполнить удаление сохраненных на устройстве фото.
-         */
-        @SuppressWarnings("ResultOfMethodCallIgnored")
-        private void handleClearPhotosOnDevice() {
-            for (File f : mPhotoFolder.listFiles()) {
-                f.delete();
-            }
-        }
+    /**
+     * Загрузить фото из памяти устройства (если оно там было).
+     */
+    @Nullable
+    private Bitmap loadBitmapFromDevice(String url) {
+        File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
+        return BitmapFactory.decodeFile(f.getAbsolutePath());
+    }
+
+    /**
+     * Загрузить изображение по переданному адресу из интернета.
+     */
+    private Bitmap downloadBitmap(String urlString) throws IOException {
+        URL url = new URL(urlString);
+        InputStream inputStream = url.openStream();
+        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+        inputStream.close();
+        return bitmap;
     }
 
 }

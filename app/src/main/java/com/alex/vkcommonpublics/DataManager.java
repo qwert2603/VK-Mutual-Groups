@@ -377,7 +377,7 @@ public class DataManager {
     private void loadFriends() {
         Log.d(TAG, "loadFriends");
         mFetchingState = FetchingState.loadingFriends;
-        VKRequest request = VKApi.friends().get(VKParameters.from("fields", "name, photo_100"));
+        VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50"));
         request.executeWithListener(new DataManagerVKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
@@ -411,7 +411,7 @@ public class DataManager {
             clear();
             return;
         }
-        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
+        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50"));
         request.executeWithListener(new DataManagerVKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
