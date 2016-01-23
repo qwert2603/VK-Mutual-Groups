@@ -8,6 +8,7 @@ import com.vk.sdk.util.VKUtil;
 
 public class VKCommonGroupsApplication extends Application {
     
+    @SuppressWarnings("ConstantConditions")
     @Override
     public void onCreate() {
         super.onCreate();

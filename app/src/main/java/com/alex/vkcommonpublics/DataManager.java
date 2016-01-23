@@ -153,7 +153,7 @@ public class DataManager {
     /**
      * Listener для оповещения об изменении состояния загрузки и об ошибках.
      */
-    public interface DataManagerListener extends Listener<Void> {
+    public interface DataManagerListener extends Listener {
         void onFriendsFetched();
         void onProgress();
     }
@@ -362,7 +362,7 @@ public class DataManager {
      * Listener для результатов выполнения обработки данных в {@link DataProcessingThread}.
      * В случае ошибки всегда происходит одно и тоже.
      */
-    private abstract class DataProcessingThreadListener implements Listener<Void> {
+    private abstract class DataProcessingThreadListener implements Listener {
         @Override
         public void onError(String error) {
             mFetchingState = FetchingState.notStarted;
@@ -390,7 +390,7 @@ public class DataManager {
 
                 mDataProcessingThread.processFriendsLoaded(new DataProcessingThreadListener() {
                     @Override
-                    public void onCompleted(Void aVoid) {
+                    public void onCompleted() {
                         mFriendsSortState = FriendsSortState.byAlphabet;
                         mFetchingState = FetchingState.calculatingCommons;
                         mDataManagerListener.onFriendsFetched();
@@ -424,7 +424,7 @@ public class DataManager {
 
                 mDataProcessingThread.processGroupsLoaded(new DataProcessingThreadListener() {
                     @Override
-                    public void onCompleted(Void aVoid) {
+                    public void onCompleted() {
                         mGroupsSortState = GroupsSortState.byDefault;
                         new CalculateCommonsTask().execute();
                     }
@@ -543,7 +543,7 @@ public class DataManager {
             }
             // если не надо было вызвать {#clear} и не было ошибок, сообщаем о завершении подсчета общих групп.
             mFetchingState = FetchingState.finished;
-            mDataManagerListener.onCompleted(null);
+            mDataManagerListener.onCompleted();
             Log.d(TAG, "onPostExecute ## finish");
         }
 
@@ -662,9 +662,9 @@ public class DataManager {
         /**
          * Слушатель результатов выполения парсинга.
          */
-        private Listener<Void> mParseJSONDataProcessingThreadListener = new Listener<Void>() {
+        private Listener mParseJSONDataProcessingThreadListener = new Listener() {
             @Override
-            public void onCompleted(Void aVoid) {
+            public void onCompleted() {
                 Log.d(TAG, "mParseJSONDataProcessingThreadListener ## onCompleted()");
                 if (!mNeedClearing && !mIsCalculatingErrorHappened) {
                     publishProgress();
@@ -705,7 +705,7 @@ public class DataManager {
          * Для соотнесения объекта для парсинга и слушателя.
          * И чтобы повторно не парсить одно и тоже.
          */
-        private Map<JSONObject, Listener<Void>> mListenerMap = Collections.synchronizedMap(new HashMap<JSONObject, Listener<Void>>());
+        private Map<JSONObject, Listener> mListenerMap = Collections.synchronizedMap(new HashMap<JSONObject, Listener>());
 
         public DataProcessingThread(Handler responseHandler) {
             super("DataProcessingThread");
@@ -721,10 +721,10 @@ public class DataManager {
                 public void handleMessage(Message msg) {
                     switch (msg.what) {
                         case MESSAGE_PROCESS_FRIENDS_LOADED_RESULT:
-                            handleProcessFriendsLoaded((Listener<Void>) msg.obj);
+                            handleProcessFriendsLoaded((Listener) msg.obj);
                             break;
                         case MESSAGE_PROCESS_GROUPS_LOADED_RESULT:
-                            handleProcessGroupsLoaded((Listener<Void>) msg.obj);
+                            handleProcessGroupsLoaded((Listener) msg.obj);
                             break;
                         case MESSAGE_PARSE_JSON:
                             handleParseJSON((JSONObject) msg.obj);
@@ -734,7 +734,7 @@ public class DataManager {
             };
         }
 
-        public void processFriendsLoaded(Listener<Void> listener) {
+        public void processFriendsLoaded(Listener listener) {
             while (mHandler == null) {
                 Thread.yield();
             }
@@ -742,7 +742,7 @@ public class DataManager {
             mHandler.obtainMessage(MESSAGE_PROCESS_FRIENDS_LOADED_RESULT, listener).sendToTarget();
         }
 
-        public void processGroupsLoaded(Listener<Void> listener) {
+        public void processGroupsLoaded(Listener listener) {
             while (mHandler == null) {
                 Thread.yield();
             }
@@ -750,7 +750,7 @@ public class DataManager {
             mHandler.obtainMessage(MESSAGE_PROCESS_GROUPS_LOADED_RESULT, listener).sendToTarget();
         }
 
-        public void parseJSON(JSONObject jsonObject, Listener<Void> listener) {
+        public void parseJSON(JSONObject jsonObject, Listener listener) {
             while (mHandler == null) {
                 Thread.yield();
             }
@@ -769,7 +769,7 @@ public class DataManager {
             mListenerMap.clear();
         }
 
-        private void handleProcessFriendsLoaded(final Listener<Void> listener) {
+        private void handleProcessFriendsLoaded(final Listener listener) {
             Log.d(TAG, "handleProcessFriendsLoaded ##");
             // Отсортировать друзей в алфавитном порядке.
             Collections.sort(mUsersFriendsByAlphabet, new Comparator<VKApiUserFull>() {
@@ -790,13 +790,13 @@ public class DataManager {
             mResponseHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    listener.onCompleted(null);
+                    listener.onCompleted();
                     Log.d(TAG, "handleProcessFriendsLoaded ## listener.onCompleted();");
                 }
             });
         }
 
-        private void handleProcessGroupsLoaded(final Listener<Void> listener) {
+        private void handleProcessGroupsLoaded(final Listener listener) {
             Log.d(TAG, "handleProcessGroupsLoaded ##");
             for (VKApiCommunityFull group : mUsersGroupsByDefault) {
                 mFriendsInGroup.put(group, new VKUsersArray());
@@ -805,7 +805,7 @@ public class DataManager {
             mResponseHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    listener.onCompleted(null);
+                    listener.onCompleted();
                     Log.d(TAG, "handleProcessGroupsLoaded ## listener.onCompleted(); ##");
                 }
             });
@@ -816,7 +816,7 @@ public class DataManager {
          */
         private void handleParseJSON(final JSONObject resultedJSONObject) {
             Log.d(TAG, "handleParseJSON ##");
-            final Listener<Void> listener = mListenerMap.get(resultedJSONObject);
+            final Listener listener = mListenerMap.get(resultedJSONObject);
             if (listener == null) {
                 Log.d(TAG, "handleParseJSON ## returning!!!");
                 return;
@@ -843,7 +843,7 @@ public class DataManager {
                 mResponseHandler.post(new Runnable() {
                     @Override
                     public void run() {
-                        listener.onCompleted(null);
+                        listener.onCompleted();
                         mListenerMap.remove(resultedJSONObject);
                         Log.d(TAG, "handleParseJSON ## listener.onCompleted(); ##");
                     }

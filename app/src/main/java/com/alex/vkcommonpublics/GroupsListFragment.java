@@ -4,9 +4,11 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
@@ -16,6 +18,8 @@ import android.widget.TextView;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
+
+import java.util.ArrayList;
 
 /**
  * Отображает список групп из DataManager в соответствии с id пользователя, переданным в {@link #newInstance(int)}
@@ -43,6 +47,7 @@ public class GroupsListFragment extends Fragment {
     private PhotoManager mPhotoManager;
     private VKApiCommunityArray mGroups;
     private ListView mListView;
+    private GroupAdapter mGroupsAdapter;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -75,6 +80,18 @@ public class GroupsListFragment extends Fragment {
                 }
             }
         });
+        mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                if (scrollState == SCROLL_STATE_IDLE) {
+                    fetchVisibleFriendsPhotos(4);
+                }
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            }
+        });
 
         TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
         no_commons_text_view.setText(R.string.no_common_groups);
@@ -84,12 +101,68 @@ public class GroupsListFragment extends Fragment {
         }
         else {
             no_commons_text_view.setVisibility(View.INVISIBLE);
-            GroupAdapter groupAdapter = new GroupAdapter(mGroups);
-            mListView.setAdapter(groupAdapter);
+            mGroupsAdapter = new GroupAdapter(mGroups);
+            mListView.setAdapter(mGroupsAdapter);
         }
         return view;
     }
 
+    /**
+     * Загрузить фото для групп отображаемых сейчас.
+     * @param padding - для скольких друзей сверху и снизу в списке будет также загружено фото.
+     */
+    private void fetchVisibleFriendsPhotos(int padding) {
+        int b = mListView.getFirstVisiblePosition();
+        int e = mListView.getLastVisiblePosition();
+        fetchFriendsPhotos(b, e, new Listener() {
+            @Override
+            public void onCompleted() {
+                notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(String e) {
+                Log.e(TAG, e);
+            }
+        });
+
+        Listener noUpdateListener = new Listener() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(String e) {
+                Log.e(TAG, e);
+            }
+        };
+        if (padding > 0) {
+            fetchFriendsPhotos(e, Math.min(e + padding, mGroups.size()), noUpdateListener);
+            fetchFriendsPhotos(Math.max(b - padding, 0), b, noUpdateListener);
+        }
+    }
+
+    /**
+     * Загрузить фото групп с 'b' по 'е'.
+     * Будут загружены только те фото, что не были загружены ранее.
+     */
+    private void fetchFriendsPhotos(int b, int e, Listener listener) {
+        ArrayList<String> urlsArrayList = new ArrayList<>();
+        for (int i = b; i < e; ++i) {
+            if (mPhotoManager.getPhoto(mGroups.get(i).photo_100) == null) {
+                urlsArrayList.add(mGroups.get(i).photo_100);
+            }
+        }
+        String[] urls = new String[urlsArrayList.size()];
+        urlsArrayList.toArray(urls);
+        mPhotoManager.fetchPhotos(urls, listener);
+    }
+
+    private void notifyDataSetChanged() {
+        if (mGroupsAdapter != null) {
+            mGroupsAdapter.notifyDataSetChanged();
+        }
+    }
 
     private class GroupAdapter extends ArrayAdapter<VKApiCommunityFull> {
         public GroupAdapter(VKApiCommunityArray groups) {
@@ -110,9 +183,10 @@ public class GroupsListFragment extends Fragment {
             VKApiCommunityFull group = getItem(position);
             ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 
-            mPhotoManager.setPhotoToImageView(viewHolder.mPhotoImageView, group.photo_100);
+            viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(group.photo_100));
             viewHolder.mTitleTextView.setText(group.name);
             viewHolder.mCommonsTextView.setText(getString(R.string.friends, mDataManager.getFriendsInGroup(group).size()));
+
             return convertView;
         }
     }

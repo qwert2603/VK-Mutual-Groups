@@ -65,7 +65,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onCompleted(Void v) {
+            public void onCompleted() {
                 updateUI();
                 Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
             }
