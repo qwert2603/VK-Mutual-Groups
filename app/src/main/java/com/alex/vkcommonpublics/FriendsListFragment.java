@@ -90,6 +90,9 @@ public class FriendsListFragment extends Fragment {
                     int e = mListView.getLastVisiblePosition() + 1;
                     int pb = Math.max(0, b - padding);
                     int pe = Math.min(mFriends.size(), e + padding);
+                    for (int i = b; i < e; ++i) {
+                        mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
+                    }
                     for (int i = e; i < pe; ++i) {
                         mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
                     }
@@ -104,6 +107,11 @@ public class FriendsListFragment extends Fragment {
             }
         });
 
+        // todo comment
+        for (int i = 0; i <= mListView.getLastVisiblePosition(); ++i) {
+            mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
+        }
+
         TextView no_friends_text_view = (TextView) view.findViewById(R.id.empty_list);
         no_friends_text_view.setText(R.string.no_friends_in_group);
 
@@ -117,6 +125,18 @@ public class FriendsListFragment extends Fragment {
         }
         return view;
     }
+
+    private Listener listenerToUpdate = new Listener() {
+        @Override
+        public void onCompleted() {
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void onError(String e) {
+
+        }
+    };
 
     /**
      * Обновить адаптер ListView.
@@ -152,7 +172,7 @@ public class FriendsListFragment extends Fragment {
             }
             else {
                 viewHolder.mPhotoImageView.setImageBitmap(null);
-                mPhotoManager.setPhotoToImageViewHolder(viewHolder, friend.photo_50);
+                //mPhotoManager.setPhotoToImageViewHolder(viewHolder, friend.photo_50);
             }
 
             viewHolder.mTitleTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));

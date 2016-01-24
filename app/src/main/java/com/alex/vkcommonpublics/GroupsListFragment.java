@@ -87,6 +87,9 @@ public class GroupsListFragment extends Fragment {
                     int e = mListView.getLastVisiblePosition() + 1;
                     int pb = Math.max(0, b - padding);
                     int pe = Math.min(mGroups.size(), e + padding);
+                    for (int i = b; i < e; ++i) {
+                        mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
+                    }
                     for (int i = e; i < pe; ++i) {
                         mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, null);
                     }
@@ -101,6 +104,11 @@ public class GroupsListFragment extends Fragment {
             }
         });
 
+        // todo comment
+        for (int i = 0; i <= mListView.getLastVisiblePosition(); ++i) {
+            mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
+        }
+
         TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
         no_commons_text_view.setText(R.string.no_common_groups);
 
@@ -114,6 +122,18 @@ public class GroupsListFragment extends Fragment {
         }
         return view;
     }
+
+    private Listener listenerToUpdate = new Listener() {
+        @Override
+        public void onCompleted() {
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void onError(String e) {
+
+        }
+    };
 
     /**
      * Обновить адаптер ListView.
@@ -150,7 +170,7 @@ public class GroupsListFragment extends Fragment {
             }
             else {
                 viewHolder.mPhotoImageView.setImageBitmap(null);
-                mPhotoManager.setPhotoToImageViewHolder(viewHolder, group.photo_50);
+                //mPhotoManager.setPhotoToImageViewHolder(viewHolder, group.photo_50);
             }
 
             viewHolder.mTitleTextView.setText(group.name);
