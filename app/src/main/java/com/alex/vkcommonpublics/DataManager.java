@@ -341,7 +341,6 @@ public class DataManager {
      * Завершить поток обработки результатов запросов.
      */
     public void quitProcessingThread() {
-        mDataProcessingThread.clearMessages();
         mDataProcessingThread.quit();
     }
 
@@ -350,6 +349,9 @@ public class DataManager {
      * В случае ошибки всегда происходит одно и тоже.
      */
     private abstract class DataManagerVKRequestListener extends VKRequest.VKRequestListener {
+        @Override
+        public abstract void onComplete(VKResponse response);
+
         @Override
         public void onError(VKError error) {
             mFetchingState = FetchingState.notStarted;
@@ -818,7 +820,7 @@ public class DataManager {
             Log.d(TAG, "handleParseJSON ##");
             final Listener listener = mListenerMap.get(resultedJSONObject);
             if (listener == null) {
-                Log.d(TAG, "handleParseJSON ## returning!!!");
+                Log.d(TAG, "handleParseJSON ## returning!!! ## listener == null");
                 return;
             }
             try {

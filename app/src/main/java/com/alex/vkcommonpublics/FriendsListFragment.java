@@ -4,6 +4,7 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
+import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
 import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
 
@@ -48,6 +50,7 @@ public class FriendsListFragment extends Fragment {
     private ListView mListView;
     private FriendAdapter mFriendAdapter = null;
     private VKUsersArray mFriends;
+    private int mListViewScrollState;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -83,22 +86,10 @@ public class FriendsListFragment extends Fragment {
         mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
-                if (scrollState == SCROLL_STATE_IDLE) {
-                    // загружаем фото для друзей, ближайших к отображаемым.
-                    int padding = 3;
-                    int b = mListView.getFirstVisiblePosition();
-                    int e = mListView.getLastVisiblePosition() + 1;
-                    int pb = Math.max(0, b - padding);
-                    int pe = Math.min(mFriends.size(), e + padding);
-                    for (int i = b; i < e; ++i) {
-                        mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
-                    }
-                    for (int i = e; i < pe; ++i) {
-                        mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
-                    }
-                    for (int i = pb; i < b; ++i) {
-                        mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
-                    }
+                mListViewScrollState = scrollState;
+                if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                    notifyDataSetChanged();
+                    fetchVisibleFriendsPhoto();
                 }
             }
 
@@ -106,11 +97,6 @@ public class FriendsListFragment extends Fragment {
             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
             }
         });
-
-        // todo comment
-        for (int i = 0; i <= mListView.getLastVisiblePosition(); ++i) {
-            mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
-        }
 
         TextView no_friends_text_view = (TextView) view.findViewById(R.id.empty_list);
         no_friends_text_view.setText(R.string.no_friends_in_group);
@@ -126,15 +112,54 @@ public class FriendsListFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        int e = Math.min(20, mFriends.size());
+        for (int i = 0; i < e; ++i) {
+            if (mPhotoManager.getPhoto(mFriends.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
+            }
+        }
+    }
+
+    /**
+     * Загрузить фото для отображаемых друзей и ближайших к отображаемым.
+     */
+    private void fetchVisibleFriendsPhoto() {
+        int padding = 3;
+        int b = mListView.getFirstVisiblePosition();
+        int e = mListView.getLastVisiblePosition() + 1;
+        int pb = Math.max(0, b - padding);
+        int pe = Math.min(mFriends.size(), e + padding);
+        for (int i = b; i < e; ++i) {
+            if (mPhotoManager.getPhoto(mFriends.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
+            }
+        }
+        for (int i = e; i < pe; ++i) {
+            if (mPhotoManager.getPhoto(mFriends.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
+            }
+        }
+        for (int i = pb; i < b; ++i) {
+            if (mPhotoManager.getPhoto(mFriends.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, null);
+            }
+        }
+    }
+
     private Listener listenerToUpdate = new Listener() {
         @Override
         public void onCompleted() {
-            notifyDataSetChanged();
+            if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                notifyDataSetChanged();
+            }
         }
 
         @Override
         public void onError(String e) {
-
+            Log.e(TAG, e);
         }
     };
 

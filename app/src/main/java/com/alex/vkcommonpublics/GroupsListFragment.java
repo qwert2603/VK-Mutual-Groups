@@ -4,6 +4,7 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,8 @@ import android.widget.TextView;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
+
+import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 
 /**
  * Отображает список групп из DataManager в соответствии с id пользователя, переданным в {@link #newInstance(int)}
@@ -45,6 +48,7 @@ public class GroupsListFragment extends Fragment {
     private VKApiCommunityArray mGroups;
     private ListView mListView;
     private GroupAdapter mGroupsAdapter;
+    private int mListViewScrollState;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -80,22 +84,10 @@ public class GroupsListFragment extends Fragment {
         mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(AbsListView view, int scrollState) {
-                if (scrollState == SCROLL_STATE_IDLE) {
-                    // загружаем фото для групп, ближайших к отображаемым.
-                    int padding = 3;
-                    int b = mListView.getFirstVisiblePosition();
-                    int e = mListView.getLastVisiblePosition() + 1;
-                    int pb = Math.max(0, b - padding);
-                    int pe = Math.min(mGroups.size(), e + padding);
-                    for (int i = b; i < e; ++i) {
-                        mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
-                    }
-                    for (int i = e; i < pe; ++i) {
-                        mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, null);
-                    }
-                    for (int i = pb; i < b; ++i) {
-                        mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, null);
-                    }
+                mListViewScrollState = scrollState;
+                if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                    notifyDataSetChanged();
+                    fetchVisibleGroupsPhoto();
                 }
             }
 
@@ -103,11 +95,6 @@ public class GroupsListFragment extends Fragment {
             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
             }
         });
-
-        // todo comment
-        for (int i = 0; i <= mListView.getLastVisiblePosition(); ++i) {
-            mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
-        }
 
         TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
         no_commons_text_view.setText(R.string.no_common_groups);
@@ -123,22 +110,60 @@ public class GroupsListFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+        int e = Math.min(20, mGroups.size());
+        for (int i = 0; i < e; ++i) {
+            if (mPhotoManager.getPhoto(mGroups.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
+            }
+        }
+    }
+
+    /**
+     * Загрузить фото для отображаемых групп и ближайших к отображаемым.
+     */
+    private void fetchVisibleGroupsPhoto() {
+        int padding = 3;
+        int b = mListView.getFirstVisiblePosition();
+        int e = mListView.getLastVisiblePosition() + 1;
+        int pb = Math.max(0, b - padding);
+        int pe = Math.min(mGroups.size(), e + padding);
+        for (int i = b; i < e; ++i) {
+            if (mPhotoManager.getPhoto(mGroups.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
+            }
+        }
+        for (int i = e; i < pe; ++i) {
+            if (mPhotoManager.getPhoto(mGroups.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, null);
+            }
+        }
+        for (int i = pb; i < b; ++i) {
+            if (mPhotoManager.getPhoto(mGroups.get(i).photo_50) == null) {
+                mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, null);
+            }
+        }
+    }
+
     private Listener listenerToUpdate = new Listener() {
         @Override
         public void onCompleted() {
-            notifyDataSetChanged();
+            if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                notifyDataSetChanged();
+            }
         }
 
         @Override
         public void onError(String e) {
-
+            Log.e(TAG, e);
         }
     };
 
     /**
      * Обновить адаптер ListView.
      */
-    @SuppressWarnings("unused")
     private void notifyDataSetChanged() {
         if (mGroupsAdapter != null) {
             mGroupsAdapter.notifyDataSetChanged();

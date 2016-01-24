@@ -60,16 +60,9 @@ public class PhotoManager {
     }
 
     /**
-     * Загрузить фото по url, если его нет в {@link #mPhotos}.
+     * Загрузить фото по url.
      */
-    @SuppressWarnings("unused")
     public void fetchPhoto(final String url, @Nullable final Listener listener) {
-        if (mPhotos.get(url) != null) {
-            if (listener != null) {
-                listener.onCompleted();
-            }
-            return;
-        }
         new AsyncTask<String, Void, Bitmap>() {
             @Override
             protected Bitmap doInBackground(String... params) {
@@ -96,6 +89,7 @@ public class PhotoManager {
     /**
      * Установить фото в {@link ImageViewHolder}.
      */
+    @SuppressWarnings("unused")
     public void setPhotoToImageViewHolder(ImageViewHolder imageViewHolder, String url) {
         new PhotoSettingTask(imageViewHolder).execute(url);
     }
