@@ -7,7 +7,8 @@
         app:showAsAction="never" />
 
     <item android:id="@+id/menu_sort"
-        android:title="@string/sort_by_commons"
+        android:title="@string/sort_by_mutual"
+        android:checkable="true"
         app:showAsAction="never"/>
 
     <item android:id="@+id/menu_groups_list"

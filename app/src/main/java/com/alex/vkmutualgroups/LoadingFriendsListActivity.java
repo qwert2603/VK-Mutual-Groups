@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -21,17 +21,18 @@ import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKError;
 
-import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
-import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
-import static com.alex.vkcommonpublics.DataManager.FetchingState.loadingFriends;
-import static com.alex.vkcommonpublics.DataManager.FetchingState.notStarted;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.calculatingMutual;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.loadingFriends;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.notStarted;
+import static com.alex.vkmutualgroups.DataManager.FriendsSortState.byMutial;
 
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
  */
 public class LoadingFriendsListActivity extends AppCompatActivity {
 
-    private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS };
+    private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager;
@@ -134,7 +135,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 case loadingFriends:
                     mProgressBar.setVisibility(View.VISIBLE);
                     break;
-                case calculatingCommons:
+                case calculatingMutual:
                     notifyDataSetChanged();
                     mProgressBar.setVisibility(View.VISIBLE);
                     break;
@@ -188,21 +189,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
 
         MenuItem sortMenuItem = menu.findItem(R.id.menu_sort);
+        sortMenuItem.setChecked(mDataManager.getFriendsSortState() == byMutial);
+
         MenuItem groupsListMenuItem = menu.findItem(R.id.menu_groups_list);
-        switch (mDataManager.getFriendsSortState()) {
-            case notSorted:
-                sortMenuItem.setTitle(R.string.sort);
-                sortMenuItem.setEnabled(false);
-                break;
-            case byAlphabet:
-                sortMenuItem.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
-                sortMenuItem.setTitle(R.string.sort_alphabetically);
-                break;
-            case byCommons:
-                sortMenuItem.setIcon(android.R.drawable.ic_menu_sort_by_size);
-                sortMenuItem.setTitle(R.string.sort_by_commons);
-                break;
-        }
         if (mDataManager.getFetchingState() != finished) {
             sortMenuItem.setEnabled(false);
             groupsListMenuItem.setEnabled(false);
@@ -210,7 +199,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
         MenuItem refreshMenuItem = menu.findItem(R.id.menu_refresh);
         DataManager.FetchingState currentState = mDataManager.getFetchingState();
-        if (currentState == loadingFriends || currentState == calculatingCommons) {
+        if (currentState == loadingFriends || currentState == calculatingMutual) {
             refreshMenuItem.setEnabled(false);
         }
 
@@ -223,9 +212,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             case R.id.menu_sort:
                 switch (mDataManager.getFriendsSortState()) {
                     case byAlphabet:
-                        mDataManager.sortFriendsByCommons();
+                        mDataManager.sortFriendsByMutual();
                         break;
-                    case byCommons:
+                    case byMutial:
                         mDataManager.sortFriendsByAlphabet();
                         break;
                 }

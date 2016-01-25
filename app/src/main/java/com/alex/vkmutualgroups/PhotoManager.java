@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -162,12 +162,7 @@ public class PhotoManager {
             return result;
         }
 
-        try {
-            result = downloadBitmap(url);
-        } catch (IOException e) {
-            Log.e(TAG, e.toString(), e);
-            return null;
-        }
+        result = downloadBitmap(url);
         if (result != null) {
             saveBitmapToDevice(url, result);
         }
@@ -178,13 +173,21 @@ public class PhotoManager {
      * Сохранить фото в память устройства.
      */
     private void saveBitmapToDevice(String url, Bitmap bitmap) {
-        File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
+        File f = new File(mPhotoFolder, url.substring(url.length() - 15));
+        FileOutputStream outputStream = null;
         try {
-            FileOutputStream outputStream = new FileOutputStream(f);
+            outputStream = new FileOutputStream(f);
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            outputStream.close();
         } catch (IOException e) {
             Log.e(TAG, e.toString(), e);
+        }
+        finally {
+            if (outputStream != null) {
+                try {
+                    outputStream.close();
+                } catch (IOException ignored) {
+                }
+            }
         }
     }
 
@@ -193,18 +196,31 @@ public class PhotoManager {
      */
     @Nullable
     private Bitmap loadBitmapFromDevice(String url) {
-        File f = new File(mPhotoFolder, String.valueOf(url.hashCode()) + ".jpg");
+        File f = new File(mPhotoFolder, url.substring(url.length() - 15));
         return BitmapFactory.decodeFile(f.getAbsolutePath());
     }
 
     /**
      * Загрузить изображение по переданному адресу из интернета.
      */
-    private Bitmap downloadBitmap(String urlString) throws IOException {
-        URL url = new URL(urlString);
-        InputStream inputStream = url.openStream();
-        Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-        inputStream.close();
+    private Bitmap downloadBitmap(String urlString) {
+        Bitmap bitmap = null;
+        InputStream inputStream = null;
+        try {
+            URL url = new URL(urlString);
+            inputStream = url.openStream();
+            bitmap = BitmapFactory.decodeStream(inputStream);
+        } catch (IOException e) {
+            Log.e(TAG, e.toString(), e);
+        }
+        finally {
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException ignored) {
+                }
+            }
+        }
         return bitmap;
     }
 

@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 /**
  * Класс-listener для оповещения о заверении какого-либо действия и об ошибках.

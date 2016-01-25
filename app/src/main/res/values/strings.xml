@@ -1,22 +1,33 @@
 <resources>
-    <string name="app_name">VK Common Groups</string>
+    <string name="app_name">VK Mutual Groups</string>
     <string name="login_failed">Login failed!</string>
     <string name="log_out">Log out</string>
     <string name="friend_name" translatable="false">"%1$s %2$s"</string>
-    <string name="commons">%d cmn.</string>
+    <string name="mutual">%d mut.</string>
     <string name="refresh">Refresh</string>
     <string name="error_message">Loading failed!\nYou can try again.</string>
     <string name="friends">%d frn.</string>
-    <string name="sort_alphabetically">Sort: alphabetically</string>
-    <string name="sort_by_commons">Sort: by commons</string>
-    <string name="no_common_groups">No common groups.</string>
+    <string name="sort_by_mutual">Sort by mutual</string>
+    <string name="no_mutual_groups">No mutual groups.</string>
     <string name="no_friends_in_group">No friends in group.</string>
-    <string name="sort">Sort</string>
     <string name="group_list">My Groups</string>
     <string name="to_the_begin">To the begin</string>
-    <string name="sort_by_default">Sort: by default</string>
-    <string name="sort_by_friends">Sort: by friends</string>
+    <string name="sort_by_friends">Sort by friends</string>
     <string name="my_groups">My groups</string>
     <string name="loading_completed">Loading completed!</string>
     <string name="no_internet_connection">No internet connection!</string>
+    <string name="send_message">Send message</string>
+    <string name="cancel">Cancel</string>
+    <string name="send">Send</string>
+    <string name="send_dialog_message_prefix">"We have "</string>
+    <string name="send_dialog_message_suffix_1">" mutual group"</string>
+    <string name="send_dialog_message_suffix_2">" mutual groups"</string>
+    <string name="send_dialog_message_suffix_5">" mutual groups"</string>
+    <string name="dot" translatable="false">"."</string>
+    <string name="cant_send_message">You can\'t write to this user.</string>
+    <string name="ok" translatable="false">OK</string>
+    <string name="no">no</string>
+    <string name="message_sent">Message sent successfully.</string>
+    <string name="message_sending_error">Message was NOT sent!</string>
+    <string name="empty_message">Empty message!</string>
 </resources>

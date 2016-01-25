@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.os.Bundle;

@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.content.Intent;
@@ -6,6 +6,9 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -20,6 +23,7 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
 
 /**
  * Отображает список групп из DataManager в соответствии с id пользователя, переданным в {@link #newInstance(int)}
@@ -45,7 +49,10 @@ public class GroupsListFragment extends Fragment {
 
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager;
+
     private VKApiCommunityArray mGroups;
+    private int mFriendId;
+
     private ListView mListView;
     private GroupAdapter mGroupsAdapter;
     private int mListViewScrollState;
@@ -54,11 +61,12 @@ public class GroupsListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        setHasOptionsMenu(true);
         mPhotoManager = PhotoManager.get(getActivity());
-        int friendId = getArguments().getInt(friendIdKey);
-        if (friendId != 0) {
-            VKApiUserFull friend = mDataManager.getFriendById(friendId);
-            mGroups = mDataManager.getGroupsCommonWithFriend(friend);
+        mFriendId = getArguments().getInt(friendIdKey);
+        if (mFriendId != 0) {
+            VKApiUserFull friend = mDataManager.getFriendById(mFriendId);
+            mGroups = mDataManager.getGroupsMutualWithFriend(friend);
         }
         else {
             mGroups = mDataManager.getUsersGroups();
@@ -86,6 +94,7 @@ public class GroupsListFragment extends Fragment {
             public void onScrollStateChanged(AbsListView view, int scrollState) {
                 mListViewScrollState = scrollState;
                 if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                    // при остановке скроллинга загружаем фото видимых групп.
                     notifyDataSetChanged();
                     fetchVisibleGroupsPhoto();
                 }
@@ -97,7 +106,7 @@ public class GroupsListFragment extends Fragment {
         });
 
         TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
-        no_commons_text_view.setText(R.string.no_common_groups);
+        no_commons_text_view.setText(R.string.no_mutual_groups);
 
         if (mGroups == null || mGroups.isEmpty()) {
             mListView.setVisibility(View.INVISIBLE);
@@ -110,13 +119,18 @@ public class GroupsListFragment extends Fragment {
         return view;
     }
 
+    private boolean isEverResumed = false;
     @Override
     public void onResume() {
         super.onResume();
-        int e = Math.min(20, mGroups.size());
-        for (int i = 0; i < e; ++i) {
-            if (mPhotoManager.getPhoto(mGroups.get(i).photo_50) == null) {
-                mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
+        if (! isEverResumed) {
+            isEverResumed = true;
+            // при первом запуске загружаем фото первых 20 групп.
+            int e = Math.min(20, mGroups.size());
+            for (int i = 0; i < e; ++i) {
+                if (mPhotoManager.getPhoto(mGroups.get(i).photo_50) == null) {
+                    mPhotoManager.fetchPhoto(mGroups.get(i).photo_50, listenerToUpdate);
+                }
             }
         }
     }
@@ -222,4 +236,23 @@ public class GroupsListFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.groups_list_fragment, menu);
+        MenuItem sendMessageMenuItem = menu.findItem(R.id.menu_message);
+        sendMessageMenuItem.setVisible(mFriendId != 0);
+        sendMessageMenuItem.setEnabled(mDataManager.getFetchingState() == finished);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_message:
+                SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(mFriendId);
+                sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 }

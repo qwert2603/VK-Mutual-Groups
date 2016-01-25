@@ -1,9 +1,12 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
+import static com.alex.vkmutualgroups.DataManager.GroupsSortState.byFriends;
 
 public class UserGroupListActivity extends AbstractVkListActivity {
 
@@ -23,17 +26,8 @@ public class UserGroupListActivity extends AbstractVkListActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.user_groups_list_activity, menu);
         MenuItem sortMenuItem = menu.findItem(R.id.menu_sort);
-        switch (mDataManager.getGroupsSortState()) {
-            case notSorted:
-                sortMenuItem.setTitle(R.string.sort);
-                sortMenuItem.setEnabled(false);
-            case byDefault:
-                sortMenuItem.setTitle(R.string.sort_by_default);
-                break;
-            case byFriends:
-                sortMenuItem.setTitle(R.string.sort_by_friends);
-                break;
-        }
+        sortMenuItem.setChecked(mDataManager.getGroupsSortState() == byFriends);
+        sortMenuItem.setEnabled(mDataManager.getFetchingState() == finished);
         return super.onCreateOptionsMenu(menu);
     }
 

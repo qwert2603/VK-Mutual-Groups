@@ -1,11 +1,14 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -20,8 +23,8 @@ import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
-import static com.alex.vkcommonpublics.DataManager.FetchingState.calculatingCommons;
-import static com.alex.vkcommonpublics.DataManager.FetchingState.finished;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.calculatingMutual;
+import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
 
 /**
  * Отображает список друзей из DataManager в соответствии с id группы, переданным в {@link #newInstance(int)}.
@@ -47,8 +50,10 @@ public class FriendsListFragment extends Fragment {
 
     private DataManager mDataManager = DataManager.get();
     private PhotoManager mPhotoManager;
+
     private ListView mListView;
     private FriendAdapter mFriendAdapter = null;
+
     private VKUsersArray mFriends;
     private int mListViewScrollState;
 
@@ -63,7 +68,7 @@ public class FriendsListFragment extends Fragment {
             mFriends = mDataManager.getFriendsInGroup(group);
         }
         else {
-            mFriends =  mDataManager.getUsersFriends();
+            mFriends = mDataManager.getUsersFriends();
         }
     }
 
@@ -88,6 +93,7 @@ public class FriendsListFragment extends Fragment {
             public void onScrollStateChanged(AbsListView view, int scrollState) {
                 mListViewScrollState = scrollState;
                 if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                    // при остановке скроллинга загружаем фото видимых друзей.
                     notifyDataSetChanged();
                     fetchVisibleFriendsPhoto();
                 }
@@ -95,6 +101,54 @@ public class FriendsListFragment extends Fragment {
 
             @Override
             public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            }
+        });
+        mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
+        mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+            private int mActionedPosition;
+
+            @Override
+            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+                // чтобы выделялось не более 1 друга.
+                if (mListView.getCheckedItemCount() > 1) {
+                    mode.finish();
+                }
+                else {
+                    mActionedPosition = position;
+                }
+            }
+
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                if (mDataManager.getFetchingState() != finished) {
+                    mode.finish();
+                    return false;
+                }
+                mode.getMenuInflater().inflate(R.menu.friends_list_item_action_mode, menu);
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                switch (item.getItemId()) {
+                    case R.id.menu_message:
+                        int friendId = mFriends.get(mActionedPosition).id;
+                        SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(friendId);
+                        sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
+                        mode.finish();
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
             }
         });
 
@@ -112,13 +166,18 @@ public class FriendsListFragment extends Fragment {
         return view;
     }
 
+    private boolean isEverResumed = false;
     @Override
     public void onResume() {
         super.onResume();
-        int e = Math.min(20, mFriends.size());
-        for (int i = 0; i < e; ++i) {
-            if (mPhotoManager.getPhoto(mFriends.get(i).photo_50) == null) {
-                mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
+        if (! isEverResumed) {
+            isEverResumed = true;
+            // при первом запуске загружаем фото первых 20 друзей.
+            int e = Math.min(20, mFriends.size());
+            for (int i = 0; i < e; ++i) {
+                if (mPhotoManager.getPhoto(mFriends.get(i).photo_50) == null) {
+                    mPhotoManager.fetchPhoto(mFriends.get(i).photo_50, listenerToUpdate);
+                }
             }
         }
     }
@@ -201,9 +260,9 @@ public class FriendsListFragment extends Fragment {
             }
 
             viewHolder.mTitleTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
-            if (mDataManager.getFetchingState() == calculatingCommons || mDataManager.getFetchingState() == finished) {
-                int commons = mDataManager.getGroupsCommonWithFriend(friend).size();
-                viewHolder.mCommonsTextView.setText(getString(R.string.commons, commons));
+            if (mDataManager.getFetchingState() == calculatingMutual || mDataManager.getFetchingState() == finished) {
+                int commons = mDataManager.getGroupsMutualWithFriend(friend).size();
+                viewHolder.mCommonsTextView.setText(getString(R.string.mutual, commons));
             }
             else {
                 viewHolder.mCommonsTextView.setText("");

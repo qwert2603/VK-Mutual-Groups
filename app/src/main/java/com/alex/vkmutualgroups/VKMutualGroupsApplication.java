@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.app.Application;
 import android.util.Log;
@@ -6,7 +6,7 @@ import android.util.Log;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.util.VKUtil;
 
-public class VKCommonGroupsApplication extends Application {
+public class VKMutualGroupsApplication extends Application {
     
     @SuppressWarnings("ConstantConditions")
     @Override

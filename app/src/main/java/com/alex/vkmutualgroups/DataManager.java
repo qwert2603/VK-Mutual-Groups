@@ -1,4 +1,4 @@
-package com.alex.vkcommonpublics;
+package com.alex.vkmutualgroups;
 
 import android.annotation.SuppressLint;
 import android.os.AsyncTask;
@@ -41,7 +41,7 @@ import java.util.Map;
  */
 public class DataManager {
 
-    private static final String TAG = "DataManager";
+    public static final String TAG = "DataManager";
 
     private static DataManager sDataManager = new DataManager();
 
@@ -66,7 +66,7 @@ public class DataManager {
     /**
      * Друзья пользователя в порядке уменьшения кол-ва общих групп.
      */
-    private VKUsersArray mUsersFriendsByCommons;
+    private VKUsersArray mUsersFriendsByMutual;
 
     /**
      * Карта: "id друга" - "объект этого друга".
@@ -91,7 +91,7 @@ public class DataManager {
     /**
      * Карта: "друг" - "общие с ним группы"
      */
-    private Map<VKApiUserFull, VKApiCommunityArray> mGroupsCommonWithFriend;
+    private Map<VKApiUserFull, VKApiCommunityArray> mGroupsMutualWithFriend;
 
     /**
      * Карта: "группа" - "друзья в ней"
@@ -110,7 +110,7 @@ public class DataManager {
      */
     public enum FriendsSortState {
         notSorted,
-        byCommons,
+        byMutial,
         byAlphabet
     }
 
@@ -141,7 +141,7 @@ public class DataManager {
     public enum FetchingState {
         notStarted,
         loadingFriends,
-        calculatingCommons,
+        calculatingMutual,
         finished
     }
 
@@ -176,7 +176,7 @@ public class DataManager {
         if (mDataManagerListener == null) {
             return;
         }
-        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingCommons) {
+        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingMutual) {
             mDataManagerListener.onError("Fetching is already on!");
             return;
         }
@@ -193,8 +193,8 @@ public class DataManager {
                 return null;
             case byAlphabet:
                 return mUsersFriendsByAlphabet;
-            case byCommons:
-                return mUsersFriendsByCommons;
+            case byMutial:
+                return mUsersFriendsByMutual;
         }
         return null;
     }
@@ -218,8 +218,8 @@ public class DataManager {
      * Группы, общие с другом.
      */
     @NonNull
-    public VKApiCommunityArray getGroupsCommonWithFriend(VKApiUserFull user) {
-        return (mGroupsCommonWithFriend.get(user) == null) ? new VKApiCommunityArray() : mGroupsCommonWithFriend.get(user);
+    public VKApiCommunityArray getGroupsMutualWithFriend(VKApiUserFull user) {
+        return (mGroupsMutualWithFriend.get(user) == null) ? new VKApiCommunityArray() : mGroupsMutualWithFriend.get(user);
     }
 
     /**
@@ -247,9 +247,9 @@ public class DataManager {
     /**
      * Отсортировать друзей в порядке уменьшения кол-ва общих групп.
      */
-    public void sortFriendsByCommons() {
-        if (mUsersFriendsByCommons != null) {
-            mFriendsSortState = FriendsSortState.byCommons;
+    public void sortFriendsByMutual() {
+        if (mUsersFriendsByMutual != null) {
+            mFriendsSortState = FriendsSortState.byMutial;
         }
     }
 
@@ -301,7 +301,7 @@ public class DataManager {
      * так как mNeedClearing будет равно true.
      */
     public void clear() {
-        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingCommons) {
+        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingMutual) {
             mNeedClearing = true;
         }
         else {
@@ -313,14 +313,14 @@ public class DataManager {
             mDataProcessingThread.clearMessages();
 
             mUsersFriendsByAlphabet = null;
-            mUsersFriendsByCommons = null;
+            mUsersFriendsByMutual = null;
             mUserFriendsMap = new HashMap<>();
 
             mUsersGroupsByDefault = null;
             mUsersGroupsByFriends = null;
             mUserGroupsMap = new HashMap<>();
 
-            mGroupsCommonWithFriend = new HashMap<>();
+            mGroupsMutualWithFriend = new HashMap<>();
             mFriendsInGroup = new HashMap<>();
 
             mFriendsSortState = FriendsSortState.notSorted;
@@ -379,7 +379,7 @@ public class DataManager {
     private void loadFriends() {
         Log.d(TAG, "loadFriends");
         mFetchingState = FetchingState.loadingFriends;
-        VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50"));
+        VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message"));
         request.executeWithListener(new DataManagerVKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
@@ -394,7 +394,7 @@ public class DataManager {
                     @Override
                     public void onCompleted() {
                         mFriendsSortState = FriendsSortState.byAlphabet;
-                        mFetchingState = FetchingState.calculatingCommons;
+                        mFetchingState = FetchingState.calculatingMutual;
                         mDataManagerListener.onFriendsFetched();
                         loadGroups();
                     }
@@ -428,7 +428,7 @@ public class DataManager {
                     @Override
                     public void onCompleted() {
                         mGroupsSortState = GroupsSortState.byDefault;
-                        new CalculateCommonsTask().execute();
+                        new CalculateMutualTask().execute();
                     }
                 });
             }
@@ -440,7 +440,7 @@ public class DataManager {
      * Это AsyncTask потому что формирование запроса (и строк - списов id) может быть продолжительным,
      * и потому что подсчет общих групп представляет собой более менее обособленное цельное действие.
      */
-    private class CalculateCommonsTask extends AsyncTask<Void, Void, Void> {
+    private class CalculateMutualTask extends AsyncTask<Void, Void, Void> {
         /**
          * Для сообщений об ошибках, которые могут произойти во время работы этого класса, используем следующие переменные.
          */
@@ -464,7 +464,7 @@ public class DataManager {
          */
         private static final int groupPerRequest = 25;
 
-        public CalculateCommonsTask() {
+        public CalculateMutualTask() {
             int partsOfFriends = mUsersFriendsByAlphabet.size() / friendsPerRequest;
             if (mUsersFriendsByAlphabet.size() % friendsPerRequest > 0) {
                 ++partsOfFriends;
@@ -484,7 +484,7 @@ public class DataManager {
 
             Log.d(TAG, "doInBackground ## 1");
 
-            calculateCommonGroups();
+            calculateMutualGroups();
 
             if (mNeedClearing || mIsCalculatingErrorHappened) {
                 return null;
@@ -492,16 +492,16 @@ public class DataManager {
 
             Log.d(TAG, "doInBackground ## 2");
 
-            // Копируем друзей в mUsersFriendsByCommons и сортируем их по убыванию кол-ва общих групп.
-            mUsersFriendsByCommons = new VKUsersArray();
+            // Копируем друзей в mUsersFriendsByMutual и сортируем их по убыванию кол-ва общих групп.
+            mUsersFriendsByMutual = new VKUsersArray();
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
-                mUsersFriendsByCommons.add(friend);
+                mUsersFriendsByMutual.add(friend);
             }
-            Collections.sort(mUsersFriendsByCommons, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
+            Collections.sort(mUsersFriendsByMutual, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
                 @Override
                 public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                    int l = getGroupsCommonWithFriend(lhs).size();
-                    int r = getGroupsCommonWithFriend(rhs).size();
+                    int l = getGroupsMutualWithFriend(lhs).size();
+                    int r = getGroupsMutualWithFriend(rhs).size();
                     return (l == r) ? 0 : ((l > r) ? 1 : -1);
                 }
             }));
@@ -554,19 +554,19 @@ public class DataManager {
             mDataManagerListener.onProgress();
         }
 
-        private void calculateCommonGroups() {
+        private void calculateMutualGroups() {
             for (int friendNumber = 0; friendNumber < mUsersFriendsByAlphabet.size(); friendNumber += friendsPerRequest) {
                 String varFriends = getVarFriends(friendNumber);
                 for (int groupNumber = 0; groupNumber < mUsersGroupsByDefault.size(); groupNumber += groupPerRequest) {
                     if (mNeedClearing || mIsCalculatingErrorHappened) {
                         --mRequestsRemain;
-                        Log.d(TAG, "calculateCommonGroups ## continue");
+                        Log.d(TAG, "calculateMutualGroups ## continue");
                         continue;
                     }
                     String varGroups = getVarGroups(groupNumber);
                     String code = getCodeToExecute(varFriends, varGroups);
                     VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
-                    Log.d(TAG, "calculateCommonGroups ## executeWithListener");
+                    Log.d(TAG, "calculateMutualGroups ## executeWithListener");
                     request.executeWithListener(mExecuteRequestListener);
                     try {
                         // Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
@@ -578,7 +578,7 @@ public class DataManager {
                 }
             }
 
-            Log.d(TAG, "calculateCommonGroups ## waiting");
+            Log.d(TAG, "calculateMutualGroups ## waiting");
             // Ждем, пока не выполнятся все запросы.
             while (mRequestsRemain > 0) {
                 try {
@@ -586,9 +586,9 @@ public class DataManager {
                 } catch (InterruptedException e) {
                     //nth
                 }
-                Log.v(TAG, "calculateCommonGroups ## waiting ## mRequestsRemain == " + mRequestsRemain);
+                Log.v(TAG, "calculateMutualGroups ## waiting ## mRequestsRemain == " + mRequestsRemain);
             }
-            Log.d(TAG, "calculateCommonGroups ## finish");
+            Log.d(TAG, "calculateMutualGroups ## finish");
         }
 
         /**
@@ -786,7 +786,7 @@ public class DataManager {
             });
             Log.d(TAG, "handleProcessFriendsLoaded ## after_sort ##");
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
-                mGroupsCommonWithFriend.put(friend, new VKApiCommunityArray());
+                mGroupsMutualWithFriend.put(friend, new VKApiCommunityArray());
                 mUserFriendsMap.put(friend.id, friend);
             }
             mResponseHandler.post(new Runnable() {
@@ -837,7 +837,7 @@ public class DataManager {
                         if (memberJSONObject.getInt("member") == 1) {
                             int friendId = memberJSONObject.getInt("user_id");
                             VKApiUserFull friend = mUserFriendsMap.get(friendId);
-                            mGroupsCommonWithFriend.get(friend).add(group);
+                            mGroupsMutualWithFriend.get(friend).add(group);
                             mFriendsInGroup.get(group).add(friend);
                         }
                     }
