@@ -1,5 +1,5 @@
-﻿# VK-Common-Groups
-Look how much common groups you have with your friends.
+﻿# VK-Mutual-Groups
+Look how much mutual groups you have with your friends.
 
 Посмотри сколько у тебя общих групп с друзьями.
 
