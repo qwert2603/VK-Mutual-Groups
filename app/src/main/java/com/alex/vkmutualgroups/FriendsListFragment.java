@@ -2,6 +2,7 @@ package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.content.Intent;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
@@ -48,7 +49,7 @@ public class FriendsListFragment extends Fragment {
         return result;
     }
 
-    private DataManager mDataManager = DataManager.get();
+    private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
     private ListView mListView;
@@ -61,6 +62,7 @@ public class FriendsListFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
         int groupId = getArguments().getInt(groupIdKey);
         if (groupId != 0) {
@@ -208,9 +210,9 @@ public class FriendsListFragment extends Fragment {
         }
     }
 
-    private Listener listenerToUpdate = new Listener() {
+    private Listener<Bitmap> listenerToUpdate = new Listener<Bitmap>() {
         @Override
-        public void onCompleted() {
+        public void onCompleted(Bitmap bitmap) {
             if (mListViewScrollState == SCROLL_STATE_IDLE) {
                 notifyDataSetChanged();
             }

@@ -62,7 +62,7 @@ public class PhotoManager {
     /**
      * Загрузить фото по url.
      */
-    public void fetchPhoto(final String url, @Nullable final Listener listener) {
+    public void fetchPhoto(final String url, @Nullable final Listener<Bitmap> listener) {
         new AsyncTask<String, Void, Bitmap>() {
             @Override
             protected Bitmap doInBackground(String... params) {
@@ -74,7 +74,7 @@ public class PhotoManager {
                 if (bitmap != null) {
                     mPhotos.put(url, bitmap);
                     if (listener != null) {
-                        listener.onCompleted();
+                        listener.onCompleted(bitmap);
                     }
                 }
                 else {
@@ -83,7 +83,7 @@ public class PhotoManager {
                     }
                 }
             }
-        }.execute(url);
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
     }
 
     /**
@@ -91,7 +91,7 @@ public class PhotoManager {
      */
     @SuppressWarnings("unused")
     public void setPhotoToImageViewHolder(ImageViewHolder imageViewHolder, String url) {
-        new PhotoSettingTask(imageViewHolder).execute(url);
+        new PhotoSettingTask(imageViewHolder).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, url);
     }
 
     /**
@@ -140,7 +140,7 @@ public class PhotoManager {
                 }
                 return null;
             }
-        }.execute();
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**

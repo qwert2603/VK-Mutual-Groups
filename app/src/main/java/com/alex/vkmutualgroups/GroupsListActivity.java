@@ -13,7 +13,7 @@ public class GroupsListActivity extends AbstractVkListActivity {
 
     @Override
     protected String getActionBarTitle() {
-        VKApiUserFull friend = DataManager.get().getFriendById(mFriendId);
+        VKApiUserFull friend = DataManager.get(this).getFriendById(mFriendId);
         return (friend == null) ? getString(R.string.app_name) : getString(R.string.friend_name, friend.first_name, friend.last_name);
     }
 

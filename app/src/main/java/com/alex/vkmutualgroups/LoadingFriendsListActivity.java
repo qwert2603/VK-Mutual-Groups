@@ -25,7 +25,7 @@ import static com.alex.vkmutualgroups.DataManager.FetchingState.calculatingMutua
 import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
 import static com.alex.vkmutualgroups.DataManager.FetchingState.loadingFriends;
 import static com.alex.vkmutualgroups.DataManager.FetchingState.notStarted;
-import static com.alex.vkmutualgroups.DataManager.FriendsSortState.byMutial;
+import static com.alex.vkmutualgroups.DataManager.FriendsSortState.byMutual;
 
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
@@ -34,7 +34,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 
-    private DataManager mDataManager = DataManager.get();
+    private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
     private ProgressBar mProgressBar;
@@ -47,40 +47,15 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fetching_friends_list);
 
+        mDataManager = DataManager.get(this);
         mPhotoManager = PhotoManager.get(this);
 
         mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
 
-        mDataManager.setDataManagerListener(new DataManager.DataManagerListener() {
-            @Override
-            public void onFriendsFetched() {
-                refreshFriendsListFragment();
-                updateUI();
-            }
-
-            @Override
-            public void onCompleted() {
-                updateUI();
-                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
-            }
-
-            @Override
-            public void onProgress() {
-                updateUI();
-            }
-
-            @Override
-            public void onError(String e) {
-                mIsFetchingErrorHappened = true;
-                updateUI();
-                Log.e("AASSDD", e);
-            }
-        });
-
         if (VKSdk.isLoggedIn()) {
             if (mDataManager.getFetchingState() == notStarted) {
-                fetch();
+                loadFromDevice();
             }
         } else {
             VKSdk.login(this, LOGIN_SCOPE);
@@ -90,18 +65,12 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        mDataManager.quitProcessingThread();
-        super.onDestroy();
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (! VKSdk.onActivityResult(requestCode, resultCode, data, new VKCallback<VKAccessToken>() {
             @Override
             public void onResult(VKAccessToken res) {
                 if (mDataManager.getFetchingState() == notStarted) {
-                    fetch();
+                    fetchFromVK();
                     updateUI();
                 }
             }
@@ -136,11 +105,11 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                     mProgressBar.setVisibility(View.VISIBLE);
                     break;
                 case calculatingMutual:
-                    notifyDataSetChanged();
+                    notifyFragmentDataSetChanged();
                     mProgressBar.setVisibility(View.VISIBLE);
                     break;
                 case finished:
-                    notifyDataSetChanged();
+                    notifyFragmentDataSetChanged();
                     break;
             }
         }
@@ -158,17 +127,73 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         }
     }
 
-    private void notifyDataSetChanged() {
+    private void notifyFragmentDataSetChanged() {
         FragmentManager fm = getFragmentManager();
         FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
-        if(fragment != null) {
+        if(fragment == null) {
+            refreshFriendsListFragment();
+        }
+        else {
             fragment.notifyDataSetChanged();
         }
     }
 
-    private void fetch() {
+    private void loadFromDevice() {
         mIsFetchingErrorHappened = false;
-        mDataManager.fetch();
+        mDataManager.loadFromDevice(new DataManager.DataManagerListener() {
+            @Override
+            public void onFriendsLoaded() {
+                refreshFriendsListFragment();
+                updateUI();
+            }
+
+            @Override
+            public void onCompleted(Void v) {
+                updateUI();
+                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onProgress() {
+                updateUI();
+            }
+
+            @Override
+            public void onError(String e) {
+                removeFriendsListFragment();
+                Log.e("AASSDD", e);
+                fetchFromVK();
+            }
+        });
+    }
+
+    private void fetchFromVK() {
+        mIsFetchingErrorHappened = false;
+        mDataManager.fetchFromVK(new DataManager.DataManagerListener() {
+            @Override
+            public void onFriendsLoaded() {
+                refreshFriendsListFragment();
+                updateUI();
+            }
+
+            @Override
+            public void onCompleted(Void v) {
+                updateUI();
+                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onProgress() {
+                updateUI();
+            }
+
+            @Override
+            public void onError(String e) {
+                mIsFetchingErrorHappened = true;
+                updateUI();
+                Log.e("AASSDD", e);
+            }
+        });
     }
 
     private void removeFriendsListFragment() {
@@ -189,7 +214,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
 
         MenuItem sortMenuItem = menu.findItem(R.id.menu_sort);
-        sortMenuItem.setChecked(mDataManager.getFriendsSortState() == byMutial);
+        sortMenuItem.setChecked(mDataManager.getFriendsSortState() == byMutual);
 
         MenuItem groupsListMenuItem = menu.findItem(R.id.menu_groups_list);
         if (mDataManager.getFetchingState() != finished) {
@@ -214,7 +239,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                     case byAlphabet:
                         mDataManager.sortFriendsByMutual();
                         break;
-                    case byMutial:
+                    case byMutual:
                         mDataManager.sortFriendsByAlphabet();
                         break;
                 }
@@ -223,7 +248,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 return true;
             case R.id.menu_refresh:
                 if (isInternetConnected()) {
-                    fetch();
+                    fetchFromVK();
                     invalidateOptionsMenu();
                 }
                 else {
@@ -239,6 +264,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                     VKSdk.logout();
                     mDataManager.clear();
                     mPhotoManager.clearPhotosOnDevice();
+                    new DeviceDataSaver(this).clear();
                     updateUI();
                     VKSdk.login(this, LOGIN_SCOPE);
                 }

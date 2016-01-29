@@ -45,7 +45,7 @@ public class SendMessageDialogFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         int friendId = getArguments().getInt(friendIdKey);
-        mFriend = DataManager.get().getFriendById(friendId);
+        mFriend = DataManager.get(getActivity()).getFriendById(friendId);
         mContext = getActivity().getApplicationContext();
     }
 
@@ -72,7 +72,7 @@ public class SendMessageDialogFragment extends DialogFragment {
      */
     @SuppressLint("InflateParams")
     private Dialog getDialogComposeSendMessage() {
-        int mutual = DataManager.get().getGroupsMutualWithFriend(mFriend).size();
+        int mutual = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend).size();
 
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_write, null);
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);

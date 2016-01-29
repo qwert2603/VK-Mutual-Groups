@@ -1,20 +1,10 @@
 package com.alex.vkmutualgroups;
 
-import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
-import com.vk.sdk.api.VKApi;
-import com.vk.sdk.api.VKApiConst;
-import com.vk.sdk.api.VKError;
-import com.vk.sdk.api.VKParameters;
-import com.vk.sdk.api.VKRequest;
-import com.vk.sdk.api.VKResponse;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
@@ -33,30 +23,26 @@ import java.util.Map;
  * Загружает и хранит список друзей в афлавитном порядке и в порядке убывания кол-ва общих групп.
  * Загружает и хранит список групп в порядке по умолчанию и в порядке убывания друзей в них.
  * Также подсчитывает кол-во общих групп.
- * Для загрузки и подсчета надо вызвать {@link #fetch()}.
- * Перед загрузкой надо назначить слушателя {@link #setDataManagerListener(DataManagerListener)}.
- *
- * При закрытии приложения надо обязательно вызвать {@link #quitProcessingThread()}
- * для завершения потока обработки результатов загрузки.
  */
 public class DataManager {
 
     public static final String TAG = "DataManager";
 
-    private static DataManager sDataManager = new DataManager();
+    private static DataManager sDataManager;
 
-    private DataManager() {
+    private DataManager(Context context) {
+        mContext = context.getApplicationContext();
         clear();
     }
 
-    public static DataManager get() {
+    public static DataManager get(Context context) {
+        if (sDataManager == null) {
+            sDataManager = new DataManager(context);
+        }
         return sDataManager;
     }
 
-    /**
-     * Поток для обработки результатов запросов. (Сортировка и парсинг).
-     */
-    private DataProcessingThread mDataProcessingThread;
+    private Context mContext;
 
     /**
      * Друзья пользователя в алфавитном порядке.
@@ -110,7 +96,7 @@ public class DataManager {
      */
     public enum FriendsSortState {
         notSorted,
-        byMutial,
+        byMutual,
         byAlphabet
     }
 
@@ -124,7 +110,7 @@ public class DataManager {
      * Сортируется только список всех групп.
      * Списки групп общих с отдельным другом не сортируются.
      */
-    public enum GroupsSortState{
+    public enum GroupsSortState {
         notSorted,
         byDefault,
         byFriends
@@ -146,45 +132,6 @@ public class DataManager {
     }
 
     /**
-     * Надо ли прервать скачивание и вызвать {@link #clear()}.
-     */
-    private volatile boolean mNeedClearing = false;
-
-    /**
-     * Listener для оповещения об изменении состояния загрузки и об ошибках.
-     */
-    public interface DataManagerListener extends Listener {
-        void onFriendsFetched();
-        void onProgress();
-    }
-
-    private DataManagerListener mDataManagerListener;
-
-    public void setDataManagerListener(DataManagerListener dataManagerListener) {
-        mDataManagerListener = dataManagerListener;
-    }
-
-    /**
-     * Последовательно:
-     * - загрузить друзей пользователя,
-     * - его группы,
-     * - посчитать кол-во общих групп с друзьями и друзей в группах.
-     * mDataManagerListener оповещается о завершении скачивания и подсчета и о прогрессе.
-     * Перед вызовом надо назначить mDataManagerListener с помощью {@link #setDataManagerListener(DataManagerListener)}.
-     */
-    public void fetch() {
-        if (mDataManagerListener == null) {
-            return;
-        }
-        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingMutual) {
-            mDataManagerListener.onError("Fetching is already on!");
-            return;
-        }
-        clear();
-        loadFriends();
-    }
-
-    /**
      * Друзья пользователя, отсортированные в соответствии с {@link #mFriendsSortState}.
      */
     public VKUsersArray getUsersFriends() {
@@ -193,7 +140,7 @@ public class DataManager {
                 return null;
             case byAlphabet:
                 return mUsersFriendsByAlphabet;
-            case byMutial:
+            case byMutual:
                 return mUsersFriendsByMutual;
         }
         return null;
@@ -249,7 +196,7 @@ public class DataManager {
      */
     public void sortFriendsByMutual() {
         if (mUsersFriendsByMutual != null) {
-            mFriendsSortState = FriendsSortState.byMutial;
+            mFriendsSortState = FriendsSortState.byMutual;
         }
     }
 
@@ -295,6 +242,18 @@ public class DataManager {
     }
 
     /**
+     * Текущее состояние загрузки.
+     */
+    public FetchingState getFetchingState() {
+        return mFetchingState;
+    }
+
+    /**
+     * Надо ли прервать скачивание и вызвать {@link #clear()}.
+     */
+    private volatile boolean mNeedClearing = false;
+
+    /**
      * Очистить все поля.
      * Если эта функция вызвана во время за грузки, то mNeedClearing присваивается true;
      * и функция будет вызвана заново после завершения загрузки, которая завершится скоро,
@@ -303,15 +262,7 @@ public class DataManager {
     public void clear() {
         if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingMutual) {
             mNeedClearing = true;
-        }
-        else {
-            if (mDataProcessingThread == null) {
-                mDataProcessingThread = new DataProcessingThread(new Handler(Looper.getMainLooper()));
-                mDataProcessingThread.start();
-                mDataProcessingThread.getLooper();
-            }
-            mDataProcessingThread.clearMessages();
-
+        } else {
             mUsersFriendsByAlphabet = null;
             mUsersFriendsByMutual = null;
             mUserFriendsMap = new HashMap<>();
@@ -331,168 +282,214 @@ public class DataManager {
     }
 
     /**
-     * Текущее состояние загрузки.
+     * Listener для оповещения об изменении состояния загрузки и об ошибках.
      */
-    public FetchingState getFetchingState() {
-        return mFetchingState;
+    public interface DataManagerListener extends Listener<Void> {
+        void onFriendsLoaded();
+        void onProgress();
     }
 
     /**
-     * Завершить поток обработки результатов запросов.
+     * Загрузить данные с помощью vkapi.
      */
-    public void quitProcessingThread() {
-        mDataProcessingThread.quit();
+    public void fetchFromVK(DataManagerListener listener) {
+        load(new VKDataProvider(new DeviceDataSaver(mContext)), listener);
     }
 
     /**
-     * Listener для результатов запросов к vkapi.
-     * В случае ошибки всегда происходит одно и тоже.
+     * Загрузить данные с устройства.
      */
-    private abstract class DataManagerVKRequestListener extends VKRequest.VKRequestListener {
-        @Override
-        public abstract void onComplete(VKResponse response);
-
-        @Override
-        public void onError(VKError error) {
-            mFetchingState = FetchingState.notStarted;
-            clear();
-            mDataManagerListener.onError(String.valueOf(error));
-        }
+    public void loadFromDevice(DataManagerListener listener) {
+        load(new DeviceDataProvider(mContext), listener);
     }
 
     /**
-     * Listener для результатов выполнения обработки данных в {@link DataProcessingThread}.
-     * В случае ошибки всегда происходит одно и тоже.
+     * Последовательно:
+     * - загрузить друзей пользователя,
+     * - его группы,
+     * - посчитать кол-во общих групп с друзьями и друзей в группах.
+     * listener оповещается о завершении скачивания и подсчета и о прогрессе, и об ошибках.
      */
-    private abstract class DataProcessingThreadListener implements Listener {
-        @Override
-        public void onError(String error) {
-            mFetchingState = FetchingState.notStarted;
-            clear();
-            mDataManagerListener.onError(String.valueOf(error));
-        }
-    }
-
-    /**
-     * Загрузить друзей пользователя.
-     */
-    private void loadFriends() {
-        Log.d(TAG, "loadFriends");
-        mFetchingState = FetchingState.loadingFriends;
-        VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message"));
-        request.executeWithListener(new DataManagerVKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                if (mNeedClearing) {
-                    mFetchingState = FetchingState.notStarted;
-                    clear();
-                    return;
-                }
-                mUsersFriendsByAlphabet = (VKUsersArray) response.parsedModel;
-
-                mDataProcessingThread.processFriendsLoaded(new DataProcessingThreadListener() {
-                    @Override
-                    public void onCompleted() {
-                        mFriendsSortState = FriendsSortState.byAlphabet;
-                        mFetchingState = FetchingState.calculatingMutual;
-                        mDataManagerListener.onFriendsFetched();
-                        loadGroups();
-                    }
-                });
-            }
-        });
-    }
-
-    /**
-     * Загрузить группы пользователя.
-     */
-    private void loadGroups() {
-        Log.d(TAG, "loadGroups");
-        if (mNeedClearing) {
-            mFetchingState = FetchingState.notStarted;
-            clear();
+    private void load(DataProvider dataProvider, DataManagerListener listener) {
+        if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingMutual) {
+            listener.onError("Loading is already on!");
             return;
         }
-        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50"));
-        request.executeWithListener(new DataManagerVKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                if (mNeedClearing) {
-                    mFetchingState = FetchingState.notStarted;
-                    clear();
-                    return;
-                }
-                mUsersGroupsByDefault = (VKApiCommunityArray) response.parsedModel;
-
-                mDataProcessingThread.processGroupsLoaded(new DataProcessingThreadListener() {
-                    @Override
-                    public void onCompleted() {
-                        mGroupsSortState = GroupsSortState.byDefault;
-                        new CalculateMutualTask().execute();
-                    }
-                });
-            }
-        });
+        clear();
+        new LoadingTask(listener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, dataProvider);
     }
 
-    /**
-     * Класс для выполения запроса к vkapi и подсчета друзей в группах и кол-ва общих групп с друзьями.
-     * Это AsyncTask потому что формирование запроса (и строк - списов id) может быть продолжительным,
-     * и потому что подсчет общих групп представляет собой более менее обособленное цельное действие.
-     */
-    private class CalculateMutualTask extends AsyncTask<Void, Void, Void> {
-        /**
-         * Для сообщений об ошибках, которые могут произойти во время работы этого класса, используем следующие переменные.
-         */
-        private volatile boolean mIsCalculatingErrorHappened = false;
-        private volatile String mCalculatingErrorString = null;
+    private class LoadingTask extends AsyncTask<DataProvider, Integer, Void> {
+        private DataManagerListener mListener;
 
         /**
-         * Сколько запросов осталось выполнить (vkapi.execute).
+         * Ошибка, произошедшая во время {@link #doInBackground(DataProvider...)}.
+         * Если == null, то ошибок не было.
          */
-        private volatile int mRequestsRemain;
+        private volatile String doInBackgroundErrorMessage;
 
         /**
-         * Кол-во друзей, обрабатываемое в 1 запросе.
-         * Не больше 500.
+         * Сколько шагов осталось до конца выполнения очередной части загрузки в {@link #doInBackground(DataProvider...)}.
          */
-        private static final int friendsPerRequest = 100;
+        private volatile int stepsRemain;
 
-        /**
-         * Кол-во групп, обрабатываемое в 1 запросе.
-         * Не больше 25. (ограничение в 25 запросов к api в vkapi.execute).
-         */
-        private static final int groupPerRequest = 25;
-
-        public CalculateMutualTask() {
-            int partsOfFriends = mUsersFriendsByAlphabet.size() / friendsPerRequest;
-            if (mUsersFriendsByAlphabet.size() % friendsPerRequest > 0) {
-                ++partsOfFriends;
-            }
-            int partsOfGroups = mUsersGroupsByDefault.size() / groupPerRequest;
-            if (mUsersGroupsByDefault.size() % groupPerRequest > 0) {
-                ++partsOfGroups;
-            }
-            mRequestsRemain = partsOfFriends * partsOfGroups;
+        public LoadingTask(DataManagerListener listener) {
+            mListener = listener;
         }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected Void doInBackground(DataProvider... params) {
             if (mNeedClearing) {
                 return null;
             }
 
-            Log.d(TAG, "doInBackground ## 1");
+            DataProvider dataProvider = params[0];
 
-            calculateMutualGroups();
+            doInBackgroundErrorMessage = null;
 
-            if (mNeedClearing || mIsCalculatingErrorHappened) {
+            // загрузка друзей.
+
+            mFetchingState = FetchingState.loadingFriends;
+            stepsRemain = 1;
+            dataProvider.loadFriends(new Listener<VKUsersArray>() {
+                @Override
+                public void onCompleted(VKUsersArray vkApiUserFulls) {
+                    mUsersFriendsByAlphabet = vkApiUserFulls;
+                    --stepsRemain;
+                }
+
+                @Override
+                public void onError(String e) {
+                    doInBackgroundErrorMessage = e;
+                    --stepsRemain;
+                }
+            });
+            waitSteps();
+            if (doInBackgroundErrorMessage != null || mNeedClearing) {
                 return null;
             }
+            onFriendsLoaded();
+            publishProgress(PROGRESS_FRIENDS_LOADED);
 
-            Log.d(TAG, "doInBackground ## 2");
+            // загрузка групп.
 
-            // Копируем друзей в mUsersFriendsByMutual и сортируем их по убыванию кол-ва общих групп.
+            mFetchingState = FetchingState.calculatingMutual;
+            stepsRemain = 1;
+            dataProvider.loadGroups(new Listener<VKApiCommunityArray>() {
+                @Override
+                public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
+                    mUsersGroupsByDefault = vkApiCommunityFulls;
+                    --stepsRemain;
+                }
+
+                @Override
+                public void onError(String e) {
+                    doInBackgroundErrorMessage = e;
+                    --stepsRemain;
+                }
+            });
+            waitSteps();
+            if (doInBackgroundErrorMessage != null || mNeedClearing) {
+                return null;
+            }
+            onGroupsLoaded();
+
+            // загрузка и вычисление общих групп.
+
+            stepsRemain = dataProvider.loadIsMembers(mUsersFriendsByAlphabet, mUsersGroupsByDefault,
+                    new DataProvider.LoadIsMemberListener() {
+                        @Override
+                        public void onProgress(JSONObject jsonObject) {
+                            if (doInBackgroundErrorMessage != null || mNeedClearing) {
+                                return;
+                            }
+                            parseIsMemberJSON(jsonObject, new Listener<Void>() {
+                                @Override
+                                public void onCompleted(Void aVoid) {
+                                    if (doInBackgroundErrorMessage != null || mNeedClearing) {
+                                        return;
+                                    }
+                                    --stepsRemain;
+                                    publishProgress(PROGRESS_MUTUALS_ADDED);
+                                }
+
+                                @Override
+                                public void onError(String e) {
+                                    doInBackgroundErrorMessage = e;
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onCompleted(Void aVoid) {
+                        }
+
+                        @Override
+                        public void onError(String e) {
+                            doInBackgroundErrorMessage = e;
+                            stepsRemain = 0;
+                        }
+                    });
+            waitSteps();
+            if (doInBackgroundErrorMessage != null || mNeedClearing) {
+                return null;
+            }
+            onMutualsLoaded();
+            return null;
+        }
+
+        /**
+         * Ждат пока кол-во оставшихся шагов не станет равно 0.
+         */
+        private void waitSteps() {
+            while (stepsRemain > 0 && !mNeedClearing) {
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+
+        /**
+         * Действия выполняемые по случаю окончания загрузки друзей.
+         */
+        private void onFriendsLoaded() {
+            // Отсортировать друзей в алфавитном порядке.
+            Collections.sort(mUsersFriendsByAlphabet, new Comparator<VKApiUserFull>() {
+                @Override
+                public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
+                    int r = lhs.first_name.compareTo(rhs.first_name);
+                    if (r != 0) {
+                        return r;
+                    }
+                    return lhs.last_name.compareTo(rhs.last_name);
+                }
+            });
+            mFriendsSortState = FriendsSortState.byAlphabet;
+
+            for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
+                mGroupsMutualWithFriend.put(friend, new VKApiCommunityArray());
+                mUserFriendsMap.put(friend.id, friend);
+            }
+        }
+
+        /**
+         * Действия выполняемые по случаю окончания загрузки групп.
+         */
+        private void onGroupsLoaded() {
+            mGroupsSortState = GroupsSortState.byDefault;
+
+            for (VKApiCommunityFull group : mUsersGroupsByDefault) {
+                mFriendsInGroup.put(group, new VKUsersArray());
+                mUserGroupsMap.put(group.id, group);
+            }
+        }
+
+        /**
+         * Действия выполняемые по случаю окончания загрузки инфромации об общих группах.
+         */
+        private void onMutualsLoaded() {
+            // Копировать друзей в mUsersFriendsByMutual и отсортировать их по убыванию кол-ва общих групп.
             mUsersFriendsByMutual = new VKUsersArray();
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
                 mUsersFriendsByMutual.add(friend);
@@ -506,13 +503,7 @@ public class DataManager {
                 }
             }));
 
-            if (mNeedClearing || mIsCalculatingErrorHappened) {
-                return null;
-            }
-
-            Log.d(TAG, "doInBackground ## 3");
-
-            // Копируем группы в mUsersGroupsByFriends и сортируем их по убыванию кол-ва друзей.
+            // Копировать группы в mUsersGroupsByFriends и отсортировать их по убыванию кол-ва друзей.
             mUsersGroupsByFriends = new VKApiCommunityArray();
             for (VKApiCommunityFull group : mUsersGroupsByDefault) {
                 mUsersGroupsByFriends.add(group);
@@ -525,341 +516,104 @@ public class DataManager {
                     return (l == r) ? 0 : ((l > r) ? 1 : -1);
                 }
             }));
+        }
 
-            Log.d(TAG, "doInBackground ## 4");
-            return null;
+        /**
+         * Разобрать resultedJSONObject с информацией о наличии друзей в группах.
+         */
+        private void parseIsMemberJSON(final JSONObject resultedJSONObject, final Listener<Void> listener) {
+            new AsyncTask<Void, Void, Void>() {
+                /**
+                 * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
+                 * Если == null, то ошибок не было.
+                 */
+                private volatile String mErrorMessage = null;
+
+                @Override
+                protected Void doInBackground(Void... params) {
+                    try {
+                        JSONArray responseJSONArray = resultedJSONObject.getJSONArray("response");
+                        int responseJSONArrayLength = responseJSONArray.length();
+                        for (int i = 0; i < responseJSONArrayLength; ++i) {
+                            JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
+                            int groupId = groupJSONObject.getInt("group_id");
+                            VKApiCommunityFull group = mUserGroupsMap.get(groupId);
+                            JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
+                            int membersJSONArrayLength = membersJSONArray.length();
+                            for (int j = 0; j < membersJSONArrayLength; ++j) {
+                                JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
+                                if (memberJSONObject.getInt("member") == 1) {
+                                    int friendId = memberJSONObject.getInt("user_id");
+                                    VKApiUserFull friend = mUserFriendsMap.get(friendId);
+                                    mGroupsMutualWithFriend.get(friend).add(group);
+                                    mFriendsInGroup.get(group).add(friend);
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        mErrorMessage = String.valueOf(e);
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    if (mErrorMessage == null) {
+                        listener.onCompleted(null);
+                    } else {
+                        listener.onError(mErrorMessage);
+                    }
+                }
+            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            Log.d(TAG, "onPostExecute ##");
-
-            if (mIsCalculatingErrorHappened) {
-                // во время выполнения подсчета общих групп произошла ошибка, сообщаем о ней.
-                mDataManagerListener.onError(mCalculatingErrorString);
-            }
-            if (mNeedClearing || mIsCalculatingErrorHappened) {
-                mFetchingState = FetchingState.notStarted;
-                clear();
+            if (doInBackgroundErrorMessage == null && !mNeedClearing) {
+                mFetchingState = FetchingState.finished;
+                notifyOnCompleted();
                 return;
             }
-            // если не надо было вызвать {#clear} и не было ошибок, сообщаем о завершении подсчета общих групп.
-            mFetchingState = FetchingState.finished;
-            mDataManagerListener.onCompleted();
-            Log.d(TAG, "onPostExecute ## finish");
+
+            mFetchingState = FetchingState.notStarted;
+            clear();
+            new DeviceDataSaver(mContext).clear();
+
+            if (doInBackgroundErrorMessage != null) {
+                notifyOnError(doInBackgroundErrorMessage);
+            }
         }
+
+        private static final int PROGRESS_FRIENDS_LOADED = 1;
+        private static final int PROGRESS_MUTUALS_ADDED = 2;
 
         @Override
-        protected void onProgressUpdate(Void... values) {
-            mDataManagerListener.onProgress();
+        protected void onProgressUpdate(Integer... values) {
+            switch (values[0]) {
+                case PROGRESS_FRIENDS_LOADED:
+                    notifyOnFriendsLoaded();
+                    break;
+                case PROGRESS_MUTUALS_ADDED:
+                    notifyOnProgress();
+                    break;
+            }
         }
 
-        private void calculateMutualGroups() {
-            for (int friendNumber = 0; friendNumber < mUsersFriendsByAlphabet.size(); friendNumber += friendsPerRequest) {
-                String varFriends = getVarFriends(friendNumber);
-                for (int groupNumber = 0; groupNumber < mUsersGroupsByDefault.size(); groupNumber += groupPerRequest) {
-                    if (mNeedClearing || mIsCalculatingErrorHappened) {
-                        --mRequestsRemain;
-                        Log.d(TAG, "calculateMutualGroups ## continue");
-                        continue;
-                    }
-                    String varGroups = getVarGroups(groupNumber);
-                    String code = getCodeToExecute(varFriends, varGroups);
-                    VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
-                    Log.d(TAG, "calculateMutualGroups ## executeWithListener");
-                    request.executeWithListener(mExecuteRequestListener);
-                    try {
-                        // Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
-                        Thread.sleep(350);
-                    } catch (InterruptedException e) {
-                        mIsCalculatingErrorHappened = true;
-                        mCalculatingErrorString = String.valueOf(e);
-                    }
-                }
-            }
-
-            Log.d(TAG, "calculateMutualGroups ## waiting");
-            // Ждем, пока не выполнятся все запросы.
-            while (mRequestsRemain > 0) {
-                try {
-                    Thread.sleep(15);
-                } catch (InterruptedException e) {
-                    //nth
-                }
-                Log.v(TAG, "calculateMutualGroups ## waiting ## mRequestsRemain == " + mRequestsRemain);
-            }
-            Log.d(TAG, "calculateMutualGroups ## finish");
+        private void notifyOnError(String e) {
+            Log.e(TAG, e);
+            mListener.onError(e);
         }
 
-        /**
-         * Получить значение для переменной в запросе - id друзей
-         * @param friendStart - друг, начиная с которого формируется список id.
-         */
-        private String getVarFriends(int friendStart) {
-            StringBuilder s = new StringBuilder();
-            s.append("\"");
-            int friendEnd = Math.min(friendStart + friendsPerRequest, mUsersFriendsByAlphabet.size());
-            for (int i = friendStart; i < friendEnd; ++i) {
-                s.append(mUsersFriendsByAlphabet.get(i).id).append(',');
-            }
-            s.append("\"");
-            return s.toString();
+        private void notifyOnCompleted() {
+            mListener.onCompleted(null);
         }
 
-        /**
-         * Получить значение для переменной в запросе - id групп
-         * @param groupStart - группа, начиная с которого формируется список id.
-         */
-        private String getVarGroups(int groupStart) {
-            StringBuilder s = new StringBuilder();
-            int groupEnd = Math.min(groupStart + groupPerRequest, mUsersGroupsByDefault.size());
-            s.append("{count:\"").append(groupEnd - groupStart).append("\",items:[");
-            for (int i = groupStart; i < groupEnd; ++i) {
-                s.append(mUsersGroupsByDefault.get(i).id).append(',');
-            }
-            s.append("]}");
-            return s.toString();
+        private void notifyOnProgress() {
+            mListener.onProgress();
         }
 
-        /**
-         * Получить код для vkapi.execute c заданными переменными - списками id друзей и групп.
-         */
-        private String getCodeToExecute(String varFriends, String varGroups) {
-            return "var friends = " + varFriends + ";" +
-                    "var groups = " + varGroups + ";" +
-                    "var res = [];" +
-                    "var i = 0;" +
-                    "while(i<groups.count)" +
-                    "{var group_id = groups.items[i];\n" +
-                    "res=res+[{\"group_id\":group_id," +
-                    "\"members\":API.groups.isMember({\"group_id\": group_id,\"user_ids\":friends})}];\n" +
-                    "i=i+1;}" +
-                    "return res;";
-        }
-
-        /**
-         * Слушатель результатов выполнения запроса vkapi.execute.
-         */
-        private VKRequest.VKRequestListener mExecuteRequestListener = new VKRequest.VKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                Log.d(TAG, "mExecuteRequestListener ## onComplete()");
-                if (!mNeedClearing && !mIsCalculatingErrorHappened) {
-                    mDataProcessingThread.parseJSON(response.json, mParseJSONDataProcessingThreadListener);
-                }
-                else {
-                    --mRequestsRemain;
-                }
-            }
-
-            @Override
-            public void onError(VKError error) {
-                Log.d(TAG, "mExecuteRequestListener ## onError()");
-                mIsCalculatingErrorHappened = true;
-                mCalculatingErrorString = String.valueOf(error);
-                --mRequestsRemain;
-            }
-        };
-
-        /**
-         * Слушатель результатов выполения парсинга.
-         */
-        private Listener mParseJSONDataProcessingThreadListener = new Listener() {
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "mParseJSONDataProcessingThreadListener ## onCompleted()");
-                if (!mNeedClearing && !mIsCalculatingErrorHappened) {
-                    publishProgress();
-                }
-                --mRequestsRemain;
-            }
-
-            @Override
-            public void onError(String e) {
-                Log.d(TAG, "mParseJSONDataProcessingThreadListener ## onError()");
-                mIsCalculatingErrorHappened = true;
-                mCalculatingErrorString = String.valueOf(e);
-                --mRequestsRemain;
-            }
-        };
-    }
-
-    /**
-     * Класс-поток-обработчик результатов запросов.
-     */
-    private class DataProcessingThread extends HandlerThread {
-
-        private static final int MESSAGE_PROCESS_FRIENDS_LOADED_RESULT = 1;
-        private static final int MESSAGE_PROCESS_GROUPS_LOADED_RESULT = 2;
-        private static final int MESSAGE_PARSE_JSON = 3;
-
-        /**
-         * Обработчик сообщений.
-         */
-        private Handler mHandler;
-
-        /**
-         * Обработчик для результатов загрузки (и ошибок тоже)
-         */
-        private Handler mResponseHandler;
-
-        /**
-         * Для соотнесения объекта для парсинга и слушателя.
-         * И чтобы повторно не парсить одно и тоже.
-         */
-        private Map<JSONObject, Listener> mListenerMap = Collections.synchronizedMap(new HashMap<JSONObject, Listener>());
-
-        public DataProcessingThread(Handler responseHandler) {
-            super("DataProcessingThread");
-            mResponseHandler = responseHandler;
-        }
-
-        @SuppressWarnings("unchecked")
-        @SuppressLint("handlerLeak")
-        @Override
-        protected void onLooperPrepared() {
-            mHandler = new Handler() {
-                @Override
-                public void handleMessage(Message msg) {
-                    switch (msg.what) {
-                        case MESSAGE_PROCESS_FRIENDS_LOADED_RESULT:
-                            handleProcessFriendsLoaded((Listener) msg.obj);
-                            break;
-                        case MESSAGE_PROCESS_GROUPS_LOADED_RESULT:
-                            handleProcessGroupsLoaded((Listener) msg.obj);
-                            break;
-                        case MESSAGE_PARSE_JSON:
-                            handleParseJSON((JSONObject) msg.obj);
-                            break;
-                    }
-                }
-            };
-        }
-
-        public void processFriendsLoaded(Listener listener) {
-            while (mHandler == null) {
-                Thread.yield();
-            }
-            Log.d(TAG, "processFriendsLoaded ##");
-            mHandler.obtainMessage(MESSAGE_PROCESS_FRIENDS_LOADED_RESULT, listener).sendToTarget();
-        }
-
-        public void processGroupsLoaded(Listener listener) {
-            while (mHandler == null) {
-                Thread.yield();
-            }
-            Log.d(TAG, "processGroupsLoaded ##");
-            mHandler.obtainMessage(MESSAGE_PROCESS_GROUPS_LOADED_RESULT, listener).sendToTarget();
-        }
-
-        public void parseJSON(JSONObject jsonObject, Listener listener) {
-            while (mHandler == null) {
-                Thread.yield();
-            }
-            Log.d(TAG, "parseJSON ##");
-            mListenerMap.put(jsonObject, listener);
-            mHandler.obtainMessage(MESSAGE_PARSE_JSON, jsonObject).sendToTarget();
-        }
-
-        public void clearMessages() {
-            while (mHandler == null) {
-                Thread.yield();
-            }
-            mHandler.removeMessages(MESSAGE_PROCESS_FRIENDS_LOADED_RESULT);
-            mHandler.removeMessages(MESSAGE_PROCESS_GROUPS_LOADED_RESULT);
-            mHandler.removeMessages(MESSAGE_PARSE_JSON);
-            mListenerMap.clear();
-        }
-
-        private void handleProcessFriendsLoaded(final Listener listener) {
-            Log.d(TAG, "handleProcessFriendsLoaded ##");
-            // Отсортировать друзей в алфавитном порядке.
-            Collections.sort(mUsersFriendsByAlphabet, new Comparator<VKApiUserFull>() {
-                @Override
-                public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                    int r = lhs.first_name.compareTo(rhs.first_name);
-                    if (r != 0) {
-                        return r;
-                    }
-                    return lhs.last_name.compareTo(rhs.last_name);
-                }
-            });
-            Log.d(TAG, "handleProcessFriendsLoaded ## after_sort ##");
-            for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
-                mGroupsMutualWithFriend.put(friend, new VKApiCommunityArray());
-                mUserFriendsMap.put(friend.id, friend);
-            }
-            mResponseHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    listener.onCompleted();
-                    Log.d(TAG, "handleProcessFriendsLoaded ## listener.onCompleted();");
-                }
-            });
-        }
-
-        private void handleProcessGroupsLoaded(final Listener listener) {
-            Log.d(TAG, "handleProcessGroupsLoaded ##");
-            for (VKApiCommunityFull group : mUsersGroupsByDefault) {
-                mFriendsInGroup.put(group, new VKUsersArray());
-                mUserGroupsMap.put(group.id, group);
-            }
-            mResponseHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    listener.onCompleted();
-                    Log.d(TAG, "handleProcessGroupsLoaded ## listener.onCompleted(); ##");
-                }
-            });
-        }
-
-        /**
-         * Разобрать и сохранить результат запроса.
-         */
-        private void handleParseJSON(final JSONObject resultedJSONObject) {
-            Log.d(TAG, "handleParseJSON ##");
-            final Listener listener = mListenerMap.get(resultedJSONObject);
-            if (listener == null) {
-                Log.d(TAG, "handleParseJSON ## returning!!! ## listener == null");
-                return;
-            }
-            try {
-                JSONArray responseJSONArray = resultedJSONObject.getJSONArray("response");
-                int responseJSONArrayLength = responseJSONArray.length();
-                for (int i = 0; i < responseJSONArrayLength; ++i) {
-                    JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
-                    int groupId = groupJSONObject.getInt("group_id");
-                    VKApiCommunityFull group = mUserGroupsMap.get(groupId);
-                    JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
-                    int membersJSONArrayLength = membersJSONArray.length();
-                    for (int j = 0; j < membersJSONArrayLength; ++j) {
-                        JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
-                        if (memberJSONObject.getInt("member") == 1) {
-                            int friendId = memberJSONObject.getInt("user_id");
-                            VKApiUserFull friend = mUserFriendsMap.get(friendId);
-                            mGroupsMutualWithFriend.get(friend).add(group);
-                            mFriendsInGroup.get(group).add(friend);
-                        }
-                    }
-                }
-                mResponseHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        listener.onCompleted();
-                        mListenerMap.remove(resultedJSONObject);
-                        Log.d(TAG, "handleParseJSON ## listener.onCompleted(); ##");
-                    }
-                });
-            } catch (final JSONException e) {
-                mResponseHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        listener.onError(String.valueOf(e));
-                        mListenerMap.remove(resultedJSONObject);
-                        Log.d(TAG, "handleParseJSON ## listener.onError(); ##");
-                    }
-                });
-            }
+        private void notifyOnFriendsLoaded() {
+            mListener.onFriendsLoaded();
         }
     }
 

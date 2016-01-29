@@ -2,6 +2,7 @@ package com.alex.vkmutualgroups;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -10,7 +11,13 @@ import static com.alex.vkmutualgroups.DataManager.GroupsSortState.byFriends;
 
 public class UserGroupListActivity extends AbstractVkListActivity {
 
-    private DataManager mDataManager = DataManager.get();
+    private DataManager mDataManager;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        mDataManager = DataManager.get(this);
+    }
 
     @Override
     protected String getActionBarTitle() {
