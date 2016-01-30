@@ -263,8 +263,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                 if (VKSdk.isLoggedIn()) {
                     VKSdk.logout();
                     mDataManager.clear();
+                    mDataManager.clearDataOnDevice();
                     mPhotoManager.clearPhotosOnDevice();
-                    new DeviceDataSaver(this).clear();
                     updateUI();
                     VKSdk.login(this, LOGIN_SCOPE);
                 }

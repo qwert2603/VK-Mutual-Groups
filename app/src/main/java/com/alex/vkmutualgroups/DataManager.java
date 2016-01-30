@@ -282,6 +282,13 @@ public class DataManager {
     }
 
     /**
+     * Удалить все сохраненные на устройстве данные.
+     */
+    public void clearDataOnDevice() {
+        new DeviceDataSaver(mContext).clear();
+    }
+
+    /**
      * Listener для оповещения об изменении состояния загрузки и об ошибках.
      */
     public interface DataManagerListener extends Listener<Void> {
@@ -571,16 +578,17 @@ public class DataManager {
         protected void onPostExecute(Void aVoid) {
             if (doInBackgroundErrorMessage == null && !mNeedClearing) {
                 mFetchingState = FetchingState.finished;
-                notifyOnCompleted();
+                mListener.onCompleted(null);
                 return;
             }
 
             mFetchingState = FetchingState.notStarted;
             clear();
-            new DeviceDataSaver(mContext).clear();
+            clearDataOnDevice();
 
             if (doInBackgroundErrorMessage != null) {
-                notifyOnError(doInBackgroundErrorMessage);
+                mListener.onError(doInBackgroundErrorMessage);
+                Log.e(TAG, doInBackgroundErrorMessage);
             }
         }
 
@@ -591,29 +599,12 @@ public class DataManager {
         protected void onProgressUpdate(Integer... values) {
             switch (values[0]) {
                 case PROGRESS_FRIENDS_LOADED:
-                    notifyOnFriendsLoaded();
+                    mListener.onFriendsLoaded();
                     break;
                 case PROGRESS_MUTUALS_ADDED:
-                    notifyOnProgress();
+                    mListener.onProgress();
                     break;
             }
-        }
-
-        private void notifyOnError(String e) {
-            Log.e(TAG, e);
-            mListener.onError(e);
-        }
-
-        private void notifyOnCompleted() {
-            mListener.onCompleted(null);
-        }
-
-        private void notifyOnProgress() {
-            mListener.onProgress();
-        }
-
-        private void notifyOnFriendsLoaded() {
-            mListener.onFriendsLoaded();
         }
     }
 

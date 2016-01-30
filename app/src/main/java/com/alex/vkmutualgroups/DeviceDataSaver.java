@@ -14,6 +14,7 @@ import java.util.Random;
 
 /**
  * Класс для сохранения jsonObject в файл в фоновом режиме.
+ * И для удаления сохраненных файлов с устройства.
  */
 public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
 
