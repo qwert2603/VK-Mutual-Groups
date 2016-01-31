@@ -72,24 +72,30 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
                 }
                 return null;
             }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
     }
 
     /**
      * Удалить все сохраненные на устройстве данные.
      */
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public void clear() {
-        File friends = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
-        friends.delete();
-        File groups = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
-        groups.delete();
-        File folder = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
-        folder.mkdirs();
-        for (File file : folder.listFiles()) {
-            file.delete();
-        }
+        new AsyncTask<Void, Void, Void>(){
+            @SuppressWarnings("ResultOfMethodCallIgnored")
+            @Override
+            protected Void doInBackground(Void... params) {
+                File friends = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
+                friends.delete();
+                File groups = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
+                groups.delete();
+                File folder = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
+                folder.mkdirs();
+                for (File file : folder.listFiles()) {
+                    file.delete();
+                }
+                return null;
+            }
+        }.executeOnExecutor(AsyncTask.SERIAL_EXECUTOR);
     }
 
 }

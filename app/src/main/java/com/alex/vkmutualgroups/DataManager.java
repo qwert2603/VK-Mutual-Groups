@@ -323,6 +323,7 @@ public class DataManager {
             return;
         }
         clear();
+        mFetchingState = FetchingState.loadingFriends;
         new LoadingTask(listener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR, dataProvider);
     }
 
@@ -356,7 +357,6 @@ public class DataManager {
 
             // загрузка друзей.
 
-            mFetchingState = FetchingState.loadingFriends;
             stepsRemain = 1;
             dataProvider.loadFriends(new Listener<VKUsersArray>() {
                 @Override
@@ -380,7 +380,6 @@ public class DataManager {
 
             // загрузка групп.
 
-            mFetchingState = FetchingState.calculatingMutual;
             stepsRemain = 1;
             dataProvider.loadGroups(new Listener<VKApiCommunityArray>() {
                 @Override
@@ -407,22 +406,23 @@ public class DataManager {
                     new DataProvider.LoadIsMemberListener() {
                         @Override
                         public void onProgress(JSONObject jsonObject) {
-                            if (doInBackgroundErrorMessage != null || mNeedClearing) {
+                            if (jsonObject == null || doInBackgroundErrorMessage != null || mNeedClearing) {
+                                --stepsRemain;
                                 return;
                             }
                             parseIsMemberJSON(jsonObject, new Listener<Void>() {
                                 @Override
                                 public void onCompleted(Void aVoid) {
-                                    if (doInBackgroundErrorMessage != null || mNeedClearing) {
-                                        return;
+                                    if (doInBackgroundErrorMessage == null && !mNeedClearing) {
+                                        publishProgress(PROGRESS_MUTUALS_ADDED);
                                     }
                                     --stepsRemain;
-                                    publishProgress(PROGRESS_MUTUALS_ADDED);
                                 }
 
                                 @Override
                                 public void onError(String e) {
                                     doInBackgroundErrorMessage = e;
+                                    --stepsRemain;
                                 }
                             });
                         }
@@ -434,7 +434,6 @@ public class DataManager {
                         @Override
                         public void onError(String e) {
                             doInBackgroundErrorMessage = e;
-                            stepsRemain = 0;
                         }
                     });
             waitSteps();
@@ -449,7 +448,7 @@ public class DataManager {
          * Ждат пока кол-во оставшихся шагов не станет равно 0.
          */
         private void waitSteps() {
-            while (stepsRemain > 0 && !mNeedClearing) {
+            while (stepsRemain > 0) {
                 try {
                     Thread.sleep(15);
                 } catch (InterruptedException ignored) {
@@ -567,11 +566,28 @@ public class DataManager {
                 protected void onPostExecute(Void aVoid) {
                     if (mErrorMessage == null) {
                         listener.onCompleted(null);
-                    } else {
+                    }
+                    else {
                         listener.onError(mErrorMessage);
                     }
                 }
             }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
+
+        private static final int PROGRESS_FRIENDS_LOADED = 1;
+        private static final int PROGRESS_MUTUALS_ADDED = 2;
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            switch (values[0]) {
+                case PROGRESS_FRIENDS_LOADED:
+                    mFetchingState = FetchingState.calculatingMutual;
+                    mListener.onFriendsLoaded();
+                    break;
+                case PROGRESS_MUTUALS_ADDED:
+                    mListener.onProgress();
+                    break;
+            }
         }
 
         @Override
@@ -589,21 +605,6 @@ public class DataManager {
             if (doInBackgroundErrorMessage != null) {
                 mListener.onError(doInBackgroundErrorMessage);
                 Log.e(TAG, doInBackgroundErrorMessage);
-            }
-        }
-
-        private static final int PROGRESS_FRIENDS_LOADED = 1;
-        private static final int PROGRESS_MUTUALS_ADDED = 2;
-
-        @Override
-        protected void onProgressUpdate(Integer... values) {
-            switch (values[0]) {
-                case PROGRESS_FRIENDS_LOADED:
-                    mListener.onFriendsLoaded();
-                    break;
-                case PROGRESS_MUTUALS_ADDED:
-                    mListener.onProgress();
-                    break;
             }
         }
     }

@@ -112,16 +112,19 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
              */
             private volatile String mErrorMessage = null;
 
+            @SuppressWarnings("NullArgumentToVariableArgMethod")
             @Override
             protected Void doInBackground(Void... params) {
                 for (File file : folder.listFiles()) {
-                    try {
-                        JSONObject jsonObject = loadJSONObjectFromJSONFile(file);
-                        publishProgress(jsonObject);
-                    } catch (IOException | JSONException e) {
-                        mErrorMessage = String.valueOf(e);
-                        break;
+                    JSONObject jsonObject = null;
+                    if (mErrorMessage == null) {
+                        try {
+                            jsonObject = loadJSONObjectFromJSONFile(file);
+                        } catch (IOException | JSONException e) {
+                            mErrorMessage = String.valueOf(e);
+                        }
                     }
+                    publishProgress(jsonObject);
                 }
                 return null;
             }

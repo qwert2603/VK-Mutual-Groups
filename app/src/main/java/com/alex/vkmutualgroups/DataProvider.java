@@ -1,5 +1,7 @@
 package com.alex.vkmutualgroups;
 
+import android.support.annotation.Nullable;
+
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKUsersArray;
 
@@ -16,12 +18,16 @@ public interface DataProvider {
 
     /**
      *
-     * @return кол-во JSONObject которое будет передано в
-     * {@link DataProvider.LoadIsMemberListener#onProgress(JSONObject)}.
+     * @return кол-во JSONObject которое будет передано в {@link DataProvider.LoadIsMemberListener#onProgress(JSONObject)}.
      */
     int loadIsMembers(VKUsersArray friends, VKApiCommunityArray groups, LoadIsMemberListener listener);
 
     interface LoadIsMemberListener extends Listener<Void> {
-        void onProgress(JSONObject jsonObject);
+        /**
+         * Если произошла ошибка, будет передано jsonObject == null,
+         * Если хоть раз было передано null, в конце процесса надо вызывать {@link #onError(String)}.
+         * Если все успешно загрузилось, то {@link #onCompleted(Object)}.
+         */
+        void onProgress(@Nullable JSONObject jsonObject);
     }
 }

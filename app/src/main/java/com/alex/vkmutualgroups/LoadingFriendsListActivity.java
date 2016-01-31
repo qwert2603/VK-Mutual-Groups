@@ -160,7 +160,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
             @Override
             public void onError(String e) {
-                removeFriendsListFragment();
                 Log.e("AASSDD", e);
                 fetchFromVK();
             }
