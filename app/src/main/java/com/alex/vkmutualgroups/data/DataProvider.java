@@ -1,7 +1,8 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.data;
 
 import android.support.annotation.Nullable;
 
+import com.alex.vkmutualgroups.Listener;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKUsersArray;
 

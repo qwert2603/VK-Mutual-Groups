@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.activities;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -7,6 +7,8 @@ import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+
+import com.alex.vkmutualgroups.R;
 
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).

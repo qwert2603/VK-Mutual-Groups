@@ -1,8 +1,11 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.activities;
 
 import android.app.Fragment;
 import android.os.Bundle;
 
+import com.alex.vkmutualgroups.fragments.FriendsListFragment;
+import com.alex.vkmutualgroups.R;
+import com.alex.vkmutualgroups.data.DataManager;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 
 public class FriendsListActivity extends AbstractVkListActivity {

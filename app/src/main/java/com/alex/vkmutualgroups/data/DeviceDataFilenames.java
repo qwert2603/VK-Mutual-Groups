@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.data;
 
 /**
  * Имена файлов с данными на устройстве.

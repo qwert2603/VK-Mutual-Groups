@@ -1,9 +1,10 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.data;
 
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.alex.vkmutualgroups.Listener;
 import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;

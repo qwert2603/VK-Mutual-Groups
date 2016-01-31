@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.fragments;
 
 import android.app.Fragment;
 import android.content.Intent;
@@ -19,13 +19,19 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.alex.vkmutualgroups.Listener;
+import com.alex.vkmutualgroups.R;
+import com.alex.vkmutualgroups.activities.GroupsListActivity;
+import com.alex.vkmutualgroups.data.DataManager;
+import com.alex.vkmutualgroups.photo.ImageViewHolder;
+import com.alex.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
-import static com.alex.vkmutualgroups.DataManager.FetchingState.calculatingMutual;
-import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
  * Отображает список друзей из DataManager в соответствии с id группы, переданным в {@link #newInstance(int)}.

@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.activities;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -15,17 +15,21 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.alex.vkmutualgroups.fragments.FriendsListFragment;
+import com.alex.vkmutualgroups.R;
+import com.alex.vkmutualgroups.data.DataManager;
+import com.alex.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKError;
 
-import static com.alex.vkmutualgroups.DataManager.FetchingState.calculatingMutual;
-import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
-import static com.alex.vkmutualgroups.DataManager.FetchingState.loadingFriends;
-import static com.alex.vkmutualgroups.DataManager.FetchingState.notStarted;
-import static com.alex.vkmutualgroups.DataManager.FriendsSortState.byMutual;
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.finished;
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.loadingFriends;
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.notStarted;
+import static com.alex.vkmutualgroups.data.DataManager.FriendsSortState.byMutual;
 
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.

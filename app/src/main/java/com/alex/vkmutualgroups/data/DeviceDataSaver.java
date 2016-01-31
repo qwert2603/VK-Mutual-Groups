@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.data;
 
 import android.content.Context;
 import android.os.AsyncTask;

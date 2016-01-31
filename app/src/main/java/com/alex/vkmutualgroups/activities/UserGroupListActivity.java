@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.activities;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
@@ -6,8 +6,12 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import static com.alex.vkmutualgroups.DataManager.FetchingState.finished;
-import static com.alex.vkmutualgroups.DataManager.GroupsSortState.byFriends;
+import com.alex.vkmutualgroups.fragments.GroupsListFragment;
+import com.alex.vkmutualgroups.R;
+import com.alex.vkmutualgroups.data.DataManager;
+
+import static com.alex.vkmutualgroups.data.DataManager.FetchingState.finished;
+import static com.alex.vkmutualgroups.data.DataManager.GroupsSortState.byFriends;
 
 public class UserGroupListActivity extends AbstractVkListActivity {
 

@@ -1,10 +1,11 @@
-package com.alex.vkmutualgroups;
+package com.alex.vkmutualgroups.data;
 
 import android.content.Context;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.alex.vkmutualgroups.Listener;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;

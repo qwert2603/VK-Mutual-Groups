@@ -5,13 +5,13 @@
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:name=".VKMutualGroupsApplication"
+        android:name=".Application"
         android:allowBackup="true"
         android:icon="@drawable/icon"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.alex.vkmutualgroups.LoadingFriendsListActivity"
+        <activity android:name=".activities.LoadingFriendsListActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop">
             <intent-filter>
@@ -21,28 +21,28 @@
             </intent-filter>
         </activity>
 
-        <activity android:name="com.alex.vkmutualgroups.UserGroupListActivity"
+        <activity android:name=".activities.UserGroupListActivity"
             android:screenOrientation="portrait"
-            android:parentActivityName="com.alex.vkmutualgroups.LoadingFriendsListActivity">
+            android:parentActivityName=".activities.LoadingFriendsListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.alex.vkmutualgroups.LoadingFriendsListActivity" />
+                android:value=".activities.LoadingFriendsListActivity" />
         </activity>
 
-        <activity android:name="com.alex.vkmutualgroups.GroupsListActivity"
+        <activity android:name=".activities.GroupsListActivity"
             android:screenOrientation="portrait"
-            android:parentActivityName="com.alex.vkmutualgroups.LoadingFriendsListActivity">
+            android:parentActivityName=".activities.LoadingFriendsListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.alex.vkmutualgroups.LoadingFriendsListActivity" />
+                android:value=".activities.LoadingFriendsListActivity" />
         </activity>
 
-        <activity android:name="com.alex.vkmutualgroups.FriendsListActivity"
+        <activity android:name=".activities.FriendsListActivity"
             android:screenOrientation="portrait"
-            android:parentActivityName="com.alex.vkmutualgroups.LoadingFriendsListActivity">
+            android:parentActivityName=".activities.LoadingFriendsListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.alex.vkmutualgroups.LoadingFriendsListActivity" />
+                android:value=".activities.LoadingFriendsListActivity" />
         </activity>
     </application>
 
