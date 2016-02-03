@@ -3,15 +3,17 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <FrameLayout android:id="@+id/fragment_container"
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/refresh_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-    </FrameLayout>
 
-    <ProgressBar android:id="@+id/progress_bar"
-        android:layout_width="96dp"
-        android:layout_height="96dp"
-        android:layout_gravity="center" />
+        <FrameLayout android:id="@+id/fragment_container"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+        </FrameLayout>
+
+    </android.support.v4.widget.SwipeRefreshLayout>
 
     <TextView android:id="@+id/error_text_view"
         android:layout_width="match_parent"
@@ -22,6 +24,3 @@
         android:textSize="24sp"/>
 
 </FrameLayout>
-
-
-

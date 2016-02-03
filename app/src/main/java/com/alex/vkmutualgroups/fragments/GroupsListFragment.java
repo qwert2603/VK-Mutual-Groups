@@ -57,12 +57,12 @@ public class GroupsListFragment extends Fragment {
     private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
+    private ListView mListView;
+    private int mListViewScrollState;
+    private GroupAdapter mGroupsAdapter;
+
     private VKApiCommunityArray mGroups;
     private int mFriendId;
-
-    private ListView mListView;
-    private GroupAdapter mGroupsAdapter;
-    private int mListViewScrollState;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {

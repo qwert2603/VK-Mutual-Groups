@@ -58,11 +58,27 @@ public class FriendsListFragment extends Fragment {
     private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
-    private ListView mListView;
-    private FriendAdapter mFriendAdapter = null;
+    protected ListView mListView;
+    private int mListViewScrollState;
+    private FriendAdapter mFriendAdapter;
 
     private VKUsersArray mFriends;
-    private int mListViewScrollState;
+
+    protected AbsListView.OnScrollListener mListViewOnScrollListener = new AbsListView.OnScrollListener() {
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
+            mListViewScrollState = scrollState;
+            if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                // при остановке скроллинга загружаем фото видимых друзей.
+                notifyDataSetChanged();
+                fetchVisibleFriendsPhoto();
+            }
+        }
+
+        @Override
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -96,21 +112,7 @@ public class FriendsListFragment extends Fragment {
                 }
             }
         });
-        mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(AbsListView view, int scrollState) {
-                mListViewScrollState = scrollState;
-                if (mListViewScrollState == SCROLL_STATE_IDLE) {
-                    // при остановке скроллинга загружаем фото видимых друзей.
-                    notifyDataSetChanged();
-                    fetchVisibleFriendsPhoto();
-                }
-            }
-
-            @Override
-            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-            }
-        });
+        mListView.setOnScrollListener(mListViewOnScrollListener);
         mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
         mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
             private int mActionedPosition;

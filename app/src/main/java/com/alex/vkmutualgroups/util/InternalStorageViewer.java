@@ -12,24 +12,18 @@ public class InternalStorageViewer {
 
     public static final String TAG = "InternalStorageViewer";
 
-    private Context mContext;
-
-    public InternalStorageViewer(Context context) {
-        mContext = context.getApplicationContext();
-    }
-
     /**
      * Вывести в logcat содержимое внутреннего хранилища приложения.
      */
-    public void print() {
-        File internalStorage = mContext.getFilesDir();
+    public static void print(Context context) {
+        File internalStorage = context.getApplicationContext().getFilesDir();
         printDir(internalStorage);
     }
 
     /**
      * Вывести в logcat содержмое папки. Рекурсивно.
      */
-    private void printDir(File dir) {
+    private static void printDir(File dir) {
         for (File file : dir.listFiles()) {
             if (file.isDirectory()) {
                 printDir(file);

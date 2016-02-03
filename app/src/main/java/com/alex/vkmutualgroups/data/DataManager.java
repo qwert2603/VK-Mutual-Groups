@@ -403,7 +403,9 @@ public class DataManager {
 
             // загрузка и вычисление общих групп.
 
-            stepsRemain = dataProvider.loadIsMembers(mUsersFriendsByAlphabet, mUsersGroupsByDefault,
+            // дополнительная единица - завершение всего процесса загрузки друзей в группах.
+            // это либо вызов #onCompleted либо #onError.
+            stepsRemain = 1 + dataProvider.loadIsMembers(mUsersFriendsByAlphabet, mUsersGroupsByDefault,
                     new DataProvider.LoadIsMemberListener() {
                         @Override
                         public void onProgress(JSONObject jsonObject) {
@@ -430,11 +432,13 @@ public class DataManager {
 
                         @Override
                         public void onCompleted(Void aVoid) {
+                            --stepsRemain;
                         }
 
                         @Override
                         public void onError(String e) {
                             doInBackgroundErrorMessage = e;
+                            --stepsRemain;
                         }
                     });
             waitSteps();
@@ -462,15 +466,12 @@ public class DataManager {
          */
         private void onFriendsLoaded() {
             // Отсортировать друзей в алфавитном порядке.
-            Collections.sort(mUsersFriendsByAlphabet, new Comparator<VKApiUserFull>() {
-                @Override
-                public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                    int r = lhs.first_name.compareTo(rhs.first_name);
-                    if (r != 0) {
-                        return r;
-                    }
-                    return lhs.last_name.compareTo(rhs.last_name);
+            Collections.sort(mUsersFriendsByAlphabet, (lhs, rhs) -> {
+                int r = lhs.first_name.compareTo(rhs.first_name);
+                if (r != 0) {
+                    return r;
                 }
+                return lhs.last_name.compareTo(rhs.last_name);
             });
             mFriendsSortState = FriendsSortState.byAlphabet;
 

@@ -2,60 +2,65 @@ package com.alex.vkmutualgroups.activities;
 
 import android.app.Fragment;
 import android.app.FragmentManager;
-import android.content.Context;
+import android.app.ListFragment;
 import android.content.Intent;
-import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
+import android.widget.AbsListView;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.alex.vkmutualgroups.fragments.FriendsListFragment;
 import com.alex.vkmutualgroups.R;
 import com.alex.vkmutualgroups.data.DataManager;
+import com.alex.vkmutualgroups.fragments.ScrollCallbackableFriendsListFragment;
 import com.alex.vkmutualgroups.photo.PhotoManager;
+import com.alex.vkmutualgroups.util.InternetUtils;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKError;
 
-import static com.alex.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.alex.vkmutualgroups.data.DataManager.FetchingState.finished;
-import static com.alex.vkmutualgroups.data.DataManager.FetchingState.loadingFriends;
 import static com.alex.vkmutualgroups.data.DataManager.FetchingState.notStarted;
 import static com.alex.vkmutualgroups.data.DataManager.FriendsSortState.byMutual;
 
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
  */
-public class LoadingFriendsListActivity extends AppCompatActivity {
+public class LoadingFriendsListActivity extends AppCompatActivity implements ScrollCallbackableFriendsListFragment.Callbacks {
 
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 
     private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
-    private ProgressBar mProgressBar;
     private TextView mErrorTextView;
+
+    private SwipeRefreshLayout mRefreshLayout;
 
     private boolean mIsFetchingErrorHappened = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_fetching_friends_list);
+        setContentView(R.layout.activity_loading_friends_list);
+        setEmptyFragment();
 
         mDataManager = DataManager.get(this);
         mPhotoManager = PhotoManager.get(this);
 
-        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
+
+        mRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.refresh_layout);
+        mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
+        mRefreshLayout.setOnRefreshListener(this::refreshData);
 
         if (VKSdk.isLoggedIn()) {
             if (mDataManager.getFetchingState() == notStarted) {
@@ -91,26 +96,22 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     private void updateUI() {
         invalidateOptionsMenu();
-        mProgressBar.setVisibility(View.INVISIBLE);
         mErrorTextView.setVisibility(View.INVISIBLE);
         if (! VKSdk.isLoggedIn()) {
-            removeFriendsListFragment();
+            setEmptyFragment();
             return;
         }
         if (mIsFetchingErrorHappened) {
             onFetchingErrorUI();
-        }
-        else {
+        } else {
             switch (mDataManager.getFetchingState()) {
                 case notStarted:
-                    removeFriendsListFragment();
+                    setEmptyFragment();
                     break;
                 case loadingFriends:
-                    mProgressBar.setVisibility(View.VISIBLE);
                     break;
                 case calculatingMutual:
                     notifyFragmentDataSetChanged();
-                    mProgressBar.setVisibility(View.VISIBLE);
                     break;
                 case finished:
                     notifyFragmentDataSetChanged();
@@ -121,39 +122,39 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
 
     private void onFetchingErrorUI() {
         FragmentManager fm = getFragmentManager();
-        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
-        if(fragment != null) {
-            fragment.notifyDataSetChanged();
+        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        if(fragment != null && fragment instanceof ScrollCallbackableFriendsListFragment) {
+            ((ScrollCallbackableFriendsListFragment) fragment).notifyDataSetChanged();
             Toast.makeText(this, R.string.error_message, Toast.LENGTH_SHORT).show();
-        }
-        else {
+        } else {
             mErrorTextView.setVisibility(View.VISIBLE);
         }
     }
 
     private void notifyFragmentDataSetChanged() {
         FragmentManager fm = getFragmentManager();
-        FriendsListFragment fragment = (FriendsListFragment) fm.findFragmentById(R.id.fragment_container);
-        if(fragment == null) {
-            refreshFriendsListFragment();
-        }
-        else {
-            fragment.notifyDataSetChanged();
+        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        if(fragment != null && fragment instanceof ScrollCallbackableFriendsListFragment) {
+            ((ScrollCallbackableFriendsListFragment) fragment).notifyDataSetChanged();
+        } else {
+            refreshScrollCallbackableFriendsListFragment();
         }
     }
 
     private void loadFromDevice() {
+        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
         mIsFetchingErrorHappened = false;
         mDataManager.loadFromDevice(new DataManager.DataManagerListener() {
             @Override
             public void onFriendsLoaded() {
-                refreshFriendsListFragment();
+                refreshScrollCallbackableFriendsListFragment();
                 updateUI();
             }
 
             @Override
             public void onCompleted(Void v) {
                 updateUI();
+                mRefreshLayout.setRefreshing(false);
                 Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
             }
 
@@ -165,23 +166,26 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             @Override
             public void onError(String e) {
                 Log.e("AASSDD", e);
+                mRefreshLayout.setRefreshing(false);
                 fetchFromVK();
             }
         });
     }
 
     private void fetchFromVK() {
+        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
         mIsFetchingErrorHappened = false;
         mDataManager.fetchFromVK(new DataManager.DataManagerListener() {
             @Override
             public void onFriendsLoaded() {
-                refreshFriendsListFragment();
+                refreshScrollCallbackableFriendsListFragment();
                 updateUI();
             }
 
             @Override
             public void onCompleted(Void v) {
                 updateUI();
+                mRefreshLayout.setRefreshing(false);
                 Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
             }
 
@@ -194,22 +198,40 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
             public void onError(String e) {
                 mIsFetchingErrorHappened = true;
                 updateUI();
+                mRefreshLayout.setRefreshing(false);
                 Log.e("AASSDD", e);
             }
         });
     }
 
-    private void removeFriendsListFragment() {
-        FragmentManager fm = getFragmentManager();
-        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
-        if(fragment != null) {
-            fm.beginTransaction().remove(fragment).commitAllowingStateLoss();
+    private void refreshData() {
+        if (InternetUtils.isInternetConnected(this)) {
+            fetchFromVK();
+            invalidateOptionsMenu();
+        }
+        else {
+            mRefreshLayout.setRefreshing(false);
+            Toast.makeText(LoadingFriendsListActivity.this, R.string.no_internet_connection, Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void refreshFriendsListFragment() {
+    private void refreshScrollCallbackableFriendsListFragment() {
         FragmentManager fm = getFragmentManager();
-        fm.beginTransaction().replace(R.id.fragment_container, FriendsListFragment.newInstance(0)).commitAllowingStateLoss();
+        fm.beginTransaction()
+                .replace(R.id.fragment_container, ScrollCallbackableFriendsListFragment.newInstance(0))
+                .commitAllowingStateLoss();
+    }
+
+    private void setEmptyFragment() {
+        FragmentManager fm = getFragmentManager();
+
+        // чтобы mRefreshLayout нормально отображался.
+        // Просто пустой фрагмент для фона.
+        ListFragment fragment = new ListFragment();
+        fragment.setListAdapter(new ArrayAdapter<>(this, 0, new String[]{}));
+        fm.beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commitAllowingStateLoss();
     }
 
     @Override
@@ -223,12 +245,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         if (mDataManager.getFetchingState() != finished) {
             sortMenuItem.setEnabled(false);
             groupsListMenuItem.setEnabled(false);
-        }
-
-        MenuItem refreshMenuItem = menu.findItem(R.id.menu_refresh);
-        DataManager.FetchingState currentState = mDataManager.getFetchingState();
-        if (currentState == loadingFriends || currentState == calculatingMutual) {
-            refreshMenuItem.setEnabled(false);
         }
 
         return true;
@@ -246,17 +262,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
                         mDataManager.sortFriendsByAlphabet();
                         break;
                 }
-                refreshFriendsListFragment();
+                refreshScrollCallbackableFriendsListFragment();
                 invalidateOptionsMenu();
-                return true;
-            case R.id.menu_refresh:
-                if (isInternetConnected()) {
-                    fetchFromVK();
-                    invalidateOptionsMenu();
-                }
-                else {
-                    Toast.makeText(LoadingFriendsListActivity.this, R.string.no_internet_connection, Toast.LENGTH_SHORT).show();
-                }
                 return true;
             case R.id.menu_groups_list:
                 Intent intent = new Intent(this, UserGroupListActivity.class);
@@ -277,8 +284,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity {
         }
     }
 
-    private boolean isInternetConnected() {
-        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
+    @Override
+    public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
+        mRefreshLayout.setEnabled(b);
     }
 }
