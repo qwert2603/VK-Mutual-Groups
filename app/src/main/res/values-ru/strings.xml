@@ -26,5 +26,4 @@
     <string name="no">нет</string>
     <string name="message_sent">Сообщение успешно отправлено.</string>
     <string name="message_sending_error">Сообщение НЕ было отправлено!</string>
-    <string name="empty_message">Пустое сообщение!</string>
 </resources>

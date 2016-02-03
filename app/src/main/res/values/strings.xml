@@ -29,5 +29,4 @@
     <string name="no">no</string>
     <string name="message_sent">Message sent successfully.</string>
     <string name="message_sending_error">Message was NOT sent!</string>
-    <string name="empty_message">Empty message!</string>
 </resources>

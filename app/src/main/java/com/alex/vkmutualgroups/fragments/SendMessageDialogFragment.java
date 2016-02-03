@@ -1,16 +1,19 @@
 package com.alex.vkmutualgroups.fragments;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.DialogFragment;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import com.alex.vkmutualgroups.R;
 import com.alex.vkmutualgroups.data.DataManager;
@@ -41,14 +44,12 @@ public class SendMessageDialogFragment extends DialogFragment {
     }
 
     private VKApiUserFull mFriend;
-    private Context mContext;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         int friendId = getArguments().getInt(friendIdKey);
         mFriend = DataManager.get(getActivity()).getFriendById(friendId);
-        mContext = getActivity().getApplicationContext();
     }
 
     @Override
@@ -77,6 +78,10 @@ public class SendMessageDialogFragment extends DialogFragment {
         int mutual = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend).size();
 
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_write, null);
+
+        TextView friendName = (TextView) view.findViewById(R.id.friend_name_text_view);
+        friendName.setText(getString(R.string.friend_name, mFriend.first_name, mFriend.last_name));
+
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);
 
         String text = getString(R.string.send_dialog_message_prefix);
@@ -84,33 +89,47 @@ public class SendMessageDialogFragment extends DialogFragment {
         text += getMessageSuffix(mutual);
         editText.setText(text);
 
+        Button cancelButton = (Button) view.findViewById(R.id.cancel_button);
+        cancelButton.setOnClickListener((v) -> dismiss());
+
+        Button sendButton = (Button) view.findViewById(R.id.send_button);
+        sendButton.setOnClickListener((v) -> {
+            VKParameters parameters = VKParameters.from(
+                    VKApiConst.USER_ID, mFriend.id, VKApiConst.MESSAGE, editText.getText());
+            VKRequest request = new VKRequest("messages.send", parameters);
+            request.executeWithListener(new VKRequest.VKRequestListener() {
+                @Override
+                public void onComplete(VKResponse response) {
+                    getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, null);
+                    dismiss();
+                }
+
+                @Override
+                public void onError(VKError error) {
+                    Log.e(TAG, error.toString());
+                    Snackbar.make(view, R.string.message_sending_error, Snackbar.LENGTH_SHORT).show();
+                    getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_CANCELED, null);
+                }
+            });
+        });
+
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                sendButton.setEnabled(! s.toString().isEmpty());
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+            }
+        });
+
         return new AlertDialog.Builder(getActivity())
                 .setView(view)
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.send, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        if (editText.getText().length() == 0) {
-                            Toast.makeText(mContext, R.string.empty_message, Toast.LENGTH_SHORT).show();
-                            return;
-                        }
-                        VKParameters parameters = VKParameters.from(
-                                VKApiConst.USER_ID, mFriend.id, VKApiConst.MESSAGE, editText.getText());
-                        VKRequest request = new VKRequest("messages.send", parameters);
-                        request.executeWithListener(new VKRequest.VKRequestListener() {
-                            @Override
-                            public void onComplete(VKResponse response) {
-                                Toast.makeText(mContext, R.string.message_sent, Toast.LENGTH_SHORT).show();
-                            }
-
-                            @Override
-                            public void onError(VKError error) {
-                                Log.e(TAG, error.toString());
-                                Toast.makeText(mContext, R.string.message_sending_error, Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                    }
-                })
                 .create();
     }
 

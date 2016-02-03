@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -125,7 +126,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         Fragment fragment = fm.findFragmentById(R.id.fragment_container);
         if(fragment != null && fragment instanceof ScrollCallbackableFriendsListFragment) {
             ((ScrollCallbackableFriendsListFragment) fragment).notifyDataSetChanged();
-            Toast.makeText(this, R.string.error_message, Toast.LENGTH_SHORT).show();
+            Snackbar.make(mErrorTextView, R.string.error_message, Snackbar.LENGTH_SHORT)
+                    .setAction(R.string.refresh, (v) -> refreshData())
+                    .show();
         } else {
             mErrorTextView.setVisibility(View.VISIBLE);
         }
@@ -155,7 +158,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
             public void onCompleted(Void v) {
                 updateUI();
                 mRefreshLayout.setRefreshing(false);
-                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
+                Snackbar.make(mRefreshLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
@@ -186,7 +189,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
             public void onCompleted(Void v) {
                 updateUI();
                 mRefreshLayout.setRefreshing(false);
-                Toast.makeText(LoadingFriendsListActivity.this, R.string.loading_completed, Toast.LENGTH_SHORT).show();
+                Snackbar.make(mRefreshLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
@@ -211,7 +214,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         }
         else {
             mRefreshLayout.setRefreshing(false);
-            Toast.makeText(LoadingFriendsListActivity.this, R.string.no_internet_connection, Toast.LENGTH_SHORT).show();
+            Snackbar.make(mErrorTextView, R.string.no_internet_connection, Snackbar.LENGTH_SHORT)
+                    .setAction(R.string.refresh, (v) -> refreshData())
+                    .show();
         }
     }
 

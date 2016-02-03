@@ -1,10 +1,12 @@
 package com.alex.vkmutualgroups.fragments;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -13,7 +15,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -41,6 +42,8 @@ public class GroupsListFragment extends Fragment {
     private static final String TAG = "GroupsListFragment";
 
     private static final String friendIdKey = "friendIdKey";
+
+    private static final int REQUEST_SEND_MESSAGE = 1;
 
     /**
      * friendId - id друга. В списке будут выведены группы, общие с этим другом.
@@ -86,15 +89,12 @@ public class GroupsListFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
         mListView = (ListView) view.findViewById(android.R.id.list);
-        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                if (mDataManager.getFetchingState() == DataManager.FetchingState.finished) {
-                    Intent intent = new Intent(getActivity(), FriendsListActivity.class);
-                    VKApiCommunityFull group = (VKApiCommunityFull) mListView.getAdapter().getItem(position);
-                    intent.putExtra(FriendsListActivity.EXTRA_GROUP_ID, group.id);
-                    startActivity(intent);
-                }
+        mListView.setOnItemClickListener((parent, view1, position, id) -> {
+            if (mDataManager.getFetchingState() == DataManager.FetchingState.finished) {
+                Intent intent = new Intent(getActivity(), FriendsListActivity.class);
+                VKApiCommunityFull group = (VKApiCommunityFull) mListView.getAdapter().getItem(position);
+                intent.putExtra(FriendsListActivity.EXTRA_GROUP_ID, group.id);
+                startActivity(intent);
             }
         });
         mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
@@ -257,10 +257,21 @@ public class GroupsListFragment extends Fragment {
         switch (item.getItemId()) {
             case R.id.menu_message:
                 SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(mFriendId);
+                sendMessageDialogFragment.setTargetFragment(this, REQUEST_SEND_MESSAGE);
                 sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == REQUEST_SEND_MESSAGE && resultCode == Activity.RESULT_OK) {
+            if (getView() != null) {
+                Snackbar.make(getView(), R.string.message_sent, Snackbar.LENGTH_SHORT).show();
+            }
+        }
+        super.onActivityResult(requestCode, resultCode, data);
     }
 }
