@@ -9,9 +9,6 @@ import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -127,8 +124,7 @@ public class GroupsListFragment extends Fragment {
         }
 
         FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.action_button);
-        actionButton.s
-        actionButton.setImageResource(R.drawable.message);
+        actionButton.setIcon(R.drawable.message);
         actionButton.setOnClickListener((v) -> {
             SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(mFriendId);
             sendMessageDialogFragment.setTargetFragment(this, REQUEST_SEND_MESSAGE);
@@ -259,27 +255,6 @@ public class GroupsListFragment extends Fragment {
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.groups_list_fragment, menu);
-        MenuItem sendMessageMenuItem = menu.findItem(R.id.menu_message);
-        sendMessageMenuItem.setVisible(mFriendId != 0);
-        sendMessageMenuItem.setEnabled(mDataManager.getFetchingState() == finished);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_message:
-                SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(mFriendId);
-                sendMessageDialogFragment.setTargetFragment(this, REQUEST_SEND_MESSAGE);
-                sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_SEND_MESSAGE && resultCode == Activity.RESULT_OK) {
             if (getView() != null) {
@@ -288,4 +263,5 @@ public class GroupsListFragment extends Fragment {
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
+
 }

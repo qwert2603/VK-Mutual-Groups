@@ -1,19 +1,11 @@
 package com.alex.vkmutualgroups.fragments;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-
-import com.alex.vkmutualgroups.R;
-import com.alex.vkmutualgroups.activities.UserGroupListActivity;
-import com.alex.vkmutualgroups.data.DataManager;
-import com.getbase.floatingactionbutton.FloatingActionButton;
-
-import static com.alex.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
  * Расширяет FriendsListFragment.
@@ -50,16 +42,6 @@ public class ScrollCallbackableFriendsListFragment extends FriendsListFragment {
                 if (getActivity() instanceof Callbacks) {
                     ((Callbacks) getActivity()).onListViewScroll(view, firstVisibleItem, visibleItemCount, totalItemCount);
                 }
-            }
-        });
-
-        FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.action_button);
-        actionButton.setVisibility(View.VISIBLE);
-        actionButton.setImageResource(R.drawable.icon);
-        actionButton.setOnClickListener((v) -> {
-            if (DataManager.get(getActivity()).getFetchingState() == finished) {
-                Intent intent = new Intent(getActivity(), UserGroupListActivity.class);
-                startActivity(intent);
             }
         });
 

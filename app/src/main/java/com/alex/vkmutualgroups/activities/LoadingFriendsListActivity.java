@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +23,7 @@ import com.alex.vkmutualgroups.data.DataManager;
 import com.alex.vkmutualgroups.fragments.ScrollCallbackableFriendsListFragment;
 import com.alex.vkmutualgroups.photo.PhotoManager;
 import com.alex.vkmutualgroups.util.InternetUtils;
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
@@ -30,7 +32,6 @@ import com.vk.sdk.api.VKError;
 
 import static com.alex.vkmutualgroups.data.DataManager.FetchingState.finished;
 import static com.alex.vkmutualgroups.data.DataManager.FetchingState.notStarted;
-import static com.alex.vkmutualgroups.data.DataManager.FriendsSortState.byMutual;
 
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
@@ -42,9 +43,10 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
+    private CoordinatorLayout mCoordinatorLayout;
     private TextView mErrorTextView;
-
     private SwipeRefreshLayout mRefreshLayout;
+    private FloatingActionButton mActionButton;
 
     private boolean mIsFetchingErrorHappened = false;
 
@@ -52,16 +54,36 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_loading_friends_list);
-        setEmptyFragment();
 
         mDataManager = DataManager.get(this);
         mPhotoManager = PhotoManager.get(this);
+
+        mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
 
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
 
         mRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.refresh_layout);
         mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
         mRefreshLayout.setOnRefreshListener(this::refreshData);
+
+        mActionButton = (FloatingActionButton) findViewById(R.id.action_button);
+        mActionButton.setVisibility(View.VISIBLE);
+        mActionButton.setOnClickListener((v) -> {
+            if (mDataManager.getFetchingState() == finished) {
+                switch (mDataManager.getFriendsSortState()) {
+                    case byAlphabet:
+                        mDataManager.sortFriendsByMutual();
+                        mActionButton.setIcon(android.R.drawable.ic_menu_sort_by_size);
+                        break;
+                    case byMutual:
+                        mDataManager.sortFriendsByAlphabet();
+                        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                        break;
+                }
+                refreshScrollCallbackableFriendsListFragment();
+                invalidateOptionsMenu();
+            }
+        });
 
         if (VKSdk.isLoggedIn()) {
             if (mDataManager.getFetchingState() == notStarted) {
@@ -71,6 +93,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
             VKSdk.login(this, LOGIN_SCOPE);
         }
 
+        setEmptyFragment();
         updateUI();
     }
 
@@ -126,7 +149,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         Fragment fragment = fm.findFragmentById(R.id.fragment_container);
         if(fragment != null && fragment instanceof ScrollCallbackableFriendsListFragment) {
             ((ScrollCallbackableFriendsListFragment) fragment).notifyDataSetChanged();
-            Snackbar.make(mErrorTextView, R.string.error_message, Snackbar.LENGTH_SHORT)
+            Snackbar.make(mCoordinatorLayout, R.string.error_message, Snackbar.LENGTH_SHORT)
                     .setAction(R.string.refresh, (v) -> refreshData())
                     .show();
         } else {
@@ -145,6 +168,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     }
 
     private void loadFromDevice() {
+        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
         mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
         mIsFetchingErrorHappened = false;
         mDataManager.loadFromDevice(new DataManager.DataManagerListener() {
@@ -158,7 +182,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
             public void onCompleted(Void v) {
                 updateUI();
                 mRefreshLayout.setRefreshing(false);
-                Snackbar.make(mRefreshLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
@@ -176,6 +200,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     }
 
     private void fetchFromVK() {
+        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
         mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
         mIsFetchingErrorHappened = false;
         mDataManager.fetchFromVK(new DataManager.DataManagerListener() {
@@ -189,7 +214,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
             public void onCompleted(Void v) {
                 updateUI();
                 mRefreshLayout.setRefreshing(false);
-                Snackbar.make(mRefreshLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
@@ -214,13 +239,15 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         }
         else {
             mRefreshLayout.setRefreshing(false);
-            Snackbar.make(mErrorTextView, R.string.no_internet_connection, Snackbar.LENGTH_SHORT)
+            Snackbar.make(mCoordinatorLayout, R.string.no_internet_connection, Snackbar.LENGTH_SHORT)
                     .setAction(R.string.refresh, (v) -> refreshData())
                     .show();
         }
     }
 
     private void refreshScrollCallbackableFriendsListFragment() {
+        mActionButton.setVisibility(View.VISIBLE);
+
         FragmentManager fm = getFragmentManager();
         fm.beginTransaction()
                 .replace(R.id.fragment_container, ScrollCallbackableFriendsListFragment.newInstance(0))
@@ -228,6 +255,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     }
 
     private void setEmptyFragment() {
+        mActionButton.setVisibility(View.INVISIBLE);
+        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+
         FragmentManager fm = getFragmentManager();
 
         // чтобы mRefreshLayout нормально отображался.
@@ -243,12 +273,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
 
-        MenuItem sortMenuItem = menu.findItem(R.id.menu_sort);
-        sortMenuItem.setChecked(mDataManager.getFriendsSortState() == byMutual);
-
         MenuItem groupsListMenuItem = menu.findItem(R.id.menu_groups_list);
         if (mDataManager.getFetchingState() != finished) {
-            sortMenuItem.setEnabled(false);
             groupsListMenuItem.setEnabled(false);
         }
 
@@ -258,18 +284,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.menu_sort:
-                switch (mDataManager.getFriendsSortState()) {
-                    case byAlphabet:
-                        mDataManager.sortFriendsByMutual();
-                        break;
-                    case byMutual:
-                        mDataManager.sortFriendsByAlphabet();
-                        break;
-                }
-                refreshScrollCallbackableFriendsListFragment();
-                invalidateOptionsMenu();
-                return true;
             case R.id.menu_groups_list:
                 Intent intent = new Intent(this, UserGroupListActivity.class);
                 startActivity(intent);
