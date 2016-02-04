@@ -26,6 +26,7 @@ import com.alex.vkmutualgroups.activities.GroupsListActivity;
 import com.alex.vkmutualgroups.data.DataManager;
 import com.alex.vkmutualgroups.photo.ImageViewHolder;
 import com.alex.vkmutualgroups.photo.PhotoManager;
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
@@ -174,6 +175,10 @@ public class FriendsListFragment extends Fragment {
             mFriendAdapter = new FriendAdapter(mFriends);
             mListView.setAdapter(mFriendAdapter);
         }
+
+        FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.action_button);
+        actionButton.setVisibility(View.INVISIBLE);
+
         return view;
     }
 

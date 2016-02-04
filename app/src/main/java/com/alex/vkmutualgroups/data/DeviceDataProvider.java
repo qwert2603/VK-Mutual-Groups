@@ -113,7 +113,6 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
              */
             private volatile String mErrorMessage = null;
 
-            @SuppressWarnings("NullArgumentToVariableArgMethod")
             @Override
             protected Void doInBackground(Void... params) {
                 for (File file : folder.listFiles()) {
