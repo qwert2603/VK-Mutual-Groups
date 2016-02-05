@@ -21,7 +21,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".activities.UserGroupListActivity"
+        <activity android:name=".activities.UserGroupsListActivity"
             android:screenOrientation="portrait"
             android:parentActivityName=".activities.LoadingFriendsListActivity">
             <meta-data

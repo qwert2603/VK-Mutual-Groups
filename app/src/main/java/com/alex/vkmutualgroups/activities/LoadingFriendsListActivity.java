@@ -67,7 +67,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         mRefreshLayout.setOnRefreshListener(this::refreshData);
 
         mActionButton = (FloatingActionButton) findViewById(R.id.action_button);
-        mActionButton.setVisibility(View.VISIBLE);
         mActionButton.setOnClickListener((v) -> {
             if (mDataManager.getFetchingState() == finished) {
                 switch (mDataManager.getFriendsSortState()) {
@@ -81,7 +80,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
                         break;
                 }
                 refreshScrollCallbackableFriendsListFragment();
-                invalidateOptionsMenu();
             }
         });
 
@@ -285,7 +283,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_groups_list:
-                Intent intent = new Intent(this, UserGroupListActivity.class);
+                Intent intent = new Intent(this, UserGroupsListActivity.class);
                 startActivity(intent);
                 return true;
             case R.id.menu_logout:
