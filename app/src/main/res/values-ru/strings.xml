@@ -24,4 +24,6 @@
     <string name="no">нет</string>
     <string name="message_sent">Сообщение успешно отправлено.</string>
     <string name="message_sending_error">Сообщение НЕ было отправлено!</string>
+    <string name="no_friends">Нет друзей.</string>
+    <string name="no_groups">Нет групп.</string>
 </resources>

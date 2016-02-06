@@ -304,6 +304,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
         boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
+        b |= mDataManager.getUsersFriends().isEmpty();
         mRefreshLayout.setEnabled(b);
     }
 }

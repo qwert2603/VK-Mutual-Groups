@@ -27,7 +27,14 @@ public class UserGroupsListActivity extends NavigableActivity {
         mDataManager = DataManager.get(this);
 
         mActionButton = (FloatingActionButton) findViewById(R.id.action_button);
-        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+        switch (mDataManager.getGroupsSortState()) {
+            case byDefault:
+                mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                break;
+            case byFriends:
+                mActionButton.setIcon(android.R.drawable.ic_menu_sort_by_size);
+                break;
+        }
         mActionButton.setOnClickListener((v) -> {
             switch (mDataManager.getGroupsSortState()) {
                 case byDefault:

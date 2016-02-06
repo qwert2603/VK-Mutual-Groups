@@ -67,6 +67,7 @@ public class FriendsListFragment extends Fragment {
     private FriendAdapter mFriendAdapter;
 
     private VKUsersArray mFriends;
+    private int mGroupId;
 
     protected AbsListView.OnScrollListener mListViewOnScrollListener = new AbsListView.OnScrollListener() {
         @Override
@@ -90,9 +91,9 @@ public class FriendsListFragment extends Fragment {
         setRetainInstance(true);
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
-        int groupId = getArguments().getInt(groupIdKey);
-        if (groupId != 0) {
-            VKApiCommunityFull group = mDataManager.getGroupById(groupId);
+        mGroupId = getArguments().getInt(groupIdKey);
+        if (mGroupId != 0) {
+            VKApiCommunityFull group = mDataManager.getGroupById(mGroupId);
             mFriends = mDataManager.getFriendsInGroup(group);
         }
         else {
@@ -164,7 +165,7 @@ public class FriendsListFragment extends Fragment {
         });
 
         TextView no_friends_text_view = (TextView) view.findViewById(R.id.empty_list);
-        no_friends_text_view.setText(R.string.no_friends_in_group);
+        no_friends_text_view.setText(mGroupId == 0 ? R.string.no_friends : R.string.no_friends_in_group);
 
         if (mFriends == null || mFriends.isEmpty()) {
             mListView.setVisibility(View.INVISIBLE);

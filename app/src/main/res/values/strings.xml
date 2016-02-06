@@ -7,7 +7,9 @@
     <string name="refresh">Refresh</string>
     <string name="error_message">Loading failed!\nYou can try again.</string>
     <string name="friends">%d frn.</string>
+    <string name="no_groups">No groups.</string>
     <string name="no_mutual_groups">No mutual groups.</string>
+    <string name="no_friends">No friends.</string>
     <string name="no_friends_in_group">No friends in group.</string>
     <string name="group_list">My Groups</string>
     <string name="to_the_begin">To the begin</string>

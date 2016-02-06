@@ -112,7 +112,7 @@ public class GroupsListFragment extends Fragment {
         });
 
         TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
-        no_commons_text_view.setText(R.string.no_mutual_groups);
+        no_commons_text_view.setText(mFriendId == 0 ? R.string.no_groups : R.string.no_mutual_groups);
 
         if (mGroups == null || mGroups.isEmpty()) {
             mListView.setVisibility(View.INVISIBLE);

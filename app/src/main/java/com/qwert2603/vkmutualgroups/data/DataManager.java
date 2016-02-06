@@ -135,10 +135,11 @@ public class DataManager {
     /**
      * Друзья пользователя, отсортированные в соответствии с {@link #mFriendsSortState}.
      */
+    @NonNull
     public VKUsersArray getUsersFriends() {
         switch (mFriendsSortState) {
             case notSorted:
-                return null;
+                return new VKUsersArray();
             case byAlphabet:
                 return mUsersFriendsByAlphabet;
             case byMutual:
@@ -150,10 +151,11 @@ public class DataManager {
     /**
      * Группы пользователя, отсортированные в соответствии с {@link #mGroupsSortState}.
      */
+    @NonNull
     public VKApiCommunityArray getUsersGroups() {
         switch (mGroupsSortState) {
             case notSorted:
-                return null;
+                return new VKApiCommunityArray();
             case byDefault:
                 return mUsersGroupsByDefault;
             case byFriends:
