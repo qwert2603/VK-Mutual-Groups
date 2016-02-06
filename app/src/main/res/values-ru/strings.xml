@@ -6,12 +6,10 @@
     <string name="refresh">Обновить</string>
     <string name="error_message">Ошибка загрузки!\nВы можете попытаться снова.</string>
     <string name="friends">%d дрг.</string>
-    <string name="sort_by_mutual">Сортировать по общим</string>
     <string name="no_mutual_groups">Нет общих групп.</string>
     <string name="no_friends_in_group">Нет друзей в группе.</string>
     <string name="group_list">Мои Группы</string>
     <string name="to_the_begin">В начало</string>
-    <string name="sort_by_friends">Сортировать по друзьям</string>
     <string name="my_groups">Мои группы</string>
     <string name="loading_completed">Загрузка завершена!</string>
     <string name="no_internet_connection">Нет подключения к интернету!</string>

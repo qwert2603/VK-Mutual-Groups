@@ -17,7 +17,7 @@
         android:layout_marginLeft="2dp"
         android:layout_weight="1"
         android:textSize="18sp"
-        android:textColor="@color/title"
+        android:textColor="@color/item_title"
         android:text="Ночная Птица Ночная Птица Ночная"/>
 
     <TextView android:id="@+id/common_count"
@@ -27,7 +27,7 @@
         android:layout_marginStart="12dp"
         android:layout_marginLeft="12dp"
         android:textSize="18sp"
-        android:textColor="@color/commons"
+        android:textColor="@color/mutuals"
         android:text="26 frn"/>
 
 </LinearLayout>

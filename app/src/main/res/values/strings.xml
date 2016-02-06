@@ -7,12 +7,10 @@
     <string name="refresh">Refresh</string>
     <string name="error_message">Loading failed!\nYou can try again.</string>
     <string name="friends">%d frn.</string>
-    <string name="sort_by_mutual">Sort by mutual</string>
     <string name="no_mutual_groups">No mutual groups.</string>
     <string name="no_friends_in_group">No friends in group.</string>
     <string name="group_list">My Groups</string>
     <string name="to_the_begin">To the begin</string>
-    <string name="sort_by_friends">Sort by friends</string>
     <string name="my_groups">My groups</string>
     <string name="loading_completed">Loading completed!</string>
     <string name="no_internet_connection">No internet connection!</string>
@@ -23,7 +21,6 @@
     <string name="send_dialog_message_suffix_1">" mutual group"</string>
     <string name="send_dialog_message_suffix_2">" mutual groups"</string>
     <string name="send_dialog_message_suffix_5">" mutual groups"</string>
-    <string name="dot" translatable="false">"."</string>
     <string name="cant_send_message">You can\'t write to this user.</string>
     <string name="ok" translatable="false">OK</string>
     <string name="no">no</string>

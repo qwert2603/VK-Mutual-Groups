@@ -1,4 +1,4 @@
-package com.alex.vkmutualgroups;
+package com.qwert2603.vkmutualgroups;
 
 import org.junit.Test;
 

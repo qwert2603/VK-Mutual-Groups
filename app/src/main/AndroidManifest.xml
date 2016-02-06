@@ -1,17 +1,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.alex.vkmutualgroups">
+    package="com.qwert2603.vkmutualgroups">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:name=".Application"
+        android:name="com.qwert2603.vkmutualgroups.Application"
         android:allowBackup="true"
         android:icon="@drawable/icon"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".activities.LoadingFriendsListActivity"
+        <activity android:name="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity"
             android:screenOrientation="portrait"
             android:launchMode="singleTop">
             <intent-filter>
@@ -21,28 +21,28 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".activities.UserGroupsListActivity"
+        <activity android:name="com.qwert2603.vkmutualgroups.activities.UserGroupsListActivity"
             android:screenOrientation="portrait"
-            android:parentActivityName=".activities.LoadingFriendsListActivity">
+            android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".activities.LoadingFriendsListActivity" />
+                android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
         </activity>
 
-        <activity android:name=".activities.GroupsListActivity"
+        <activity android:name="com.qwert2603.vkmutualgroups.activities.GroupsListActivity"
             android:screenOrientation="portrait"
-            android:parentActivityName=".activities.LoadingFriendsListActivity">
+            android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".activities.LoadingFriendsListActivity" />
+                android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
         </activity>
 
-        <activity android:name=".activities.FriendsListActivity"
+        <activity android:name="com.qwert2603.vkmutualgroups.activities.FriendsListActivity"
             android:screenOrientation="portrait"
-            android:parentActivityName=".activities.LoadingFriendsListActivity">
+            android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value=".activities.LoadingFriendsListActivity" />
+                android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
         </activity>
     </application>
 
