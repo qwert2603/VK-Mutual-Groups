@@ -26,7 +26,7 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:23.1.1'
+    compile "com.vk:androidsdk:+"
     compile 'com.android.support:design:23.1.1'
     compile 'com.getbase:floatingactionbutton:1.10.1'
-    compile project(':vksdk_library')
 }
