@@ -2,14 +2,16 @@ package com.alex.vkmutualgroups.activities;
 
 import android.app.FragmentManager;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 
 import com.alex.vkmutualgroups.R;
 import com.alex.vkmutualgroups.data.DataManager;
 import com.alex.vkmutualgroups.fragments.GroupsListFragment;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 
-public class UserGroupsListActivity extends AppCompatActivity {
+/**
+ * Activity, содержащая список групп пользователя.
+ */
+public class UserGroupsListActivity extends NavigableActivity {
 
     private DataManager mDataManager;
 

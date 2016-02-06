@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="12dp"
-        app:fab_colorNormal="@color/colorAccent"
+        app:fab_colorNormal="@color/colorAccentTrans"
         app:fab_colorPressed="@color/colorAccent"
         app:layout_behavior="com.alex.vkmutualgroups.behaviors.FloatingActionButtonBehavior"/>
 

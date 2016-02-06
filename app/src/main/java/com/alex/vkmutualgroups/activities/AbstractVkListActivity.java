@@ -13,7 +13,7 @@ import com.alex.vkmutualgroups.R;
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
  */
-public abstract class AbstractVkListActivity extends AppCompatActivity {
+public abstract class AbstractVkListActivity extends NavigableActivity {
 
     protected abstract String getActionBarTitle();
     protected abstract Fragment getListFragment();
@@ -23,7 +23,6 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_fragment);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
             getSupportActionBar().setTitle(getActionBarTitle());
         }
         FragmentManager fm = getFragmentManager();
@@ -31,26 +30,6 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         if (fragment == null) {
             fragment = getListFragment();
             fm.beginTransaction().add(R.id.fragment_container, fragment).commitAllowingStateLoss();
-        }
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.list_activity, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                finish();
-                return true;
-            case R.id.menu_to_the_begin:
-                NavUtils.navigateUpFromSameTask(this);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
         }
     }
 
