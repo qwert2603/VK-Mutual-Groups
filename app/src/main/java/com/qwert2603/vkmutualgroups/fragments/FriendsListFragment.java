@@ -164,17 +164,13 @@ public class FriendsListFragment extends Fragment {
             }
         });
 
-        TextView no_friends_text_view = (TextView) view.findViewById(R.id.empty_list);
+        TextView no_friends_text_view = (TextView) view.findViewById(android.R.id.empty);
         no_friends_text_view.setText(mGroupId == 0 ? R.string.no_friends : R.string.no_friends_in_group);
 
-        if (mFriends == null || mFriends.isEmpty()) {
-            mListView.setVisibility(View.INVISIBLE);
-        }
-        else {
-            no_friends_text_view.setVisibility(View.INVISIBLE);
-            mFriendAdapter = new FriendAdapter(mFriends);
-            mListView.setAdapter(mFriendAdapter);
-        }
+        mListView.setEmptyView(no_friends_text_view);
+
+        mFriendAdapter = new FriendAdapter(mFriends);
+        mListView.setAdapter(mFriendAdapter);
 
         FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.action_button);
         actionButton.setVisibility(View.INVISIBLE);

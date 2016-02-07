@@ -111,17 +111,13 @@ public class GroupsListFragment extends Fragment {
             }
         });
 
-        TextView no_commons_text_view = (TextView) view.findViewById(R.id.empty_list);
+        TextView no_commons_text_view = (TextView) view.findViewById(android.R.id.empty);
         no_commons_text_view.setText(mFriendId == 0 ? R.string.no_groups : R.string.no_mutual_groups);
 
-        if (mGroups == null || mGroups.isEmpty()) {
-            mListView.setVisibility(View.INVISIBLE);
-        }
-        else {
-            no_commons_text_view.setVisibility(View.INVISIBLE);
-            mGroupsAdapter = new GroupAdapter(mGroups);
-            mListView.setAdapter(mGroupsAdapter);
-        }
+        mListView.setEmptyView(no_commons_text_view);
+
+        mGroupsAdapter = new GroupAdapter(mGroups);
+        mListView.setAdapter(mGroupsAdapter);
 
         FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.action_button);
         actionButton.setIcon(R.drawable.message);

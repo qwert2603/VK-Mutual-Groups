@@ -18,12 +18,12 @@ import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.ScrollCallbackableFriendsListFragment;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
@@ -48,12 +48,27 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     private SwipeRefreshLayout mRefreshLayout;
     private FloatingActionButton mActionButton;
 
+    /**
+     * Пустое View для нормального отображения mRefreshLayout.
+     */
+    private View mFakeView;
+
     private boolean mIsFetchingErrorHappened = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_loading_friends_list);
+
+        // Чтобы mRefreshLayout нормально отображался.
+        // Просто пустой фрагмент для фона.
+        ListFragment fragment = new ListFragment();
+        fragment.setListAdapter(new ArrayAdapter<>(this, 0, new String[]{}));
+        getFragmentManager().beginTransaction()
+                .replace(R.id.fake_fragment_container, fragment)
+                .commitAllowingStateLoss();
+
+        mFakeView = findViewById(R.id.fake_fragment_container);
 
         mDataManager = DataManager.get(this);
         mPhotoManager = PhotoManager.get(this);
@@ -91,7 +106,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
             VKSdk.login(this, LOGIN_SCOPE);
         }
 
-        setEmptyFragment();
+        removeScrollCallbackableFriendsListFragment();
         updateUI();
     }
 
@@ -120,7 +135,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         invalidateOptionsMenu();
         mErrorTextView.setVisibility(View.INVISIBLE);
         if (! VKSdk.isLoggedIn()) {
-            setEmptyFragment();
+            removeScrollCallbackableFriendsListFragment();
             return;
         }
         if (mIsFetchingErrorHappened) {
@@ -128,7 +143,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         } else {
             switch (mDataManager.getFetchingState()) {
                 case notStarted:
-                    setEmptyFragment();
+                    removeScrollCallbackableFriendsListFragment();
                     break;
                 case loadingFriends:
                     break;
@@ -143,8 +158,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     }
 
     private void onFetchingErrorUI() {
-        FragmentManager fm = getFragmentManager();
-        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        Fragment fragment = getFragmentManager().findFragmentById(R.id.fragment_container);
         if(fragment != null && fragment instanceof ScrollCallbackableFriendsListFragment) {
             ((ScrollCallbackableFriendsListFragment) fragment).notifyDataSetChanged();
             Snackbar.make(mCoordinatorLayout, R.string.error_message, Snackbar.LENGTH_SHORT)
@@ -156,8 +170,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     }
 
     private void notifyFragmentDataSetChanged() {
-        FragmentManager fm = getFragmentManager();
-        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        Fragment fragment = getFragmentManager().findFragmentById(R.id.fragment_container);
         if(fragment != null && fragment instanceof ScrollCallbackableFriendsListFragment) {
             ((ScrollCallbackableFriendsListFragment) fragment).notifyDataSetChanged();
         } else {
@@ -246,25 +259,27 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     private void refreshScrollCallbackableFriendsListFragment() {
         mActionButton.setVisibility(View.VISIBLE);
 
-        FragmentManager fm = getFragmentManager();
-        fm.beginTransaction()
+        mFakeView.setVisibility(mDataManager.getUsersFriends().isEmpty() ? View.VISIBLE : View.INVISIBLE);
+
+        getFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, ScrollCallbackableFriendsListFragment.newInstance(0))
                 .commitAllowingStateLoss();
     }
 
-    private void setEmptyFragment() {
+    private void removeScrollCallbackableFriendsListFragment() {
         mActionButton.setVisibility(View.INVISIBLE);
         mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
 
+        mFakeView.setVisibility(View.VISIBLE);
+
         FragmentManager fm = getFragmentManager();
 
-        // чтобы mRefreshLayout нормально отображался.
-        // Просто пустой фрагмент для фона.
-        ListFragment fragment = new ListFragment();
-        fragment.setListAdapter(new ArrayAdapter<>(this, 0, new String[]{}));
-        fm.beginTransaction()
-                .replace(R.id.fragment_container, fragment)
-                .commitAllowingStateLoss();
+        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
+        if (fragment != null) {
+            fm.beginTransaction()
+                    .remove(fragment)
+                    .commitAllowingStateLoss();
+        }
     }
 
     @Override
