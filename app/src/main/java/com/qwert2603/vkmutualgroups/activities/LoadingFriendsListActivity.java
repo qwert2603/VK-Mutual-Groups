@@ -30,7 +30,9 @@ import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKError;
 
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadingFriends;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notStarted;
 
 /**
@@ -244,6 +246,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
     }
 
     private void refreshData() {
+        if (mDataManager.getFetchingState() == loadingFriends || mDataManager.getFetchingState() == calculatingMutual) {
+            return;
+        }
         if (InternetUtils.isInternetConnected(this)) {
             fetchFromVK();
             invalidateOptionsMenu();
