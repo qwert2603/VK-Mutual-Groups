@@ -107,11 +107,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
 
 
         mActionButton.setIcon(R.drawable.message);
-        mActionButton.setOnClickListener((v) -> {
-            SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(mFriendId);
-            sendMessageDialogFragment.setTargetFragment(this, REQUEST_SEND_MESSAGE);
-            sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
-        });
+        mActionButton.setOnClickListener((v) -> sendMessage(mFriendId));
         if (mFriendId == 0 || mDataManager.getFetchingState() != finished) {
             mActionButton.setVisibility(View.INVISIBLE);
         }

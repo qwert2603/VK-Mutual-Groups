@@ -33,14 +33,14 @@ import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 /**
  * Фрагмент для отображения списка друзей или групп.
  * Автоматически загружает фото для видимых элементов списка при остановке прокрутки.
- * Показывает Snackbar если сообщение было успешно отправлено.
+ * Позволяет запускать диалог отправки сообщения и показывает Snackbar, если сообщение было успешно отправлено.
  */
 public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable> extends Fragment {
 
     @SuppressWarnings("unused")
-    private static final String TAG = "AbstractVkListFragment";
+    public static final String TAG = "AbstractVkListFragment";
 
-    protected static final int REQUEST_SEND_MESSAGE = 1;
+    private static final int REQUEST_SEND_MESSAGE = 1;
 
     public interface Callbacks {
         @NonNull
@@ -177,6 +177,12 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }
+    }
+
+    public void sendMessage(int friendId) {
+        SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(friendId);
+        sendMessageDialogFragment.setTargetFragment(this, REQUEST_SEND_MESSAGE);
+        sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
     }
 
     @Override

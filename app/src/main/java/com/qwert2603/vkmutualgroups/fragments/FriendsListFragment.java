@@ -139,9 +139,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                 switch (item.getItemId()) {
                     case R.id.menu_message:
                         int friendId = mFriends.get(mActionedPosition).id;
-                        SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(friendId);
-                        sendMessageDialogFragment.setTargetFragment(FriendsListFragment.this, REQUEST_SEND_MESSAGE);
-                        sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
+                        sendMessage(friendId);
                         mode.finish();
                         return true;
                     default:
