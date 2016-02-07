@@ -7,14 +7,12 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
-import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
+import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
  */
-public abstract class AbstractVkListActivity extends NavigableActivity
-        implements FriendsListFragment.Callbacks, GroupsListFragment.Callbacks {
+public abstract class AbstractVkListActivity extends NavigableActivity implements AbstractVkListFragment.Callbacks {
 
     protected abstract String getActionBarTitle();
     protected abstract Fragment getListFragment();

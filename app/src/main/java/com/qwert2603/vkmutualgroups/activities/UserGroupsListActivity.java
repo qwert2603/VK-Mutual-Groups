@@ -7,13 +7,14 @@ import android.support.design.widget.CoordinatorLayout;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
+import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 
 /**
  * Activity, содержащая список групп пользователя.
  */
-public class UserGroupsListActivity extends NavigableActivity implements GroupsListFragment.Callbacks {
+public class UserGroupsListActivity extends NavigableActivity implements AbstractVkListFragment.Callbacks {
 
     private DataManager mDataManager;
 

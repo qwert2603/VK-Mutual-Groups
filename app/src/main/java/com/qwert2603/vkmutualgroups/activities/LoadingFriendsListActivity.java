@@ -22,7 +22,7 @@ import android.widget.Toast;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
-import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
+import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.ScrollCallbackableFriendsListFragment;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
@@ -41,7 +41,7 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notSta
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
  */
 public class LoadingFriendsListActivity extends AppCompatActivity
-        implements ScrollCallbackableFriendsListFragment.Callbacks, FriendsListFragment.Callbacks {
+        implements ScrollCallbackableFriendsListFragment.Callbacks, AbstractVkListFragment.Callbacks {
 
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 

@@ -31,14 +31,16 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 
 /**
- * todo comment
+ * Фрагмент для отображения списка друзей или групп.
+ * Автоматически загружает фото для видимых элементов списка при остановке прокрутки.
+ * Показывает Snackbar если сообщение было успешно отправлено.
  */
 public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable> extends Fragment {
 
     @SuppressWarnings("unused")
     private static final String TAG = "AbstractVkListFragment";
 
-    private static final int REQUEST_SEND_MESSAGE = 1;
+    protected static final int REQUEST_SEND_MESSAGE = 1;
 
     public interface Callbacks {
         @NonNull
