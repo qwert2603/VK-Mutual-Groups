@@ -1,0 +1,8 @@
+<resources>
+
+    <plurals name="we_have_26_mutual_groups">
+        <item quantity="one">We have %d mutual group.</item>
+        <item quantity="other">We have %d mutual groups.</item>
+    </plurals>
+
+</resources>

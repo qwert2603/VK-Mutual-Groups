@@ -1,0 +1,10 @@
+<resources>
+    
+    <plurals name="we_have_26_mutual_groups">
+        <item quantity="one">У нас %d общая группа.</item>
+        <item quantity="few">У нас %d общие группы.</item>
+        <item quantity="many">У нас %d общих групп.</item>
+        <item quantity="other">У нас %d общих групп.</item>
+    </plurals>
+
+</resources>

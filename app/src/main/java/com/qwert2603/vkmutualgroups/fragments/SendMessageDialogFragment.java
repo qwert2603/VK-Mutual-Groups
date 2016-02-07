@@ -84,9 +84,7 @@ public class SendMessageDialogFragment extends DialogFragment {
 
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);
 
-        String text = getString(R.string.send_dialog_message_prefix);
-        text += (mutual != 0 ? mutual : getString(R.string.no));
-        text += getMessageSuffix(mutual);
+        String text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);
         editText.setText(text);
 
         Button cancelButton = (Button) view.findViewById(R.id.cancel_button);
@@ -131,22 +129,5 @@ public class SendMessageDialogFragment extends DialogFragment {
         return new AlertDialog.Builder(getActivity())
                 .setView(view)
                 .create();
-    }
-
-    /**
-     * Окончание слова (например, существительного) в зависимости от кол-ва.
-     */
-    private String getMessageSuffix(int count) {
-        count = count % 100;
-        if (count % 10 == 0 || count / 10 == 1) {
-            return getString(R.string.send_dialog_message_suffix_5);   // -
-        }
-        if (count % 10 == 1) {
-            return getString(R.string.send_dialog_message_suffix_1);   // а
-        }
-        if (count % 10 >= 2 && count % 10 <= 4) {
-            return getString(R.string.send_dialog_message_suffix_2);   // ы
-        }
-        return getString(R.string.send_dialog_message_suffix_5);   // -
     }
 }

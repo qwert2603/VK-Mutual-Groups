@@ -19,10 +19,6 @@
     <string name="send_message">Send message</string>
     <string name="cancel">Cancel</string>
     <string name="send">Send</string>
-    <string name="send_dialog_message_prefix">"We have "</string>
-    <string name="send_dialog_message_suffix_1">" mutual group"</string>
-    <string name="send_dialog_message_suffix_2">" mutual groups"</string>
-    <string name="send_dialog_message_suffix_5">" mutual groups"</string>
     <string name="cant_send_message">You can\'t write to this user.</string>
     <string name="ok" translatable="false">OK</string>
     <string name="no">no</string>
