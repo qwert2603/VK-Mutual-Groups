@@ -79,12 +79,15 @@ public class SendMessageDialogFragment extends DialogFragment {
 
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_write, null);
 
-        TextView friendName = (TextView) view.findViewById(R.id.friend_name_text_view);
-        friendName.setText(getString(R.string.friend_name, mFriend.first_name, mFriend.last_name));
+        TextView friendNameTextView = (TextView) view.findViewById(R.id.friend_name_text_view);
+        friendNameTextView.setText(getString(R.string.friend_name, mFriend.first_name, mFriend.last_name));
 
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);
 
         String text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);
+        if (mutual == 0) {
+            text = text.replace("0", getString(R.string.no));
+        }
         editText.setText(text);
 
         Button cancelButton = (Button) view.findViewById(R.id.cancel_button);
