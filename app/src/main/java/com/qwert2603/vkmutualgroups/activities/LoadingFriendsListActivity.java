@@ -5,6 +5,7 @@ import android.app.FragmentManager;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -21,6 +22,7 @@ import android.widget.Toast;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
+import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.qwert2603.vkmutualgroups.fragments.ScrollCallbackableFriendsListFragment;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
@@ -38,7 +40,8 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notSta
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
  */
-public class LoadingFriendsListActivity extends AppCompatActivity implements ScrollCallbackableFriendsListFragment.Callbacks {
+public class LoadingFriendsListActivity extends AppCompatActivity
+        implements ScrollCallbackableFriendsListFragment.Callbacks, FriendsListFragment.Callbacks {
 
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 
@@ -326,5 +329,11 @@ public class LoadingFriendsListActivity extends AppCompatActivity implements Scr
         boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
         b |= mDataManager.getUsersFriends().isEmpty();
         mRefreshLayout.setEnabled(b);
+    }
+
+    @NonNull
+    @Override
+    public CoordinatorLayout getCoordinatorLayout() {
+        return mCoordinatorLayout;
     }
 }

@@ -2,6 +2,8 @@ package com.qwert2603.vkmutualgroups.activities;
 
 import android.app.FragmentManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.design.widget.CoordinatorLayout;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
@@ -11,7 +13,7 @@ import com.getbase.floatingactionbutton.FloatingActionButton;
 /**
  * Activity, содержащая список групп пользователя.
  */
-public class UserGroupsListActivity extends NavigableActivity {
+public class UserGroupsListActivity extends NavigableActivity implements GroupsListFragment.Callbacks {
 
     private DataManager mDataManager;
 
@@ -55,5 +57,11 @@ public class UserGroupsListActivity extends NavigableActivity {
     private void refreshGroupsListFragment() {
         FragmentManager fm = getFragmentManager();
         fm.beginTransaction().replace(R.id.fragment_container, GroupsListFragment.newInstance(0)).commitAllowingStateLoss();
+    }
+
+    @NonNull
+    @Override
+    public CoordinatorLayout getCoordinatorLayout() {
+        return (CoordinatorLayout) findViewById(R.id.coordinator_layout);
     }
 }

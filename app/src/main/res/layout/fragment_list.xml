@@ -1,7 +1,7 @@
-<android.support.design.widget.CoordinatorLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/coordinator_layout"
+    android:id="@+id/frame_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -17,13 +17,13 @@
         android:textColor="@android:color/black" />
 
     <com.getbase.floatingactionbutton.FloatingActionButton
-        android:id="@+id/action_button"
+        android:id="@+id/fragment_list_action_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="12dp"
+        android:layout_margin="@dimen/floatingActionButtonMargin"
         app:fab_colorNormal="@color/floatingActionButton"
         app:fab_colorPressed="@color/floatingActionButton"
         app:layout_behavior="com.qwert2603.vkmutualgroups.behaviors.FloatingActionButtonBehavior"/>
 
-</android.support.design.widget.CoordinatorLayout>
+</FrameLayout>

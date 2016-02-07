@@ -5,9 +5,12 @@ import android.app.Fragment;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,6 +23,7 @@ import android.widget.TextView;
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.activities.FriendsListActivity;
+import com.qwert2603.vkmutualgroups.behaviors.FloatingActionButtonBehavior;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.ImageViewHolder;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
@@ -28,6 +32,7 @@ import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
@@ -53,6 +58,11 @@ public class GroupsListFragment extends Fragment {
         args.putInt(friendIdKey, friendId);
         result.setArguments(args);
         return result;
+    }
+
+    public interface Callbacks {
+        @NonNull
+        CoordinatorLayout getCoordinatorLayout();
     }
 
     private DataManager mDataManager;
@@ -119,7 +129,7 @@ public class GroupsListFragment extends Fragment {
         mGroupsAdapter = new GroupAdapter(mGroups);
         mListView.setAdapter(mGroupsAdapter);
 
-        FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.action_button);
+        FloatingActionButton actionButton = (FloatingActionButton) view.findViewById(R.id.fragment_list_action_button);
         actionButton.setIcon(R.drawable.message);
         actionButton.setOnClickListener((v) -> {
             SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(mFriendId);
@@ -129,6 +139,17 @@ public class GroupsListFragment extends Fragment {
         if (mFriendId == 0 || mDataManager.getFetchingState() != finished) {
             actionButton.setVisibility(View.INVISIBLE);
         }
+
+        // Прикрепляем actionButton к CoordinatorLayout активности, чтобы actionButton смещался при появлении Snackbar.
+        CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
+        layoutParams.gravity = Gravity.END | Gravity.BOTTOM;
+        int margin = (int) getResources().getDimension(R.dimen.floatingActionButtonMargin);
+        layoutParams.bottomMargin = layoutParams.rightMargin = margin;
+        layoutParams.setBehavior(new FloatingActionButtonBehavior(getActivity(), null));
+
+        ((ViewGroup) actionButton.getParent()).removeView(actionButton);
+        CoordinatorLayout coordinatorLayout = ((Callbacks) getActivity()).getCoordinatorLayout();
+        coordinatorLayout.addView(actionButton, layoutParams);
 
         return view;
     }
@@ -254,7 +275,8 @@ public class GroupsListFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_SEND_MESSAGE && resultCode == Activity.RESULT_OK) {
             if (getView() != null) {
-                Snackbar.make(getView(), R.string.message_sent, Snackbar.LENGTH_SHORT).show();
+                Snackbar.make(((Callbacks) getActivity()).getCoordinatorLayout(),
+                        R.string.message_sent, Snackbar.LENGTH_SHORT).show();
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
