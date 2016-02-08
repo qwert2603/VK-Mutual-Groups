@@ -18,7 +18,9 @@ import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
+import com.vk.sdk.api.model.VKUsersArray;
 
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
@@ -79,12 +81,17 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
         mFriendId = getArguments().getInt(friendIdKey);
+
         if (mFriendId != 0) {
             VKApiUserFull friend = mDataManager.getFriendById(mFriendId);
             mGroups = mDataManager.getGroupsMutualWithFriend(friend);
         }
         else {
             mGroups = mDataManager.getUsersGroups();
+        }
+
+        if (mGroups == null) {
+            mGroups = new VKApiCommunityArray();
         }
     }
 
@@ -127,7 +134,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
                 ViewHolder viewHolder = new ViewHolder();
                 viewHolder.mPhotoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
                 viewHolder.mTitleTextView = (TextView) convertView.findViewById(R.id.item_title);
-                viewHolder.mCommonsTextView = (TextView) convertView.findViewById(R.id.common_count);
+                viewHolder.mMutualsTextView = (TextView) convertView.findViewById(R.id.common_count);
                 convertView.setTag(viewHolder);
             }
 
@@ -135,16 +142,26 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
             ViewHolder viewHolder = (ViewHolder) convertView.getTag();
 
             viewHolder.mPosition = position;
-            if (mPhotoManager.getPhoto(group.photo_50) != null) {
-                viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(group.photo_50));
+            if (mPhotoManager.getPhoto(getPhotoURL(position)) != null) {
+                viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(getPhotoURL(position)));
             }
             else {
                 viewHolder.mPhotoImageView.setImageBitmap(null);
-                //mPhotoManager.setPhotoToImageViewHolder(viewHolder, group.photo_50);
+                //mPhotoManager.setPhotoToImageViewHolder(viewHolder, getPhotoURL(position));
             }
 
             viewHolder.mTitleTextView.setText(group.name);
-            viewHolder.mCommonsTextView.setText(getString(R.string.friends, mDataManager.getFriendsInGroup(group).size()));
+
+            if (mDataManager.getFetchingState() == calculatingMutual || mDataManager.getFetchingState() == finished) {
+                VKUsersArray friends = mDataManager.getFriendsInGroup(group);
+                if (friends != null) {
+                    viewHolder.mMutualsTextView.setText(getString(R.string.friends, friends.size()));
+                } else {
+                    viewHolder.mMutualsTextView.setText("");
+                }
+            } else {
+                viewHolder.mMutualsTextView.setText("");
+            }
 
             return convertView;
         }
@@ -154,7 +171,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         int mPosition;
         ImageView mPhotoImageView;
         TextView mTitleTextView;
-        TextView mCommonsTextView;
+        TextView mMutualsTextView;
 
         @Override
         public int getPosition() {

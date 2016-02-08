@@ -22,6 +22,7 @@ import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
+import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 /**
@@ -54,16 +55,20 @@ public class SendMessageDialogFragment extends DialogFragment {
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        return mFriend.can_write_private_message ? getDialogComposeSendMessage() : getDialogCantWrite();
-
+        if (mFriend == null) {
+            Log.e(TAG, "onCreateDialog ## mFriend == null");
+        }
+        return (mFriend != null) && (mFriend.can_write_private_message)
+                ? getDialogComposeSendMessage() : getDialogWithText(R.string.cant_send_message);
     }
 
     /**
-     * Диалог-фрагмент, сообщающий о том, что нельзя писать этому другу.
+     * Диалог-фрагмент, сообщающий о чем-либо.
      */
     @SuppressLint("InflateParams")
-    private Dialog getDialogCantWrite() {
+    private Dialog getDialogWithText(int stringRes) {
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_cant_write, null);
+        ((TextView) view.findViewById(R.id.text_view)).setText(stringRes);
         return new AlertDialog.Builder(getActivity())
                 .setView(view)
                 .setPositiveButton(R.string.ok, null)
@@ -75,18 +80,20 @@ public class SendMessageDialogFragment extends DialogFragment {
      */
     @SuppressLint("InflateParams")
     private Dialog getDialogComposeSendMessage() {
-        int mutual = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend).size();
-
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_write, null);
 
         TextView friendNameTextView = (TextView) view.findViewById(R.id.friend_name_text_view);
         friendNameTextView.setText(getString(R.string.friend_name, mFriend.first_name, mFriend.last_name));
 
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);
-
-        String text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);
-        if (mutual == 0) {
-            text = text.replace("0", getString(R.string.no));
+        String text = "";
+        VKApiCommunityArray groupsMutualWithFriend = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend);
+        if (groupsMutualWithFriend != null) {
+            int mutual = groupsMutualWithFriend.size();
+            text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);
+            if (mutual == 0) {
+                text = text.replace("0", getString(R.string.no));
+            }
         }
         editText.setText(text);
 

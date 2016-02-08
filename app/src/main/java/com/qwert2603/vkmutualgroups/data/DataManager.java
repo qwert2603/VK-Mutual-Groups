@@ -2,7 +2,7 @@ package com.qwert2603.vkmutualgroups.data;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
@@ -135,11 +135,11 @@ public class DataManager {
     /**
      * Друзья пользователя, отсортированные в соответствии с {@link #mFriendsSortState}.
      */
-    @NonNull
+    @Nullable
     public VKUsersArray getUsersFriends() {
         switch (mFriendsSortState) {
             case notSorted:
-                return new VKUsersArray();
+                return null;
             case byAlphabet:
                 return mUsersFriendsByAlphabet;
             case byMutual:
@@ -151,11 +151,11 @@ public class DataManager {
     /**
      * Группы пользователя, отсортированные в соответствии с {@link #mGroupsSortState}.
      */
-    @NonNull
+    @Nullable
     public VKApiCommunityArray getUsersGroups() {
         switch (mGroupsSortState) {
             case notSorted:
-                return new VKApiCommunityArray();
+                return null;
             case byDefault:
                 return mUsersGroupsByDefault;
             case byFriends:
@@ -167,22 +167,23 @@ public class DataManager {
     /**
      * Группы, общие с другом.
      */
-    @NonNull
+    @Nullable
     public VKApiCommunityArray getGroupsMutualWithFriend(VKApiUserFull user) {
-        return (mGroupsMutualWithFriend.get(user) == null) ? new VKApiCommunityArray() : mGroupsMutualWithFriend.get(user);
+        return mGroupsMutualWithFriend.get(user);
     }
 
     /**
      * Список друзей в группе.
      */
-    @NonNull
+    @Nullable
     public VKUsersArray getFriendsInGroup(VKApiCommunityFull group) {
-        return (mFriendsInGroup.get(group) == null) ? new VKUsersArray() : mFriendsInGroup.get(group);
+        return mFriendsInGroup.get(group);
     }
 
     /**
      * Получить друга с требуемым id.
      */
+    @Nullable
     public VKApiUserFull getFriendById(int id) {
         return mUserFriendsMap.get(id);
     }
@@ -190,6 +191,7 @@ public class DataManager {
     /**
      * Получить группу с требуемым id.
      */
+    @Nullable
     public VKApiCommunityFull getGroupById(int id) {
         return mUserGroupsMap.get(id);
     }
@@ -507,8 +509,14 @@ public class DataManager {
             Collections.sort(mUsersFriendsByMutual, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
                 @Override
                 public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                    int l = getGroupsMutualWithFriend(lhs).size();
-                    int r = getGroupsMutualWithFriend(rhs).size();
+                    VKApiCommunityArray lg = mGroupsMutualWithFriend.get(lhs);
+                    VKApiCommunityArray rg = mGroupsMutualWithFriend.get(rhs);
+                    if (lg == null || rg == null) {
+                        Log.e(TAG, "ERROR!!! UNKNOWN FRIEND!!! SORT FAILED!!!");
+                        return 0;
+                    }
+                    int l = lg.size();
+                    int r = rg.size();
                     return (l == r) ? 0 : ((l > r) ? 1 : -1);
                 }
             }));
@@ -521,8 +529,14 @@ public class DataManager {
             Collections.sort(mUsersGroupsByFriends, Collections.reverseOrder(new Comparator<VKApiCommunityFull>() {
                 @Override
                 public int compare(VKApiCommunityFull lhs, VKApiCommunityFull rhs) {
-                    int l = getFriendsInGroup(lhs).size();
-                    int r = getFriendsInGroup(rhs).size();
+                    VKUsersArray lf = mFriendsInGroup.get(lhs);
+                    VKUsersArray rf = mFriendsInGroup.get(rhs);
+                    if (lf == null || rf == null) {
+                        Log.e(TAG, "ERROR!!! UNKNOWN GROUP!!! SORT FAILED!!!");
+                        return 0;
+                    }
+                    int l = lf.size();
+                    int r = rf.size();
                     return (l == r) ? 0 : ((l > r) ? 1 : -1);
                 }
             }));

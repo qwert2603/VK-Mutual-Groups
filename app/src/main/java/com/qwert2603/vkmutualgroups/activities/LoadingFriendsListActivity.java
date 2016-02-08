@@ -31,6 +31,7 @@ import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKError;
+import com.vk.sdk.api.model.VKUsersArray;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
@@ -267,7 +268,9 @@ public class LoadingFriendsListActivity extends AppCompatActivity
     private void refreshScrollCallbackableFriendsListFragment() {
         mActionButton.setVisibility(View.VISIBLE);
 
-        mFakeView.setVisibility(mDataManager.getUsersFriends().isEmpty() ? View.VISIBLE : View.INVISIBLE);
+        VKUsersArray friends = mDataManager.getUsersFriends();
+        mFakeView.setVisibility(friends == null || friends.isEmpty() ? View.VISIBLE : View.INVISIBLE);
+        mRefreshLayout.setEnabled(true);
 
         getFragmentManager().beginTransaction()
                 .replace(R.id.fragment_container, ScrollCallbackableFriendsListFragment.newInstance(0))
@@ -279,6 +282,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity
         mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
 
         mFakeView.setVisibility(View.VISIBLE);
+        mRefreshLayout.setEnabled(true);
 
         FragmentManager fm = getFragmentManager();
 
@@ -327,7 +331,6 @@ public class LoadingFriendsListActivity extends AppCompatActivity
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
         boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
-        b |= mDataManager.getUsersFriends().isEmpty();
         mRefreshLayout.setEnabled(b);
     }
 
