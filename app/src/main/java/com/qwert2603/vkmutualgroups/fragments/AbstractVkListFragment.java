@@ -23,9 +23,12 @@ import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.behaviors.FloatingActionButtonBehavior;
+import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.api.model.Identifiable;
+import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiModel;
+import com.vk.sdk.api.model.VKApiUserFull;
 
 import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
@@ -41,12 +44,17 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
     public static final String TAG = "AbstractVkListFragment";
 
     private static final int REQUEST_SEND_MESSAGE = 1;
+    private static final int REQUEST_DELETE_FRIEND = 2;
+    private static final int REQUEST_LEAVE_GROUP = 3;
+
+    private static final String friendToDeleteId = "friendToDeleteId";
+    private static final String groupToLeaveId = "groupToLeaveId";
 
     public interface Callbacks {
         @NonNull
         CoordinatorLayout getCoordinatorLayout();
     }
-
+    private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
     protected ListView mListView;
@@ -82,6 +90,7 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
     }
 
@@ -107,7 +116,7 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
         layoutParams.setBehavior(new FloatingActionButtonBehavior(getActivity(), null));
 
         ((ViewGroup) mActionButton.getParent()).removeView(mActionButton);
-        CoordinatorLayout coordinatorLayout = ((Callbacks) getActivity()).getCoordinatorLayout();
+        CoordinatorLayout coordinatorLayout = getCoordinatorLayout();
         coordinatorLayout.addView(mActionButton, layoutParams);
 
         return view;
@@ -127,6 +136,7 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
                 }
             }
         }
+        notifyDataSetChanged();
     }
 
     /**
@@ -185,15 +195,70 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
         sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
     }
 
+    public void deleteFriend(int friendId) {
+        VKApiUserFull friend = mDataManager.getFriendById(friendId);
+        if (friend == null) {
+            Log.e(TAG, "deleteFriend ## ERROR!!! friend == null");
+            return;
+        }
+        getArguments().putInt(friendToDeleteId, friendId);
+
+        String title = getString(R.string.friend_name, friend.first_name, friend.last_name);
+        String question = getString(R.string.delete_friend) + "?";
+        ConfirmationDialogFragment dialogFragment = ConfirmationDialogFragment.newInstance(title, question);
+        dialogFragment.setTargetFragment(this, REQUEST_DELETE_FRIEND);
+        dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
+    }
+
+    public void leaveGroup(int groupId) {
+        VKApiCommunityFull group = mDataManager.getGroupById(groupId);
+        if (group == null) {
+            Log.e(TAG, "leaveGroup ## ERROR!!! group == null");
+            return;
+        }
+        getArguments().putInt(groupToLeaveId, groupId);
+
+        String title = group.name;
+        String question = getString(R.string.leave_group) + "?";
+        ConfirmationDialogFragment dialogFragment = ConfirmationDialogFragment.newInstance(title, question);
+        dialogFragment.setTargetFragment(this, REQUEST_LEAVE_GROUP);
+        dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
+    }
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == REQUEST_SEND_MESSAGE && resultCode == Activity.RESULT_OK) {
-            if (getView() != null) {
-                Snackbar.make(((Callbacks) getActivity()).getCoordinatorLayout(),
-                        R.string.message_sent, Snackbar.LENGTH_SHORT).show();
+        if (resultCode == Activity.RESULT_OK) {
+            switch (requestCode) {
+                case REQUEST_SEND_MESSAGE:
+                    Snackbar.make(getCoordinatorLayout(), R.string.message_sent, Snackbar.LENGTH_SHORT).show();
+                    break;
+                case REQUEST_DELETE_FRIEND:
+                    if (mDataManager.deleteFriend(getArguments().getInt(friendToDeleteId))) {
+                        Snackbar.make(getCoordinatorLayout(), R.string.friend_deleted_successfully, Snackbar.LENGTH_SHORT).show();
+                        notifyDataSetChanged();
+                    } else {
+                        Snackbar.make(getCoordinatorLayout(), R.string.friend_deleting_error, Snackbar.LENGTH_SHORT).show();
+                    }
+                    break;
+                case REQUEST_LEAVE_GROUP:
+                    if (mDataManager.leaveGroup(getArguments().getInt(groupToLeaveId))) {
+                        Snackbar.make(getCoordinatorLayout(), R.string.group_left_successfully, Snackbar.LENGTH_SHORT).show();
+                        notifyDataSetChanged();
+                    } else {
+                        Snackbar.make(getCoordinatorLayout(), R.string.group_leaving_error, Snackbar.LENGTH_SHORT).show();
+                    }
+                    break;
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    /**
+     * CoordinatorLayout для показа Snackbar.
+     */
+    @NonNull
+    protected CoordinatorLayout getCoordinatorLayout() {
+        return ((Callbacks) getActivity()).getCoordinatorLayout();
     }
 
 }

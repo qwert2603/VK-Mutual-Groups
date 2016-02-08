@@ -105,7 +105,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity
         });
 
         if (VKSdk.isLoggedIn()) {
-            if (mDataManager.getFetchingState() == notStarted) {
+            if (mDataManager.getFetchingState() == notStarted || mDataManager.getFetchingState() == finished) {
                 loadFromDevice();
             }
         } else {
@@ -121,7 +121,7 @@ public class LoadingFriendsListActivity extends AppCompatActivity
         if (! VKSdk.onActivityResult(requestCode, resultCode, data, new VKCallback<VKAccessToken>() {
             @Override
             public void onResult(VKAccessToken res) {
-                if (mDataManager.getFetchingState() == notStarted) {
+                if (mDataManager.getFetchingState() == notStarted || mDataManager.getFetchingState() == finished) {
                     fetchFromVK();
                     updateUI();
                 }

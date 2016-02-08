@@ -8,4 +8,10 @@
         <item name="actionModeBackground">@color/actionModeBackground</item>
     </style>
 
+    <style name="DialogFragmentTitle">
+        <item name="android:textColor">@color/item_title</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:padding">4dp</item>
+    </style>
+
 </resources>

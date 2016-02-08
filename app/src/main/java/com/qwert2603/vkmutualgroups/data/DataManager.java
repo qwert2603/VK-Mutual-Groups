@@ -6,6 +6,12 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.vk.sdk.api.VKApi;
+import com.vk.sdk.api.VKApiConst;
+import com.vk.sdk.api.VKError;
+import com.vk.sdk.api.VKParameters;
+import com.vk.sdk.api.VKRequest;
+import com.vk.sdk.api.VKResponse;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
@@ -251,6 +257,100 @@ public class DataManager {
      */
     public FetchingState getFetchingState() {
         return mFetchingState;
+    }
+
+    /**
+     * Удалить из друзей.
+     * Возвращает -- успешно ли удаление.
+     */
+    private volatile boolean deleteFriendResult;
+    public boolean deleteFriend(int friendId) {
+        deleteFriendResult = false;
+        VKRequest request = VKApi.friends().delete(VKParameters.from(VKApiConst.USER_ID, friendId));
+        request.executeSyncWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                deleteFriendResult = true;
+            }
+
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "deleteFriend ERROR!!! == " + error);
+                deleteFriendResult = false;
+            }
+        });
+        if (deleteFriendResult) {
+           deleteFriendFromData(friendId);
+            new DeviceDataSaver(mContext).clear();
+        }
+        return deleteFriendResult;
+    }
+
+    /**
+     * Удалить все данные о друге.
+     */
+    private void deleteFriendFromData(int friendId) {
+        VKApiUserFull friend = mUserFriendsMap.get(friendId);
+
+        mUsersFriendsByAlphabet.remove(friend);
+        mUsersFriendsByMutual.remove(friend);
+
+        VKApiCommunityArray groups = mGroupsMutualWithFriend.get(friend);
+        if (groups != null) {
+            for (VKApiCommunityFull group : groups) {
+                mFriendsInGroup.get(group).remove(friend);
+            }
+        }
+        mGroupsMutualWithFriend.remove(friend);
+
+        mUserFriendsMap.remove(friendId);
+    }
+
+    /**
+     * Выйти из группы
+     * Возвращает -- успешен ли выход.
+     */
+    private volatile boolean leaveGroupResult;
+    public boolean leaveGroup(int groupId) {
+        leaveGroupResult = false;
+        VKRequest request = VKApi.groups().leave(VKParameters.from(VKApiConst.GROUP_ID, groupId));
+        request.executeSyncWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                leaveGroupResult = true;
+            }
+
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "leaveGroup ERROR!!! == " + error);
+                leaveGroupResult = false;
+            }
+        });
+        if (leaveGroupResult) {
+            deleteGroupFromData(groupId);
+            new DeviceDataSaver(mContext).clear();
+        }
+        return leaveGroupResult;
+    }
+
+    /**
+     * Удалить все данные о группе.
+     */
+    private void deleteGroupFromData(int groupId) {
+        VKApiCommunityFull group = mUserGroupsMap.get(groupId);
+
+        mUsersGroupsByDefault.remove(group);
+        mUsersGroupsByFriends.remove(group);
+
+        VKUsersArray friends = mFriendsInGroup.get(group);
+        if (friends != null) {
+            for (VKApiUserFull friend : friends) {
+                mGroupsMutualWithFriend.get(friend).remove(group);
+            }
+        }
+        mFriendsInGroup.remove(group);
+
+        mUserGroupsMap.remove(groupId);
     }
 
     /**

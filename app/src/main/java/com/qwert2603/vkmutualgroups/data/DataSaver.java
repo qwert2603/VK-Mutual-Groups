@@ -3,7 +3,7 @@ package com.qwert2603.vkmutualgroups.data;
 import org.json.JSONObject;
 
 /**
- * Класс для сохранения jsonObject.
+ * Класс для сохранения и удаления jsonObject.
  */
 public interface DataSaver {
     void saveFriends(JSONObject friends);

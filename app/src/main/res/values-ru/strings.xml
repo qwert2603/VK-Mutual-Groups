@@ -22,4 +22,10 @@
     <string name="message_sending_error">Сообщение НЕ было отправлено!</string>
     <string name="no_friends">Нет друзей.</string>
     <string name="no_groups">Нет групп.</string>
+    <string name="delete_friend">Удалить из друзей</string>
+    <string name="leave_group">Выйти из группы</string>
+    <string name="friend_deleting_error">Друг НЕ был удален!</string>
+    <string name="group_leaving_error">Вы НЕ вышли из группы!</string>
+    <string name="friend_deleted_successfully">Друг успешно удален.</string>
+    <string name="group_left_successfully">Вы успешно вышли  из группы.</string>
 </resources>

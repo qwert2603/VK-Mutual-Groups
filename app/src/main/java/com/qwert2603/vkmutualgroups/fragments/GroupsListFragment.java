@@ -1,11 +1,17 @@
 package com.qwert2603.vkmutualgroups.fragments;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.view.ActionMode;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -78,6 +84,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
         setHasOptionsMenu(true);
+
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
         mFriendId = getArguments().getInt(friendIdKey);
@@ -108,18 +115,71 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
                 startActivity(intent);
             }
         });
+        mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
+        mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+            private int mActionedPosition;
+
+            @Override
+            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+                // чтобы выделялось не более 1 группы.
+                if (mListView.getCheckedItemCount() > 1) {
+                    mode.finish();
+                } else {
+                    mActionedPosition = position;
+                }
+            }
+
+            @Override
+            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+                if (mDataManager.getFetchingState() != finished) {
+                    mode.finish();
+                    return false;
+                }
+                mode.getMenuInflater().inflate(R.menu.groups_list_item_action_mode, menu);
+                return true;
+            }
+
+            @Override
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+                return false;
+            }
+
+            @Override
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                int groupId = mGroups.get(mActionedPosition).id;
+                switch (item.getItemId()) {
+                    case R.id.menu_leave_group:
+                        leaveGroup(groupId);
+                        mode.finish();
+                        return true;
+                    default:
+                        return false;
+                }
+            }
+
+            @Override
+            public void onDestroyActionMode(ActionMode mode) {
+            }
+        });
 
         mGroupsAdapter = new GroupAdapter(mGroups);
         mListView.setAdapter(mGroupsAdapter);
 
-
         mActionButton.setIcon(R.drawable.message);
         mActionButton.setOnClickListener((v) -> sendMessage(mFriendId));
-        if (mFriendId == 0 || mDataManager.getFetchingState() != finished) {
-            mActionButton.setVisibility(View.INVISIBLE);
-        }
 
         return view;
+    }
+
+    @Override
+    public void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
+        Activity activity = getActivity();
+        if (activity != null) {
+            activity.invalidateOptionsMenu();
+        }
+        boolean b = mFriendId != 0 && mDataManager.getFriendById(mFriendId) != null && mDataManager.getFetchingState() == finished;
+        mActionButton.setVisibility(b ? View.VISIBLE : View.INVISIBLE);
     }
 
     private class GroupAdapter extends ArrayAdapter<VKApiCommunityFull> {
@@ -182,6 +242,27 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         public ImageView getImageView() {
             return mPhotoImageView;
         }
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.groups_list_fragment, menu);
+
+        // если это список групп пользователя
+        // или пользователь, общие группы с которым отображаются, был удален, то удалить его нельзя.
+        if (mFriendId == 0 || mDataManager.getFriendById(mFriendId) == null) {
+            menu.findItem(R.id.menu_delete_friend).setVisible(false);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_delete_friend:
+                deleteFriend(mFriendId);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
 }

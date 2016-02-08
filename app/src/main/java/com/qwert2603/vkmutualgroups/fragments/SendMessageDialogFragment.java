@@ -29,6 +29,8 @@ import com.vk.sdk.api.model.VKApiUserFull;
  * Диалог фрагмент для отправки сообщения о кол-ве общих групп.
  * Если отправка сообщения пользователю невозможна (он закрыл личные сообщения),
  * выводится соответствующая надпись.
+ *
+ * Для работы необходимо, чтобы {@link DataManager#getFriendById(int)} для friendId возвращал объект друга, а не null.
  */
 public class SendMessageDialogFragment extends DialogFragment {
 
@@ -65,8 +67,8 @@ public class SendMessageDialogFragment extends DialogFragment {
     /**
      * Диалог-фрагмент, сообщающий о чем-либо.
      */
-    @SuppressLint("InflateParams")
     private Dialog getDialogWithText(int stringRes) {
+        @SuppressLint("InflateParams")
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_cant_write, null);
         ((TextView) view.findViewById(R.id.text_view)).setText(stringRes);
         return new AlertDialog.Builder(getActivity())
@@ -78,8 +80,8 @@ public class SendMessageDialogFragment extends DialogFragment {
     /**
      * Диалог-фрагмент для ввода и отправки сообщения.
      */
-    @SuppressLint("InflateParams")
     private Dialog getDialogComposeSendMessage() {
+        @SuppressLint("InflateParams")
         View view = getActivity().getLayoutInflater().inflate(R.layout.dialog_fragment_write, null);
 
         TextView friendNameTextView = (TextView) view.findViewById(R.id.friend_name_text_view);
@@ -98,7 +100,7 @@ public class SendMessageDialogFragment extends DialogFragment {
         editText.setText(text);
 
         Button cancelButton = (Button) view.findViewById(R.id.cancel_button);
-        cancelButton.setOnClickListener((v) -> dismiss());
+        cancelButton.setOnClickListener((v) -> dismissAllowingStateLoss());
 
         Button sendButton = (Button) view.findViewById(R.id.send_button);
         sendButton.setOnClickListener((v) -> {
@@ -109,7 +111,7 @@ public class SendMessageDialogFragment extends DialogFragment {
                 @Override
                 public void onComplete(VKResponse response) {
                     getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, null);
-                    dismiss();
+                    dismissAllowingStateLoss();
                 }
 
                 @Override

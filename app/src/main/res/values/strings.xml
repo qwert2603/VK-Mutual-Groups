@@ -24,4 +24,10 @@
     <string name="no">no</string>
     <string name="message_sent">Message sent successfully.</string>
     <string name="message_sending_error">Message was NOT sent!</string>
+    <string name="delete_friend">Delete friend</string>
+    <string name="leave_group">Leave group</string>
+    <string name="friend_deleting_error">Friend was NOT deleted!</string>
+    <string name="group_leaving_error">You did NOT leave group!</string>
+    <string name="friend_deleted_successfully">Friend deleted successfully.</string>
+    <string name="group_left_successfully">You left group successfully.</string>
 </resources>

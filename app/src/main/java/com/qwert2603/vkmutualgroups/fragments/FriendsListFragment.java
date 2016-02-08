@@ -1,11 +1,13 @@
 package com.qwert2603.vkmutualgroups.fragments;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -81,6 +83,8 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
+        setHasOptionsMenu(true);
+
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
         mGroupId = getArguments().getInt(groupIdKey);
@@ -142,10 +146,14 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
             @Override
             public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+                int friendId = mFriends.get(mActionedPosition).id;
                 switch (item.getItemId()) {
                     case R.id.menu_message:
-                        int friendId = mFriends.get(mActionedPosition).id;
                         sendMessage(friendId);
+                        mode.finish();
+                        return true;
+                    case R.id.menu_delete_friend:
+                        deleteFriend(friendId);
                         mode.finish();
                         return true;
                     default:
@@ -164,6 +172,15 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
         mActionButton.setVisibility(View.INVISIBLE);
 
         return view;
+    }
+
+    @Override
+    public void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
+        Activity activity = getActivity();
+        if (activity != null) {
+            activity.invalidateOptionsMenu();
+        }
     }
 
     private class FriendAdapter extends ArrayAdapter<VKApiUserFull> {
@@ -229,4 +246,24 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
         }
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.friends_list_fragment, menu);
+
+        // если это список друзей пользователя
+        // или группа, друзья в которой отображаются, была покинута, то выйти из нее нельзя.
+        if (mGroupId == 0 || mDataManager.getGroupById(mGroupId) == null) {
+            menu.findItem(R.id.menu_leave_group).setVisible(false);
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_leave_group:
+                leaveGroup(mGroupId);
+                return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 }

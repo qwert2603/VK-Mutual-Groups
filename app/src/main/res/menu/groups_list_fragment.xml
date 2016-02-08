@@ -1,10 +1,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <item android:id="@+id/menu_message"
-        android:title="@string/send_message"
-        android:icon="@drawable/message"/>
-
     <item android:id="@+id/menu_delete_friend"
         android:title="@string/delete_friend"
         app:showAsAction="never"/>

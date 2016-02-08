@@ -3,11 +3,11 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <TextView android:id="@+id/friend_name_text_view"
+    <TextView android:id="@+id/title_text_view"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         style="@style/DialogFragmentTitle"
-        android:text="Fernando Alonso" />
+        android:text="User Eight"/>
 
     <View
         android:layout_width="match_parent"
@@ -18,12 +18,25 @@
         android:layout_marginRight="2dp"
         android:background="@color/colorPrimary"/>
 
-    <EditText android:id="@+id/edit_text"
+    <TextView android:id="@+id/question_text_view"
         android:layout_width="match_parent"
-        android:layout_height="128dp"
-        android:gravity="top"
-        android:textSize="16sp"
-        android:text="rtgrtg\nrtgyrg\nqwert"/>
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:layout_marginLeft="6dp"
+        android:layout_marginStart="6dp"
+        android:text="Delete from friends?"
+        android:textColor="@android:color/black"
+        android:textSize="18sp"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginStart="2dp"
+        android:layout_marginLeft="2dp"
+        android:layout_marginEnd="2dp"
+        android:layout_marginRight="2dp"
+        android:background="@color/colorAccent"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -38,13 +51,14 @@
             style="?android:buttonBarButtonStyle"
             android:textColor="@color/item_title"/>
 
-        <Button android:id="@+id/send_button"
+        <Button android:id="@+id/ok_button"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="match_parent"
-            android:text="@string/send"
+            android:text="@string/ok"
             style="?android:buttonBarButtonStyle"
             android:textColor="@color/item_title"/>
 
     </LinearLayout>
+
 </LinearLayout>
