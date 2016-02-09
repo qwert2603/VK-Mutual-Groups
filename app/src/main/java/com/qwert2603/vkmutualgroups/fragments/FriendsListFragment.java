@@ -11,25 +11,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
 import com.qwert2603.vkmutualgroups.activities.GroupsListActivity;
+import com.qwert2603.vkmutualgroups.adapters.FriendAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
-import com.qwert2603.vkmutualgroups.photo.ImageViewHolder;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
-import com.vk.sdk.api.model.VKApiCommunityArray;
-import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список друзей из DataManager в соответствии с id группы, переданным в {@link #newInstance(int)}.
+ * Отображает список друзей, переданный в {@link #newInstance(int, VKUsersArray)}.
  */
 public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
@@ -37,15 +32,17 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
     private static final String TAG = "FriendsListFragment";
 
     private static final String groupIdKey = "groupIdKey";
+    private static final String friendsKey = "friendsKey";
 
     /**
      * groupId - id группы. В списке будут выведены друзья в этой группе.
      * Если groupId == 0, будут выведены друзья пользователя в текущем порядке сортировки из mDataManager.
      */
-    public static FriendsListFragment newInstance(int groupId) {
+    public static FriendsListFragment newInstance(int groupId, VKUsersArray friends) {
         FriendsListFragment result = new FriendsListFragment();
         Bundle args = new Bundle();
         args.putInt(groupIdKey, groupId);
+        args.putParcelable(friendsKey, friends);
         result.setArguments(args);
         return result;
     }
@@ -70,7 +67,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
     @Override
     protected String getPhotoURL(int index) {
-        return mFriends.get(index).photo_50;
+        return mPhotoManager.getUserPhotoUrl(mFriends.get(index));
     }
 
     @Override
@@ -85,19 +82,9 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
+
         mGroupId = getArguments().getInt(groupIdKey);
-
-        if (mGroupId != 0) {
-            VKApiCommunityFull group = mDataManager.getGroupById(mGroupId);
-            mFriends = mDataManager.getFriendsInGroup(group);
-        }
-        else {
-            mFriends = mDataManager.getUsersFriends();
-        }
-
-        if (mFriends == null) {
-            mFriends = new VKUsersArray();
-        }
+        mFriends = getArguments().getParcelable(friendsKey);
     }
 
     @Nullable
@@ -164,7 +151,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
             }
         });
 
-        mFriendAdapter = new FriendAdapter(mFriends);
+        mFriendAdapter = new FriendAdapter(getActivity(), mFriends);
         mListView.setAdapter(mFriendAdapter);
 
         mActionButton.setVisibility(View.INVISIBLE);
@@ -172,66 +159,4 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
         return view;
     }
 
-    private class FriendAdapter extends ArrayAdapter<VKApiUserFull> {
-        public FriendAdapter(VKUsersArray users) {
-            super(getActivity(),0, users);
-        }
-
-        @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
-            if (convertView == null) {
-                convertView = getActivity().getLayoutInflater().inflate(R.layout.list_item, parent, false);
-                ViewHolder viewHolder = new ViewHolder();
-                viewHolder.mPhotoImageView = (ImageView) convertView.findViewById(R.id.photoImageView);
-                viewHolder.mTitleTextView = (TextView) convertView.findViewById(R.id.item_title);
-                viewHolder.mMutualsTextView = (TextView) convertView.findViewById(R.id.common_count);
-                convertView.setTag(viewHolder);
-            }
-
-            VKApiUserFull friend = getItem(position);
-            ViewHolder viewHolder = (ViewHolder) convertView.getTag();
-
-            viewHolder.mPosition = position;
-            if (mPhotoManager.getPhoto(getPhotoURL(position)) != null) {
-                viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(getPhotoURL(position)));
-            }
-            else {
-                viewHolder.mPhotoImageView.setImageBitmap(null);
-                //mPhotoManager.setPhotoToImageViewHolder(viewHolder, getPhotoURL(position));
-            }
-
-            viewHolder.mTitleTextView.setText(getString(R.string.friend_name, friend.first_name, friend.last_name));
-
-            if (mDataManager.getFetchingState() == calculatingMutual || mDataManager.getFetchingState() == finished) {
-                VKApiCommunityArray groups = mDataManager.getGroupsMutualWithFriend(friend);
-                if (groups != null) {
-                    viewHolder.mMutualsTextView.setText(getString(R.string.mutual, groups.size()));
-                } else {
-                    viewHolder.mMutualsTextView.setText("");
-                }
-            }
-            else {
-                viewHolder.mMutualsTextView.setText("");
-            }
-
-            return convertView;
-        }
-    }
-
-    private static class ViewHolder implements ImageViewHolder {
-        int mPosition;
-        ImageView mPhotoImageView;
-        TextView mTitleTextView;
-        TextView mMutualsTextView;
-
-        @Override
-        public int getPosition() {
-            return mPosition;
-        }
-
-        @Override
-        public ImageView getImageView() {
-            return mPhotoImageView;
-        }
-    }
 }

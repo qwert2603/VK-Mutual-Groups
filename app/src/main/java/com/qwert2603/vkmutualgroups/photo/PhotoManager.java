@@ -9,6 +9,8 @@ import android.util.Log;
 import android.util.LruCache;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.vk.sdk.api.model.VKApiCommunityFull;
+import com.vk.sdk.api.model.VKApiUserFull;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -224,6 +226,14 @@ public class PhotoManager {
             }
         }
         return bitmap;
+    }
+
+    public String getUserPhotoUrl(VKApiUserFull user) {
+        return user.photo_50;
+    }
+
+    public String getGroupPhotoUrl(VKApiCommunityFull group) {
+        return group.photo_50;
     }
 
 }

@@ -7,15 +7,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 
+import com.vk.sdk.api.model.VKUsersArray;
+
 /**
  * Расширяет FriendsListFragment.
  * Передает содержащей Activity обратные вызовы скроллинга списка друзей.
  */
 public class ScrollCallbackableFriendsListFragment extends FriendsListFragment {
 
-    public static ScrollCallbackableFriendsListFragment newInstance(int groupId) {
+    public static ScrollCallbackableFriendsListFragment newInstance(int groupId, VKUsersArray friends) {
         ScrollCallbackableFriendsListFragment result = new ScrollCallbackableFriendsListFragment();
-        FriendsListFragment friendsListFragment = FriendsListFragment.newInstance(groupId);
+        FriendsListFragment friendsListFragment = FriendsListFragment.newInstance(groupId, friends);
         result.setArguments(friendsListFragment.getArguments());
         return result;
     }

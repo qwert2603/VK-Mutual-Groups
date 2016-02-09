@@ -59,7 +59,7 @@ public class UserGroupsListActivity extends NavigableActivity {
 
     private void refreshGroupsListFragment() {
         FragmentManager fm = getFragmentManager();
-        mFragment =  GroupsListFragment.newInstance(0);
+        mFragment =  GroupsListFragment.newInstance(0, mDataManager.getUsersGroups());
         fm.beginTransaction().replace(R.id.fragment_container, mFragment).commitAllowingStateLoss();
     }
 

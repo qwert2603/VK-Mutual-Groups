@@ -270,7 +270,7 @@ public class LoadingFriendsListActivity extends BaseVkActivity implements Scroll
         mRefreshLayout.setEnabled(true);
 
         getFragmentManager().beginTransaction()
-                .replace(R.id.fragment_container, ScrollCallbackableFriendsListFragment.newInstance(0))
+                .replace(R.id.fragment_container, ScrollCallbackableFriendsListFragment.newInstance(0, mDataManager.getUsersFriends()))
                 .commitAllowingStateLoss();
     }
 

@@ -9,12 +9,15 @@ import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.vk.sdk.api.model.VKApiCommunityFull;
+import com.vk.sdk.api.model.VKUsersArray;
 
 public class FriendsListActivity extends AbstractVkListActivity {
 
     public static final String EXTRA_GROUP_ID = "com.alex.vkcommonpublics.EXTRA_GROUP_ID";
 
     private int mGroupId;
+
+    private DataManager mDataManager;
 
     @Override
     protected String getActionBarTitle() {
@@ -24,12 +27,27 @@ public class FriendsListActivity extends AbstractVkListActivity {
 
     @Override
     protected AbstractVkListFragment createListFragment() {
-        return FriendsListFragment.newInstance(mGroupId);
+        VKUsersArray friends;
+        if (mGroupId != 0) {
+            VKApiCommunityFull group = mDataManager.getGroupById(mGroupId);
+            friends = mDataManager.getFriendsInGroup(group);
+        }
+        else {
+            friends = mDataManager.getUsersFriends();
+        }
+
+        if (friends == null) {
+            friends = new VKUsersArray();
+        }
+        return FriendsListFragment.newInstance(mGroupId, friends);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // mFriendId и mDataManager будет нужен в super.onCreate, поэтому его надо получить сейчас.
         mGroupId = getIntent().getIntExtra(EXTRA_GROUP_ID, 0);
+        mDataManager = DataManager.get(this);
+
         super.onCreate(savedInstanceState);
     }
 

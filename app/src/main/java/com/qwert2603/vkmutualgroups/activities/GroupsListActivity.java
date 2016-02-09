@@ -8,6 +8,7 @@ import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
+import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 public class GroupsListActivity extends AbstractVkListActivity {
@@ -15,6 +16,8 @@ public class GroupsListActivity extends AbstractVkListActivity {
     public static final String EXTRA_FRIEND_ID = "com.alex.vkcommonpublics.EXTRA_FRIEND_ID";
 
     private int mFriendId;
+
+    private DataManager mDataManager;
 
     @Override
     protected String getActionBarTitle() {
@@ -24,12 +27,27 @@ public class GroupsListActivity extends AbstractVkListActivity {
 
     @Override
     protected AbstractVkListFragment createListFragment() {
-        return GroupsListFragment.newInstance(mFriendId);
+        VKApiCommunityArray groups;
+        if (mFriendId != 0) {
+            VKApiUserFull friend = mDataManager.getFriendById(mFriendId);
+            groups = mDataManager.getGroupsMutualWithFriend(friend);
+        }
+        else {
+            groups = mDataManager.getUsersGroups();
+        }
+
+        if (groups == null) {
+            groups = new VKApiCommunityArray();
+        }
+        return GroupsListFragment.newInstance(mFriendId, groups);
     }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // mFriendId и mDataManager будет нужен в super.onCreate, поэтому его надо получить сейчас.
         mFriendId = getIntent().getIntExtra(EXTRA_FRIEND_ID, 0);
+        mDataManager = DataManager.get(this);
+
         super.onCreate(savedInstanceState);
     }
 
