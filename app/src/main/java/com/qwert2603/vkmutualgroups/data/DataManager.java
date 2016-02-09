@@ -172,6 +172,25 @@ public class DataManager {
     }
 
     /**
+     * Загрузить список групп пользователя.
+     */
+    public void fetchUsersGroups(int userId, Listener<VKApiCommunityArray> listener) {
+        VKRequest request = VKApi.groups().get(VKParameters.from());
+        request.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                listener.onCompleted((VKApiCommunityArray) response.parsedModel);
+            }
+
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "fetchUsersGroups ## ERROR == " + error);
+                listener.onError(String.valueOf(error));
+            }
+        });
+    }
+
+    /**
      * Группы, общие с другом.
      */
     @Nullable
