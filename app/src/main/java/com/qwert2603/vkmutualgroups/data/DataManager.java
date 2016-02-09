@@ -175,7 +175,8 @@ public class DataManager {
      * Загрузить список групп пользователя.
      */
     public void fetchUsersGroups(int userId, Listener<VKApiCommunityArray> listener) {
-        VKRequest request = VKApi.groups().get(VKParameters.from());
+        VKParameters parameters = VKParameters.from(VKApiConst.USER_ID, userId, VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50");
+        VKRequest request = VKApi.groups().get(parameters);
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
@@ -194,31 +195,33 @@ public class DataManager {
      * Группы, общие с другом.
      */
     @Nullable
-    public VKApiCommunityArray getGroupsMutualWithFriend(VKApiUserFull user) {
-        return mGroupsMutualWithFriend.get(user);
+    public VKApiCommunityArray getGroupsMutualWithFriend(int userId) {
+        return mGroupsMutualWithFriend.get(mUserFriendsMap.get(userId));
     }
 
     /**
      * Список друзей в группе.
      */
     @Nullable
-    public VKUsersArray getFriendsInGroup(VKApiCommunityFull group) {
-        return mFriendsInGroup.get(group);
+    public VKUsersArray getFriendsInGroup(int groupId) {
+        return mFriendsInGroup.get(mUserGroupsMap.get(groupId));
     }
 
     /**
-     * Получить друга с требуемым id.
+     * Получить друга пользователя с требуемым id.
+     * Если не друг, вернет null.
      */
     @Nullable
-    public VKApiUserFull getFriendById(int id) {
+    public VKApiUserFull getUsersFriendById(int id) {
         return mUserFriendsMap.get(id);
     }
 
     /**
-     * Получить группу с требуемым id.
+     * Получить группу пользователя с требуемым id.
+     * Если пользователь не состоит в группе, вернет null.
      */
     @Nullable
-    public VKApiCommunityFull getGroupById(int id) {
+    public VKApiCommunityFull getUsersGroupById(int id) {
         return mUserGroupsMap.get(id);
     }
 

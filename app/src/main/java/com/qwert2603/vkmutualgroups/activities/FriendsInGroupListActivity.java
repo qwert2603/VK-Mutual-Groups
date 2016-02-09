@@ -11,7 +11,10 @@ import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
-public class FriendsListActivity extends AbstractVkListActivity {
+/**
+ * Друзья в группе.
+ */
+public class FriendsInGroupListActivity extends AbstractVkListActivity {
 
     public static final String EXTRA_GROUP_ID = "com.alex.vkcommonpublics.EXTRA_GROUP_ID";
 
@@ -21,18 +24,19 @@ public class FriendsListActivity extends AbstractVkListActivity {
 
     @Override
     protected String getActionBarTitle() {
-        VKApiCommunityFull group = DataManager.get(this).getGroupById(mGroupId);
+        VKApiCommunityFull group = DataManager.get(this).getUsersGroupById(mGroupId);
         return (group == null) ? getString(R.string.app_name) : group.name;
     }
 
     @Override
     protected AbstractVkListFragment createListFragment() {
-        VKUsersArray friends;
+        VKUsersArray friends = null;
         if (mGroupId != 0) {
-            VKApiCommunityFull group = mDataManager.getGroupById(mGroupId);
-            friends = mDataManager.getFriendsInGroup(group);
-        }
-        else {
+            VKApiCommunityFull group = mDataManager.getUsersGroupById(mGroupId);
+            if (group != null) {
+                friends = mDataManager.getFriendsInGroup(group.id);
+            }
+        } else {
             friends = mDataManager.getUsersFriends();
         }
 
@@ -59,7 +63,7 @@ public class FriendsListActivity extends AbstractVkListActivity {
 
         // если это список друзей пользователя
         // или группа, друзья в которой отображаются, была покинута, то выйти из нее нельзя.
-        if (mGroupId == 0 || DataManager.get(this).getGroupById(mGroupId) == null) {
+        if (mGroupId == 0 || DataManager.get(this).getUsersGroupById(mGroupId) == null) {
             menu.findItem(R.id.menu_leave_group).setVisible(false);
         }
         return true;

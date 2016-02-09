@@ -14,7 +14,8 @@ import android.widget.ArrayAdapter;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
-import com.qwert2603.vkmutualgroups.activities.GroupsListActivity;
+import com.qwert2603.vkmutualgroups.activities.FriendGroupsListActivity;
+import com.qwert2603.vkmutualgroups.activities.MutualGroupsListActivity;
 import com.qwert2603.vkmutualgroups.adapters.FriendAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
@@ -57,7 +58,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
     @Override
     protected String getEmptyListText() {
-        return getString(mGroupId == 0 ? R.string.no_friends : R.string.no_friends_in_group);
+        return getString(R.string.no_friends);
     }
 
     @Override
@@ -94,10 +95,12 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
         mListView.setOnItemClickListener((parent, view1, position, id) -> {
             if (mDataManager.getFetchingState() == finished) {
-                Intent intent = new Intent(getActivity(), GroupsListActivity.class);
                 VKApiUserFull friend = (VKApiUserFull) mListView.getAdapter().getItem(position);
-                intent.putExtra(GroupsListActivity.EXTRA_FRIEND_ID, friend.id);
-                startActivity(intent);
+                if (mDataManager.getUsersFriendById(friend.id) != null) {
+                    Intent intent = new Intent(getActivity(), MutualGroupsListActivity.class);
+                    intent.putExtra(MutualGroupsListActivity.EXTRA_FRIEND_ID, friend.id);
+                    startActivity(intent);
+                }
             }
         });
         mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
@@ -107,7 +110,8 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 // чтобы выделялось не более 1 друга.
-                if (mListView.getCheckedItemCount() > 1) {
+                // И чтобы не выделялись те люди, которых нет в друзьях.
+                if (mListView.getCheckedItemCount() > 1 || mDataManager.getUsersFriendById(mFriends.get(position).id) == null) {
                     mode.finish();
                 } else {
                     mActionedPosition = position;
@@ -135,6 +139,12 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                 switch (item.getItemId()) {
                     case R.id.menu_message:
                         ((BaseVkActivity) getActivity()).sendMessage(friendId);
+                        mode.finish();
+                        return true;
+                    case R.id.menu_view_groups:
+                        Intent intent = new Intent(getActivity(), FriendGroupsListActivity.class);
+                        intent.putExtra(MutualGroupsListActivity.EXTRA_FRIEND_ID, friendId);
+                        startActivity(intent);
                         mode.finish();
                         return true;
                     case R.id.menu_delete_friend:

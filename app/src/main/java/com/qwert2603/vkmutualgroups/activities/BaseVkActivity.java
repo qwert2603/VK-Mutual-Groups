@@ -62,7 +62,7 @@ public abstract class BaseVkActivity extends AppCompatActivity {
     }
 
     public void deleteFriend(int friendId) {
-        VKApiUserFull friend = mDataManager.getFriendById(friendId);
+        VKApiUserFull friend = mDataManager.getUsersFriendById(friendId);
         if (friend == null) {
             Log.e(TAG, "deleteFriend ## ERROR!!! friend == null");
             return;
@@ -77,7 +77,7 @@ public abstract class BaseVkActivity extends AppCompatActivity {
     }
 
     public void leaveGroup(int groupId) {
-        VKApiCommunityFull group = mDataManager.getGroupById(groupId);
+        VKApiCommunityFull group = mDataManager.getUsersGroupById(groupId);
         if (group == null) {
             Log.e(TAG, "leaveGroup ## ERROR!!! group == null");
             return;

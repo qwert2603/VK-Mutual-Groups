@@ -29,7 +29,7 @@
                 android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
         </activity>
 
-        <activity android:name="com.qwert2603.vkmutualgroups.activities.GroupsListActivity"
+        <activity android:name=".activities.MutualGroupsListActivity"
             android:screenOrientation="portrait"
             android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
             <meta-data
@@ -37,7 +37,15 @@
                 android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
         </activity>
 
-        <activity android:name="com.qwert2603.vkmutualgroups.activities.FriendsListActivity"
+        <activity android:name=".activities.FriendGroupsListActivity"
+            android:screenOrientation="portrait"
+            android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
+        </activity>
+
+        <activity android:name=".activities.FriendsInGroupListActivity"
             android:screenOrientation="portrait"
             android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
             <meta-data

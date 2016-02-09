@@ -14,7 +14,7 @@ import android.widget.ArrayAdapter;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
-import com.qwert2603.vkmutualgroups.activities.FriendsListActivity;
+import com.qwert2603.vkmutualgroups.activities.FriendsInGroupListActivity;
 import com.qwert2603.vkmutualgroups.adapters.GroupAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
@@ -57,7 +57,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
 
     @Override
     protected String getEmptyListText() {
-        return getString(mFriendId == 0 ? R.string.no_groups : R.string.no_mutual_groups);
+        return getString(R.string.no_groups);
     }
 
     @Override
@@ -93,11 +93,13 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         View view = super.onCreateView(inflater, container, savedInstanceState);
 
         mListView.setOnItemClickListener((parent, view1, position, id) -> {
-            if (mDataManager.getFetchingState() == DataManager.FetchingState.finished) {
-                Intent intent = new Intent(getActivity(), FriendsListActivity.class);
+            if (mDataManager.getFetchingState() == finished) {
                 VKApiCommunityFull group = (VKApiCommunityFull) mListView.getAdapter().getItem(position);
-                intent.putExtra(FriendsListActivity.EXTRA_GROUP_ID, group.id);
-                startActivity(intent);
+                if (mDataManager.getUsersGroupById(group.id) != null) {
+                    Intent intent = new Intent(getActivity(), FriendsInGroupListActivity.class);
+                    intent.putExtra(FriendsInGroupListActivity.EXTRA_GROUP_ID, group.id);
+                    startActivity(intent);
+                }
             }
         });
         mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
@@ -107,7 +109,8 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 // чтобы выделялось не более 1 группы.
-                if (mListView.getCheckedItemCount() > 1) {
+                // И чтобы не выделялись те группы, в которых пользователь не состоит.
+                if (mListView.getCheckedItemCount() > 1 || mDataManager.getUsersGroupById(mGroups.get(position).id) == null) {
                     mode.finish();
                 } else {
                     mActionedPosition = position;
@@ -160,7 +163,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     public void notifyDataSetChanged() {
         super.notifyDataSetChanged();
 
-        boolean b = mFriendId != 0 && mDataManager.getFriendById(mFriendId) != null && mDataManager.getFetchingState() == finished;
+        boolean b = mFriendId != 0 && mDataManager.getUsersFriendById(mFriendId) != null && mDataManager.getFetchingState() == finished;
         mActionButton.setVisibility(b ? View.VISIBLE : View.INVISIBLE);
     }
 

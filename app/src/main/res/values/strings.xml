@@ -31,4 +31,5 @@
     <string name="friend_deleted_successfully">Friend deleted successfully.</string>
     <string name="group_left_successfully">You left group successfully.</string>
     <string name="groups_of_friend_empty_list">User\'s groups list is empty or user hide groups list.</string>
+    <string name="view_groups">View groups</string>
 </resources>

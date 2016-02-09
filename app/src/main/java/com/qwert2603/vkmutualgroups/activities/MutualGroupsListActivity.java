@@ -1,6 +1,7 @@
 package com.qwert2603.vkmutualgroups.activities;
 
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -11,7 +12,10 @@ import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
 
-public class GroupsListActivity extends AbstractVkListActivity {
+/**
+ * Группы, общте с другом.
+ */
+public class MutualGroupsListActivity extends AbstractVkListActivity {
 
     public static final String EXTRA_FRIEND_ID = "com.alex.vkcommonpublics.EXTRA_FRIEND_ID";
 
@@ -21,25 +25,27 @@ public class GroupsListActivity extends AbstractVkListActivity {
 
     @Override
     protected String getActionBarTitle() {
-        VKApiUserFull friend = DataManager.get(this).getFriendById(mFriendId);
+        VKApiUserFull friend = DataManager.get(this).getUsersFriendById(mFriendId);
         return (friend == null) ? getString(R.string.app_name) : getString(R.string.friend_name, friend.first_name, friend.last_name);
     }
 
+    @Nullable
     @Override
     protected AbstractVkListFragment createListFragment() {
-        VKApiCommunityArray groups;
+        VKApiCommunityArray group = null;
         if (mFriendId != 0) {
-            VKApiUserFull friend = mDataManager.getFriendById(mFriendId);
-            groups = mDataManager.getGroupsMutualWithFriend(friend);
-        }
-        else {
-            groups = mDataManager.getUsersGroups();
+            VKApiUserFull friend = mDataManager.getUsersFriendById(mFriendId);
+            if (friend != null) {
+                group = mDataManager.getGroupsMutualWithFriend(friend.id);
+            }
+        } else {
+            group = mDataManager.getUsersGroups();
         }
 
-        if (groups == null) {
-            groups = new VKApiCommunityArray();
+        if (group == null) {
+            group = new VKApiCommunityArray();
         }
-        return GroupsListFragment.newInstance(mFriendId, groups);
+        return GroupsListFragment.newInstance(mFriendId, group);
     }
 
     @Override
@@ -59,7 +65,7 @@ public class GroupsListActivity extends AbstractVkListActivity {
 
         // если это список групп пользователя
         // или пользователь, общие группы с которым отображаются, был удален, то удалить его нельзя.
-        if (mFriendId == 0 || DataManager.get(this).getFriendById(mFriendId) == null) {
+        if (mFriendId == 0 || DataManager.get(this).getUsersFriendById(mFriendId) == null) {
             menu.findItem(R.id.menu_delete_friend).setVisible(false);
         }
         return true;

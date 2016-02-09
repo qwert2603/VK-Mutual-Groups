@@ -30,7 +30,7 @@ import com.vk.sdk.api.model.VKApiUserFull;
  * Если отправка сообщения пользователю невозможна (он закрыл личные сообщения),
  * выводится соответствующая надпись.
  *
- * Для работы необходимо, чтобы {@link DataManager#getFriendById(int)} для friendId возвращал объект друга, а не null.
+ * Для работы необходимо, чтобы {@link DataManager#getUsersFriendById(int)} для friendId возвращал объект друга, а не null.
  */
 public class SendMessageDialogFragment extends DialogFragment {
 
@@ -52,7 +52,7 @@ public class SendMessageDialogFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         int friendId = getArguments().getInt(friendIdKey);
-        mFriend = DataManager.get(getActivity()).getFriendById(friendId);
+        mFriend = DataManager.get(getActivity()).getUsersFriendById(friendId);
     }
 
     @Override
@@ -89,7 +89,7 @@ public class SendMessageDialogFragment extends DialogFragment {
 
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);
         String text = "";
-        VKApiCommunityArray groupsMutualWithFriend = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend);
+        VKApiCommunityArray groupsMutualWithFriend = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend.id);
         if (groupsMutualWithFriend != null) {
             int mutual = groupsMutualWithFriend.size();
             text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);

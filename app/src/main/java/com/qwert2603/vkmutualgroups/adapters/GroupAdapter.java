@@ -56,7 +56,7 @@ public class GroupAdapter extends ArrayAdapter<VKApiCommunityFull> {
         viewHolder.mTitleTextView.setText(group.name);
 
         if (mDataManager.getFetchingState() == calculatingMutual || mDataManager.getFetchingState() == finished) {
-            VKUsersArray friends = mDataManager.getFriendsInGroup(group);
+            VKUsersArray friends = mDataManager.getFriendsInGroup(group.id);
             if (friends != null) {
                 viewHolder.mMutualsTextView.setText(mActivity.getString(R.string.friends, friends.size()));
             } else {
