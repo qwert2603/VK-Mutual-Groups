@@ -30,6 +30,7 @@ import java.util.Map;
  * Загружает и хранит список друзей в афлавитном порядке и в порядке убывания кол-ва общих групп.
  * Загружает и хранит список групп в порядке по умолчанию и в порядке убывания друзей в них.
  * Также подсчитывает кол-во общих групп.
+ * Позволяет удалять друзей и выходить из групп.
  */
 public class DataManager {
 
@@ -261,29 +262,44 @@ public class DataManager {
 
     /**
      * Удалить из друзей.
-     * Возвращает -- успешно ли удаление.
      */
-    private volatile boolean deleteFriendResult;
-    public boolean deleteFriend(int friendId) {
-        deleteFriendResult = false;
+    public void deleteFriend(int friendId, Listener<Void> listener) {
         VKRequest request = VKApi.friends().delete(VKParameters.from(VKApiConst.USER_ID, friendId));
-        request.executeSyncWithListener(new VKRequest.VKRequestListener() {
+        request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
-                deleteFriendResult = true;
+                deleteFriendFromData(friendId);
+                new DeviceDataSaver(mContext).clear();
+                listener.onCompleted(null);
             }
 
             @Override
             public void onError(VKError error) {
                 Log.e(TAG, "deleteFriend ERROR!!! == " + error);
-                deleteFriendResult = false;
+                listener.onError(String.valueOf(error));
             }
         });
-        if (deleteFriendResult) {
-           deleteFriendFromData(friendId);
-            new DeviceDataSaver(mContext).clear();
-        }
-        return deleteFriendResult;
+    }
+
+    /**
+     * Выйти из группы.
+     */
+    public void leaveGroup(int groupId, Listener<Void> listener) {
+        VKRequest request = VKApi.groups().leave(VKParameters.from(VKApiConst.GROUP_ID, groupId));
+        request.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                deleteGroupFromData(groupId);
+                new DeviceDataSaver(mContext).clear();
+                listener.onCompleted(null);
+            }
+
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "leaveGroup ERROR!!! == " + error);
+                listener.onError(String.valueOf(error));
+            }
+        });
     }
 
     /**
@@ -306,32 +322,6 @@ public class DataManager {
         mUserFriendsMap.remove(friendId);
     }
 
-    /**
-     * Выйти из группы
-     * Возвращает -- успешен ли выход.
-     */
-    private volatile boolean leaveGroupResult;
-    public boolean leaveGroup(int groupId) {
-        leaveGroupResult = false;
-        VKRequest request = VKApi.groups().leave(VKParameters.from(VKApiConst.GROUP_ID, groupId));
-        request.executeSyncWithListener(new VKRequest.VKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                leaveGroupResult = true;
-            }
-
-            @Override
-            public void onError(VKError error) {
-                Log.e(TAG, "leaveGroup ERROR!!! == " + error);
-                leaveGroupResult = false;
-            }
-        });
-        if (leaveGroupResult) {
-            deleteGroupFromData(groupId);
-            new DeviceDataSaver(mContext).clear();
-        }
-        return leaveGroupResult;
-    }
 
     /**
      * Удалить все данные о группе.

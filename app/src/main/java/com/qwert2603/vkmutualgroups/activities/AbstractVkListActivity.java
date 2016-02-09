@@ -1,6 +1,5 @@
 package com.qwert2603.vkmutualgroups.activities;
 
-import android.app.Fragment;
 import android.app.FragmentManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -12,10 +11,12 @@ import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
  */
-public abstract class AbstractVkListActivity extends NavigableActivity implements AbstractVkListFragment.Callbacks {
+public abstract class AbstractVkListActivity extends NavigableActivity {
+
+    private AbstractVkListFragment mFragment;
 
     protected abstract String getActionBarTitle();
-    protected abstract Fragment getListFragment();
+    protected abstract AbstractVkListFragment createListFragment();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,16 +26,18 @@ public abstract class AbstractVkListActivity extends NavigableActivity implement
             getSupportActionBar().setTitle(getActionBarTitle());
         }
         FragmentManager fm = getFragmentManager();
-        Fragment fragment = fm.findFragmentById(R.id.fragment_container);
-        if (fragment == null) {
-            fragment = getListFragment();
-            fm.beginTransaction().add(R.id.fragment_container, fragment).commitAllowingStateLoss();
-        }
+        mFragment = createListFragment();
+        fm.beginTransaction().replace(R.id.fragment_container, mFragment).commitAllowingStateLoss();
     }
 
     @NonNull
     @Override
     public CoordinatorLayout getCoordinatorLayout() {
         return (CoordinatorLayout) findViewById(R.id.coordinator_layout);
+    }
+
+    @Override
+    protected void notifyDataSetChanged() {
+        mFragment.notifyDataSetChanged();
     }
 }

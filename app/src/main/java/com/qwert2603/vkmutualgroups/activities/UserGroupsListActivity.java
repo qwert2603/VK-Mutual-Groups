@@ -5,20 +5,22 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
-import com.getbase.floatingactionbutton.FloatingActionButton;
 
 /**
  * Activity, содержащая список групп пользователя.
  */
-public class UserGroupsListActivity extends NavigableActivity implements AbstractVkListFragment.Callbacks {
+public class UserGroupsListActivity extends NavigableActivity {
 
     private DataManager mDataManager;
 
     private FloatingActionButton mActionButton;
+
+    private AbstractVkListFragment mFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,12 +59,18 @@ public class UserGroupsListActivity extends NavigableActivity implements Abstrac
 
     private void refreshGroupsListFragment() {
         FragmentManager fm = getFragmentManager();
-        fm.beginTransaction().replace(R.id.fragment_container, GroupsListFragment.newInstance(0)).commitAllowingStateLoss();
+        mFragment =  GroupsListFragment.newInstance(0);
+        fm.beginTransaction().replace(R.id.fragment_container, mFragment).commitAllowingStateLoss();
     }
 
     @NonNull
     @Override
     public CoordinatorLayout getCoordinatorLayout() {
         return (CoordinatorLayout) findViewById(R.id.coordinator_layout);
+    }
+
+    @Override
+    protected void notifyDataSetChanged() {
+        mFragment.notifyDataSetChanged();
     }
 }

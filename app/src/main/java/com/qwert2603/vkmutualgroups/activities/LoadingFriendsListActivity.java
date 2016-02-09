@@ -9,7 +9,6 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -22,7 +21,6 @@ import android.widget.Toast;
 import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
-import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.ScrollCallbackableFriendsListFragment;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
@@ -41,8 +39,7 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notSta
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
  */
-public class LoadingFriendsListActivity extends AppCompatActivity
-        implements ScrollCallbackableFriendsListFragment.Callbacks, AbstractVkListFragment.Callbacks {
+public class LoadingFriendsListActivity extends BaseVkActivity implements ScrollCallbackableFriendsListFragment.Callbacks {
 
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 
@@ -296,6 +293,8 @@ public class LoadingFriendsListActivity extends AppCompatActivity
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+
         getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
 
         MenuItem groupsListMenuItem = menu.findItem(R.id.menu_groups_list);
@@ -328,15 +327,21 @@ public class LoadingFriendsListActivity extends AppCompatActivity
         }
     }
 
+    @NonNull
+    @Override
+    public CoordinatorLayout getCoordinatorLayout() {
+        return mCoordinatorLayout;
+    }
+
+    @Override
+    protected void notifyDataSetChanged() {
+        notifyFragmentDataSetChanged();
+    }
+
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
         boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
         mRefreshLayout.setEnabled(b);
     }
 
-    @NonNull
-    @Override
-    public CoordinatorLayout getCoordinatorLayout() {
-        return mCoordinatorLayout;
-    }
 }

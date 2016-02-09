@@ -1,13 +1,11 @@
 package com.qwert2603.vkmutualgroups.fragments;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +15,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.R;
+import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
 import com.qwert2603.vkmutualgroups.activities.FriendsListActivity;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.ImageViewHolder;
@@ -30,7 +29,7 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calcul
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список групп из DataManager в соответствии с id пользователя, переданным в {@link #newInstance(int)}
+ * Отображает список общих групп из DataManager в соответствии с id пользователя, переданным в {@link #newInstance(int)}
  */
 public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFull> {
 
@@ -41,7 +40,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
 
     /**
      * friendId - id друга. В списке будут выведены группы, общие с этим другом.
-     * Если friendId == 0, будут выведены группы позователя.
+     * Если friendId == 0, будут выведены группы пользователя в текущем порядке сортировки из mDataManager.
      */
     public static GroupsListFragment newInstance(int friendId) {
         GroupsListFragment result = new GroupsListFragment();
@@ -83,7 +82,6 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setRetainInstance(true);
-        setHasOptionsMenu(true);
 
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
@@ -149,7 +147,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
                 int groupId = mGroups.get(mActionedPosition).id;
                 switch (item.getItemId()) {
                     case R.id.menu_leave_group:
-                        leaveGroup(groupId);
+                        ((BaseVkActivity) getActivity()).leaveGroup(groupId);
                         mode.finish();
                         return true;
                     default:
@@ -166,7 +164,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         mListView.setAdapter(mGroupsAdapter);
 
         mActionButton.setIcon(R.drawable.message);
-        mActionButton.setOnClickListener((v) -> sendMessage(mFriendId));
+        mActionButton.setOnClickListener((v) -> ((BaseVkActivity) getActivity()).sendMessage(mFriendId));
 
         return view;
     }
@@ -174,10 +172,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     @Override
     public void notifyDataSetChanged() {
         super.notifyDataSetChanged();
-        Activity activity = getActivity();
-        if (activity != null) {
-            activity.invalidateOptionsMenu();
-        }
+
         boolean b = mFriendId != 0 && mDataManager.getFriendById(mFriendId) != null && mDataManager.getFetchingState() == finished;
         mActionButton.setVisibility(b ? View.VISIBLE : View.INVISIBLE);
     }
@@ -242,27 +237,6 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         public ImageView getImageView() {
             return mPhotoImageView;
         }
-    }
-
-    @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.groups_list_fragment, menu);
-
-        // если это список групп пользователя
-        // или пользователь, общие группы с которым отображаются, был удален, то удалить его нельзя.
-        if (mFriendId == 0 || mDataManager.getFriendById(mFriendId) == null) {
-            menu.findItem(R.id.menu_delete_friend).setVisible(false);
-        }
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_delete_friend:
-                deleteFriend(mFriendId);
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 
 }
