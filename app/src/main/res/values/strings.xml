@@ -5,7 +5,7 @@
     <string name="friend_name" translatable="false">"%1$s %2$s"</string>
     <string name="mutual">%d mut.</string>
     <string name="refresh">Refresh</string>
-    <string name="error_message">Loading failed!\nYou can try again.</string>
+    <string name="loading_failed">Loading failed!\nYou can try again.</string>
     <string name="friends">%d frn.</string>
     <string name="no_groups">No groups.</string>
     <string name="no_mutual_groups">No mutual groups.</string>

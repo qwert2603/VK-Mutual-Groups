@@ -4,7 +4,7 @@
     <string name="log_out">Выйти</string>
     <string name="mutual">%d общ.</string>
     <string name="refresh">Обновить</string>
-    <string name="error_message">Ошибка загрузки!\nВы можете попытаться снова.</string>
+    <string name="loading_failed">Ошибка загрузки!\nВы можете попытаться снова.</string>
     <string name="friends">%d дрг.</string>
     <string name="no_mutual_groups">Нет общих групп.</string>
     <string name="no_friends_in_group">Нет друзей в группе.</string>

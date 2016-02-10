@@ -57,7 +57,7 @@ public class FriendGroupsListActivity extends AbstractVkListActivity {
 
             @Override
             public void onError(String e) {
-                Snackbar.make(getCoordinatorLayout(), R.string.error_message, Snackbar.LENGTH_SHORT)
+                Snackbar.make(getCoordinatorLayout(), R.string.loading_failed, Snackbar.LENGTH_SHORT)
                         .setAction(R.string.refresh, (v) -> updateListFragment())
                         .show();
             }

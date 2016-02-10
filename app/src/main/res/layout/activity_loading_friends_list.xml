@@ -33,7 +33,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:text="@string/error_message"
+        android:text="@string/loading_failed"
         android:textColor="@color/vk_black"
         android:textSize="24sp"/>
 
