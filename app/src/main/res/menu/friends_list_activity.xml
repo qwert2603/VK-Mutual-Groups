@@ -5,4 +5,8 @@
         android:title="@string/leave_group"
         app:showAsAction="never"/>
 
+    <item android:id="@+id/menu_join_group"
+        android:title="@string/join_group"
+        app:showAsAction="never"/>
+
 </menu>

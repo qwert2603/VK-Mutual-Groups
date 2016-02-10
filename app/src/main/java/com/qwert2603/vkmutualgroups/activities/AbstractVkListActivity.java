@@ -5,12 +5,12 @@ import android.app.Fragment;
 import android.app.ListFragment;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.CallSuper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ArrayAdapter;
@@ -27,7 +27,10 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 /**
- * Activity, отображающая фрагмент-список (друзей или групп). todo
+ * Activity, отображающая фрагмент-список (друзей или групп).
+ * Это самая базовая Activity.
+ * Она позволяет отправлять сообщения, удалять из друзей и выходить из групп, вступать в группы.
+ * Также она предоставлят доступ к элементам UI: TextView-ошибка, RefreshLayout, ActionButton.
  */
 public abstract class AbstractVkListActivity extends AppCompatActivity {
 
@@ -37,18 +40,22 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     private static final int REQUEST_SEND_MESSAGE = 1;
     private static final int REQUEST_DELETE_FRIEND = 2;
     private static final int REQUEST_LEAVE_GROUP = 3;
+    private static final int REQUEST_JOIN_GROUP = 4;
 
     private static final String friendToDeleteId = "friendToDeleteId";
     private static final String groupToLeaveId = "groupToLeaveId";
+    private static final String groupToJoin = "groupToJoin";
 
     private DataManager mDataManager;
 
     private Bundle mArgs;
 
+    private SwipeRefreshLayout mRefreshLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_loading_friends_list);
+        setContentView(R.layout.activity_vk_list);
 
         mDataManager = DataManager.get(this);
         mArgs = new Bundle();
@@ -58,6 +65,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         }
 
         setListFragment(null);
+
+        mRefreshLayout = getRefreshLayout();
     }
 
     protected void setListFragment(AbstractVkListFragment fragment) {
@@ -76,7 +85,16 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         return getFragmentManager().findFragmentById(R.id.fragment_container);
     }
 
-    protected abstract void notifyDataSetChanged();
+    /**
+     * Уведомляет о том, что операция (удаления из друзей или выхода из группы) успешно завершилась.
+     */
+    @CallSuper
+    protected void notifyOperationCompleted() {
+        Fragment fragment = getListFragment();
+        if (fragment instanceof AbstractVkListFragment) {
+            ((AbstractVkListFragment) fragment).notifyDataSetChanged();
+        }
+    }
 
     protected TextView getErrorTextView() {
         return (TextView) findViewById(R.id.error_text_view);
@@ -97,7 +115,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
-        if (NavUtils.getParentActivityName(this) == null) {
+        if (NavUtils.getParentActivityName(this) != null) {
             getMenuInflater().inflate(R.menu.navigable_activity, menu);
         }
         return true;
@@ -123,13 +141,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
     }
 
-    public void deleteFriend(int friendId) {
-        VKApiUserFull friend = mDataManager.getUsersFriendById(friendId);
-        if (friend == null) {
-            Log.e(TAG, "deleteFriend ## ERROR!!! friend == null");
-            return;
-        }
-        mArgs.putInt(friendToDeleteId, friendId);
+    public void deleteFriend(VKApiUserFull friend) {
+        mArgs.putInt(friendToDeleteId, friend.id);
 
         String title = getString(R.string.friend_name, friend.first_name, friend.last_name);
         String question = getString(R.string.delete_friend) + "?";
@@ -138,18 +151,23 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
-    public void leaveGroup(int groupId) {
-        VKApiCommunityFull group = mDataManager.getUsersGroupById(groupId);
-        if (group == null) {
-            Log.e(TAG, "leaveGroup ## ERROR!!! group == null");
-            return;
-        }
-        mArgs.putInt(groupToLeaveId, groupId);
+    public void leaveGroup(VKApiCommunityFull group) {
+        mArgs.putInt(groupToLeaveId, group.id);
 
         String title = group.name;
         String question = getString(R.string.leave_group) + "?";
         ConfirmationDialogFragment dialogFragment = ConfirmationDialogFragment.newInstance(title, question);
         dialogFragment.setTargetFragment(mTargetFragment, REQUEST_LEAVE_GROUP);
+        dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
+    }
+
+    public void joinGroup(VKApiCommunityFull group) {
+        mArgs.putParcelable(groupToJoin, group);
+
+        String title = group.name;
+        String question = getString(R.string.join_group) + "?";
+        ConfirmationDialogFragment dialogFragment = ConfirmationDialogFragment.newInstance(title, question);
+        dialogFragment.setTargetFragment(mTargetFragment, REQUEST_JOIN_GROUP);
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
@@ -159,19 +177,19 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
             if (resultCode == Activity.RESULT_OK) {
                 switch (requestCode) {
                     case REQUEST_SEND_MESSAGE:
-                        Snackbar.make(getCoordinatorLayout(), R.string.message_sent, Snackbar.LENGTH_SHORT).show();
+                        showSnackbar(R.string.message_sent);
                         break;
                     case REQUEST_DELETE_FRIEND:
                         mDataManager.deleteFriend(mArgs.getInt(friendToDeleteId), new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
-                                Snackbar.make(getCoordinatorLayout(), R.string.friend_deleted_successfully, Snackbar.LENGTH_SHORT).show();
-                                notifyDataSetChanged();
+                                showSnackbar(R.string.friend_deleted_successfully);
+                                notifyOperationCompleted();
                             }
 
                             @Override
                             public void onError(String e) {
-                                Snackbar.make(getCoordinatorLayout(), R.string.friend_deleting_error, Snackbar.LENGTH_SHORT).show();
+                                showSnackbar(R.string.friend_deleting_error);
                             }
                         });
                         break;
@@ -179,13 +197,30 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                         mDataManager.leaveGroup(mArgs.getInt(groupToLeaveId), new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
-                                Snackbar.make(getCoordinatorLayout(), R.string.group_left_successfully, Snackbar.LENGTH_SHORT).show();
-                                notifyDataSetChanged();
+                                showSnackbar(R.string.group_left_successfully);
+                                notifyOperationCompleted();
                             }
 
                             @Override
                             public void onError(String e) {
-                                Snackbar.make(getCoordinatorLayout(), R.string.group_leaving_error, Snackbar.LENGTH_SHORT).show();
+                                showSnackbar(R.string.group_leaving_error);
+                            }
+                        });
+                        break;
+                    case REQUEST_JOIN_GROUP:
+                        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
+                        mDataManager.joinGroup(mArgs.getParcelable(groupToJoin), new Listener<Void>() {
+                            @Override
+                            public void onCompleted(Void aVoid) {
+                                showSnackbar(R.string.group_join_successfully);
+                                notifyOperationCompleted();
+                                mRefreshLayout.setRefreshing(false);
+                            }
+
+                            @Override
+                            public void onError(String e) {
+                                showSnackbar(R.string.group_joining_error);
+                                mRefreshLayout.setRefreshing(false);
                             }
                         });
                         break;
@@ -194,5 +229,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         }
     };
 
+    private void showSnackbar(int stringRes) {
+        Snackbar.make(getCoordinatorLayout(), stringRes, Snackbar.LENGTH_SHORT).show();
+    }
 
 }

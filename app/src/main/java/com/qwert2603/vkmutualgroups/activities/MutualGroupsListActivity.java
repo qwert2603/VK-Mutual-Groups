@@ -1,13 +1,13 @@
 package com.qwert2603.vkmutualgroups.activities;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
-import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
@@ -17,24 +17,39 @@ import com.vk.sdk.api.model.VKApiUserFull;
  */
 public class MutualGroupsListActivity extends AbstractVkListActivity {
 
-    public static final String EXTRA_FRIEND_ID = "com.alex.vkcommonpublics.EXTRA_FRIEND_ID";
+    public static final String EXTRA_FRIEND = "com.alex.vkcommonpublics.EXTRA_FRIEND";
 
-    private int mFriendId;
+    private VKApiUserFull mFriend;
 
     private DataManager mDataManager;
 
-    @Override
-    protected String getActionBarTitle() {
-        VKApiUserFull friend = DataManager.get(this).getUsersFriendById(mFriendId);
-        return (friend == null) ? getString(R.string.app_name) : getString(R.string.friend_name, friend.first_name, friend.last_name);
-    }
+    private FloatingActionButton mActionButton;
 
-    @Nullable
     @Override
-    protected AbstractVkListFragment createListFragment() {
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+
+        mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
+        mDataManager = DataManager.get(this);
+
+        if (getSupportActionBar() != null) {
+            VKApiUserFull friend = mDataManager.getUsersFriendById(mFriend.id);
+            String title = (friend == null)
+                    ? getString(R.string.app_name)
+                    : getString(R.string.friend_name, friend.first_name, friend.last_name);
+            getSupportActionBar().setTitle(title);
+        }
+
+        getErrorTextView().setVisibility(View.INVISIBLE);
+        getRefreshLayout().setEnabled(false);
+
+        mActionButton = getActionButton();
+        mActionButton.setIcon(R.drawable.message);
+        mActionButton.setOnClickListener((v) -> sendMessage(mFriend.id));
+
         VKApiCommunityArray group = null;
-        if (mFriendId != 0) {
-            VKApiUserFull friend = mDataManager.getUsersFriendById(mFriendId);
+        if (mFriend.id != 0) {
+            VKApiUserFull friend = mDataManager.getUsersFriendById(mFriend.id);
             if (friend != null) {
                 group = mDataManager.getGroupsMutualWithFriend(friend.id);
             }
@@ -45,27 +60,18 @@ public class MutualGroupsListActivity extends AbstractVkListActivity {
         if (group == null) {
             group = new VKApiCommunityArray();
         }
-        return GroupsListFragment.newInstance(mFriendId, group);
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        // mFriendId и mDataManager будет нужен в super.onCreate, поэтому его надо получить сейчас.
-        mFriendId = getIntent().getIntExtra(EXTRA_FRIEND_ID, 0);
-        mDataManager = DataManager.get(this);
-
-        super.onCreate(savedInstanceState);
+        setListFragment(GroupsListFragment.newInstance(group));
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
 
-        getMenuInflater().inflate(R.menu.groups_list_activityt, menu);
+        getMenuInflater().inflate(R.menu.groups_list_activity, menu);
 
         // если это список групп пользователя
         // или пользователь, общие группы с которым отображаются, был удален, то удалить его нельзя.
-        if (mFriendId == 0 || DataManager.get(this).getUsersFriendById(mFriendId) == null) {
+        if (mFriend.id == 0 || mDataManager.getUsersFriendById(mFriend.id) == null) {
             menu.findItem(R.id.menu_delete_friend).setVisible(false);
         }
         return true;
@@ -75,16 +81,19 @@ public class MutualGroupsListActivity extends AbstractVkListActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_delete_friend:
-                deleteFriend(mFriendId);
+                deleteFriend(mFriend);
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
-    protected void notifyDataSetChanged() {
-        super.notifyDataSetChanged();
+    protected void notifyOperationCompleted() {
+        super.notifyOperationCompleted();
         invalidateOptionsMenu();
+        if (mDataManager.getUsersFriendById(mFriend.id) == null) {
+            mActionButton.setVisibility(View.INVISIBLE);
+        }
     }
 
 }

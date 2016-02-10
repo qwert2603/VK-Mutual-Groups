@@ -83,14 +83,14 @@ public class DataManager {
     private HashMap<Integer, VKApiCommunityFull> mUserGroupsMap;
 
     /**
-     * Карта: "друг" - "общие с ним группы"
+     * Карта: "id друга" - "общие с ним группы"
      */
-    private Map<VKApiUserFull, VKApiCommunityArray> mGroupsMutualWithFriend;
+    private Map<Integer, VKApiCommunityArray> mGroupsMutualWithFriend;
 
     /**
-     * Карта: "группа" - "друзья в ней"
+     * Карта: "id группы" - "друзья в ней"
      */
-    private Map<VKApiCommunityFull, VKUsersArray> mFriendsInGroup;
+    private Map<Integer, VKUsersArray> mFriendsInGroup;
 
     /**
      * Какая сортировка друзей применена в настоящий момент.
@@ -196,7 +196,7 @@ public class DataManager {
      */
     @Nullable
     public VKApiCommunityArray getGroupsMutualWithFriend(int userId) {
-        return mGroupsMutualWithFriend.get(mUserFriendsMap.get(userId));
+        return mGroupsMutualWithFriend.get(userId);
     }
 
     /**
@@ -204,7 +204,7 @@ public class DataManager {
      */
     @Nullable
     public VKUsersArray getFriendsInGroup(int groupId) {
-        return mFriendsInGroup.get(mUserGroupsMap.get(groupId));
+        return mFriendsInGroup.get(groupId);
     }
 
     /**
@@ -325,6 +325,38 @@ public class DataManager {
     }
 
     /**
+     * Вступить в группу.
+     */
+    public void joinGroup(VKApiCommunityFull group, Listener<Void> listener) {
+        VKRequest request = VKApi.groups().join(VKParameters.from(VKApiConst.GROUP_ID, group.id));
+        request.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                new DeviceDataSaver(mContext).clear();
+                addGroupToData(group, new Listener<Void>() {
+                    @Override
+                    public void onCompleted(Void aVoid) {
+                        listener.onCompleted(null);
+                    }
+
+                    @Override
+                    public void onError(String e) {
+                        Log.e(TAG, "joinGroup ## ERROR == " + e);
+                        listener.onError(e);
+                    }
+                });
+                listener.onCompleted(null);
+            }
+
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "joinGroup ERROR!!! == " + error);
+                listener.onError(String.valueOf(error));
+            }
+        });
+    }
+
+    /**
      * Удалить все данные о друге.
      */
     private void deleteFriendFromData(int friendId) {
@@ -333,13 +365,13 @@ public class DataManager {
         mUsersFriendsByAlphabet.remove(friend);
         mUsersFriendsByMutual.remove(friend);
 
-        VKApiCommunityArray groups = mGroupsMutualWithFriend.get(friend);
+        VKApiCommunityArray groups = mGroupsMutualWithFriend.get(friend.id);
         if (groups != null) {
             for (VKApiCommunityFull group : groups) {
-                mFriendsInGroup.get(group).remove(friend);
+                mFriendsInGroup.get(group.id).remove(friend);
             }
         }
-        mGroupsMutualWithFriend.remove(friend);
+        mGroupsMutualWithFriend.remove(friend.id);
 
         mUserFriendsMap.remove(friendId);
     }
@@ -354,15 +386,106 @@ public class DataManager {
         mUsersGroupsByDefault.remove(group);
         mUsersGroupsByFriends.remove(group);
 
-        VKUsersArray friends = mFriendsInGroup.get(group);
+        VKUsersArray friends = mFriendsInGroup.get(group.id);
         if (friends != null) {
             for (VKApiUserFull friend : friends) {
-                mGroupsMutualWithFriend.get(friend).remove(group);
+                mGroupsMutualWithFriend.get(friend.id).remove(group);
             }
         }
-        mFriendsInGroup.remove(group);
+        mFriendsInGroup.remove(group.id);
 
         mUserGroupsMap.remove(groupId);
+    }
+
+    /**
+     * Добавить данные о группе, в которую вступил пользователь.
+     * При этом загрузить через vkapi список друзей, которые уже есть в этой группе.
+     */
+    private void addGroupToData(VKApiCommunityFull group, Listener<Void> listener) {
+        mFetchingState = FetchingState.calculatingMutual;
+        new AsyncTask<Void, Void, Void>(){
+            /**
+             * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
+             * Если == null, то ошибок не было.
+             */
+            private volatile String doInBackgroundErrorMessage;
+
+            /**
+             * Сколько шагов осталось до конца выполнения {@link #doInBackground(Void...)}.
+             */
+            private volatile int stepsRemain;
+
+            @Override
+            protected Void doInBackground(Void... params) {
+                mUsersGroupsByDefault.add(group);
+                mUsersGroupsByFriends.add(group);
+                mUserGroupsMap.put(group.id, group);
+                mFriendsInGroup.put(group.id, new VKUsersArray());
+
+                VKApiCommunityArray groups = new VKApiCommunityArray();
+                groups.add(group);
+
+                stepsRemain = new VKDataProvider(null).loadIsMembers(mUsersFriendsByAlphabet, groups,
+                        new DataProvider.LoadIsMemberListener() {
+                    @Override
+                    public void onProgress(@Nullable JSONObject jsonObject) {
+                        if (jsonObject == null || doInBackgroundErrorMessage != null || mNeedClearing) {
+                            --stepsRemain;
+                            return;
+                        }
+                        parseIsMemberJSON(jsonObject, new Listener<Void>() {
+                            @Override
+                            public void onCompleted(Void aVoid) {
+                                --stepsRemain;
+                            }
+
+                            @Override
+                            public void onError(String e) {
+                                doInBackgroundErrorMessage = e;
+                                --stepsRemain;
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onCompleted(Void aVoid) {
+                        --stepsRemain;
+                    }
+
+                    @Override
+                    public void onError(String e) {
+                        doInBackgroundErrorMessage = e;
+                        --stepsRemain;
+                    }
+                });
+
+                while (stepsRemain > 0) {
+                    try {
+                        Thread.sleep(15);
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                if (doInBackgroundErrorMessage == null && !mNeedClearing) {
+                    mFetchingState = FetchingState.finished;
+                    listener.onCompleted(null);
+                    return;
+                }
+
+                mFetchingState = FetchingState.notStarted;
+                clear();
+                clearDataOnDevice();
+
+                if (doInBackgroundErrorMessage != null) {
+                    listener.onError(doInBackgroundErrorMessage);
+                    Log.e(TAG, doInBackgroundErrorMessage);
+                }
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
     /**
@@ -592,7 +715,7 @@ public class DataManager {
             mFriendsSortState = FriendsSortState.byAlphabet;
 
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
-                mGroupsMutualWithFriend.put(friend, new VKApiCommunityArray());
+                mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray());
                 mUserFriendsMap.put(friend.id, friend);
             }
         }
@@ -604,7 +727,7 @@ public class DataManager {
             mGroupsSortState = GroupsSortState.byDefault;
 
             for (VKApiCommunityFull group : mUsersGroupsByDefault) {
-                mFriendsInGroup.put(group, new VKUsersArray());
+                mFriendsInGroup.put(group.id, new VKUsersArray());
                 mUserGroupsMap.put(group.id, group);
             }
         }
@@ -621,8 +744,8 @@ public class DataManager {
             Collections.sort(mUsersFriendsByMutual, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
                 @Override
                 public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                    VKApiCommunityArray lg = mGroupsMutualWithFriend.get(lhs);
-                    VKApiCommunityArray rg = mGroupsMutualWithFriend.get(rhs);
+                    VKApiCommunityArray lg = mGroupsMutualWithFriend.get(lhs.id);
+                    VKApiCommunityArray rg = mGroupsMutualWithFriend.get(rhs.id);
                     if (lg == null || rg == null) {
                         Log.e(TAG, "ERROR!!! UNKNOWN FRIEND!!! SORT FAILED!!!");
                         return 0;
@@ -641,8 +764,8 @@ public class DataManager {
             Collections.sort(mUsersGroupsByFriends, Collections.reverseOrder(new Comparator<VKApiCommunityFull>() {
                 @Override
                 public int compare(VKApiCommunityFull lhs, VKApiCommunityFull rhs) {
-                    VKUsersArray lf = mFriendsInGroup.get(lhs);
-                    VKUsersArray rf = mFriendsInGroup.get(rhs);
+                    VKUsersArray lf = mFriendsInGroup.get(lhs.id);
+                    VKUsersArray rf = mFriendsInGroup.get(rhs.id);
                     if (lf == null || rf == null) {
                         Log.e(TAG, "ERROR!!! UNKNOWN GROUP!!! SORT FAILED!!!");
                         return 0;
@@ -652,56 +775,6 @@ public class DataManager {
                     return (l == r) ? 0 : ((l > r) ? 1 : -1);
                 }
             }));
-        }
-
-        /**
-         * Разобрать resultedJSONObject с информацией о наличии друзей в группах.
-         */
-        private void parseIsMemberJSON(final JSONObject resultedJSONObject, final Listener<Void> listener) {
-            new AsyncTask<Void, Void, Void>() {
-                /**
-                 * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
-                 * Если == null, то ошибок не было.
-                 */
-                private volatile String mErrorMessage = null;
-
-                @Override
-                protected Void doInBackground(Void... params) {
-                    try {
-                        JSONArray responseJSONArray = resultedJSONObject.getJSONArray("response");
-                        int responseJSONArrayLength = responseJSONArray.length();
-                        for (int i = 0; i < responseJSONArrayLength; ++i) {
-                            JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
-                            int groupId = groupJSONObject.getInt("group_id");
-                            VKApiCommunityFull group = mUserGroupsMap.get(groupId);
-                            JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
-                            int membersJSONArrayLength = membersJSONArray.length();
-                            for (int j = 0; j < membersJSONArrayLength; ++j) {
-                                JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
-                                if (memberJSONObject.getInt("member") == 1) {
-                                    int friendId = memberJSONObject.getInt("user_id");
-                                    VKApiUserFull friend = mUserFriendsMap.get(friendId);
-                                    mGroupsMutualWithFriend.get(friend).add(group);
-                                    mFriendsInGroup.get(group).add(friend);
-                                }
-                            }
-                        }
-                    } catch (JSONException e) {
-                        mErrorMessage = String.valueOf(e);
-                    }
-                    return null;
-                }
-
-                @Override
-                protected void onPostExecute(Void aVoid) {
-                    if (mErrorMessage == null) {
-                        listener.onCompleted(null);
-                    }
-                    else {
-                        listener.onError(mErrorMessage);
-                    }
-                }
-            }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
 
         private static final int PROGRESS_FRIENDS_LOADED = 1;
@@ -737,6 +810,56 @@ public class DataManager {
                 Log.e(TAG, doInBackgroundErrorMessage);
             }
         }
+    }
+
+    /**
+     * Разобрать resultedJSONObject с информацией о наличии друзей в группах.
+     */
+    private void parseIsMemberJSON(final JSONObject resultedJSONObject, final Listener<Void> listener) {
+        new AsyncTask<Void, Void, Void>() {
+            /**
+             * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
+             * Если == null, то ошибок не было.
+             */
+            private volatile String mErrorMessage = null;
+
+            @Override
+            protected Void doInBackground(Void... params) {
+                try {
+                    JSONArray responseJSONArray = resultedJSONObject.getJSONArray("response");
+                    int responseJSONArrayLength = responseJSONArray.length();
+                    for (int i = 0; i < responseJSONArrayLength; ++i) {
+                        JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
+                        int groupId = groupJSONObject.getInt("group_id");
+                        VKApiCommunityFull group = mUserGroupsMap.get(groupId);
+                        JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
+                        int membersJSONArrayLength = membersJSONArray.length();
+                        for (int j = 0; j < membersJSONArrayLength; ++j) {
+                            JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
+                            if (memberJSONObject.getInt("member") == 1) {
+                                int friendId = memberJSONObject.getInt("user_id");
+                                VKApiUserFull friend = mUserFriendsMap.get(friendId);
+                                mGroupsMutualWithFriend.get(friend.id).add(group);
+                                mFriendsInGroup.get(group.id).add(friend);
+                            }
+                        }
+                    }
+                } catch (JSONException e) {
+                    mErrorMessage = String.valueOf(e);
+                }
+                return null;
+            }
+
+            @Override
+            protected void onPostExecute(Void aVoid) {
+                if (mErrorMessage == null) {
+                    listener.onCompleted(null);
+                }
+                else {
+                    listener.onError(mErrorMessage);
+                }
+            }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
 }

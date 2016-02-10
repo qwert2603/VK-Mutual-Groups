@@ -32,4 +32,8 @@
     <string name="group_left_successfully">You left group successfully.</string>
     <string name="groups_of_friend_empty_list">User\'s groups list is empty or user hide groups list.</string>
     <string name="view_groups">View groups</string>
+    <string name="groups_list_loaded">Groups list loaded!</string>
+    <string name="join_group">Join group</string>
+    <string name="group_joining_error">You did NOT join group!</string>
+    <string name="group_join_successfully">You join group successfully.</string>
 </resources>

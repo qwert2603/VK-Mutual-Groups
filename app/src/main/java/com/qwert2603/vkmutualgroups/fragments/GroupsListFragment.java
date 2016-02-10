@@ -13,7 +13,7 @@ import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
+import com.qwert2603.vkmutualgroups.activities.AbstractVkListActivity;
 import com.qwert2603.vkmutualgroups.activities.FriendsInGroupListActivity;
 import com.qwert2603.vkmutualgroups.adapters.GroupAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
@@ -24,24 +24,18 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список общих групп, переданный в {@link #newInstance(int, VKApiCommunityArray)}
+ * Отображает список групп, переданный в {@link #newInstance(VKApiCommunityArray)}
  */
 public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFull> {
 
     @SuppressWarnings("unused")
     private static final String TAG = "GroupsListFragment";
 
-    private static final String friendIdKey = "friendIdKey";
     private static final String groupsKey = "groupsKey";
 
-    /**
-     * friendId - id друга. В списке будут выведены группы, общие с этим другом.
-     * Если friendId == 0, будут выведены группы пользователя в текущем порядке сортировки из mDataManager.
-     */
-    public static GroupsListFragment newInstance(int friendId, VKApiCommunityArray groups) {
+    public static GroupsListFragment newInstance(VKApiCommunityArray groups) {
         GroupsListFragment result = new GroupsListFragment();
         Bundle args = new Bundle();
-        args.putInt(friendIdKey, friendId);
         args.putParcelable(groupsKey, groups);
         result.setArguments(args);
         return result;
@@ -51,7 +45,6 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     private PhotoManager mPhotoManager;
 
     private VKApiCommunityArray mGroups;
-    private int mFriendId;
 
     private GroupAdapter mGroupsAdapter;
 
@@ -83,7 +76,6 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
 
-        mFriendId = getArguments().getInt(friendIdKey);
         mGroups = getArguments().getParcelable(groupsKey);
     }
 
@@ -97,7 +89,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
                 VKApiCommunityFull group = (VKApiCommunityFull) mListView.getAdapter().getItem(position);
                 if (mDataManager.getUsersGroupById(group.id) != null) {
                     Intent intent = new Intent(getActivity(), FriendsInGroupListActivity.class);
-                    intent.putExtra(FriendsInGroupListActivity.EXTRA_GROUP_ID, group.id);
+                    intent.putExtra(FriendsInGroupListActivity.EXTRA_GROUP, group);
                     startActivity(intent);
                 }
             }
@@ -109,11 +101,16 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 // чтобы выделялось не более 1 группы.
-                // И чтобы не выделялись те группы, в которых пользователь не состоит.
-                if (mListView.getCheckedItemCount() > 1 || mDataManager.getUsersGroupById(mGroups.get(position).id) == null) {
+                if (mListView.getCheckedItemCount() > 1) {
                     mode.finish();
                 } else {
                     mActionedPosition = position;
+
+                    if (mDataManager.getUsersGroupById(mGroups.get(mActionedPosition).id) != null) {
+                        mode.getMenu().findItem(R.id.menu_join_group).setVisible(false);
+                    } else {
+                        mode.getMenu().findItem(R.id.menu_leave_group).setVisible(false);
+                    }
                 }
             }
 
@@ -134,10 +131,14 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
 
             @Override
             public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                int groupId = mGroups.get(mActionedPosition).id;
+                VKApiCommunityFull group = mGroups.get(mActionedPosition);
                 switch (item.getItemId()) {
                     case R.id.menu_leave_group:
-                        ((BaseVkActivity) getActivity()).leaveGroup(groupId);
+                        ((AbstractVkListActivity) getActivity()).leaveGroup(group);
+                        mode.finish();
+                        return true;
+                    case R.id.menu_join_group:
+                        ((AbstractVkListActivity) getActivity()).joinGroup(group);
                         mode.finish();
                         return true;
                     default:
@@ -153,18 +154,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         mGroupsAdapter = new GroupAdapter(getActivity(), mGroups);
         mListView.setAdapter(mGroupsAdapter);
 
-        mActionButton.setIcon(R.drawable.message);
-        mActionButton.setOnClickListener((v) -> ((BaseVkActivity) getActivity()).sendMessage(mFriendId));
-
         return view;
-    }
-
-    @Override
-    public void notifyDataSetChanged() {
-        super.notifyDataSetChanged();
-
-        boolean b = mFriendId != 0 && mDataManager.getUsersFriendById(mFriendId) != null && mDataManager.getFetchingState() == finished;
-        mActionButton.setVisibility(b ? View.VISIBLE : View.INVISIBLE);
     }
 
 }

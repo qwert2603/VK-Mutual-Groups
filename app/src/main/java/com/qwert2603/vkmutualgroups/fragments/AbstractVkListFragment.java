@@ -1,12 +1,11 @@
 package com.qwert2603.vkmutualgroups.fragments;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.design.widget.CoordinatorLayout;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,16 +14,12 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
-import com.qwert2603.vkmutualgroups.behaviors.FloatingActionButtonBehavior;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.api.model.Identifiable;
 import com.vk.sdk.api.model.VKApiModel;
 
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static android.widget.AbsListView.OnScrollListener.SCROLL_STATE_IDLE;
 
 /**
@@ -43,8 +38,6 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
     protected ListView mListView;
     private int mListViewScrollState;
 
-    protected FloatingActionButton mActionButton;
-
     protected abstract String getEmptyListText();
 
     protected abstract int getItemsCount();
@@ -53,21 +46,9 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
 
     protected abstract ArrayAdapter<T> getListAdapter();
 
-    protected AbsListView.OnScrollListener mListViewOnScrollListener = new AbsListView.OnScrollListener() {
-        @Override
-        public void onScrollStateChanged(AbsListView view, int scrollState) {
-            mListViewScrollState = scrollState;
-            if (mListViewScrollState == SCROLL_STATE_IDLE) {
-                // при остановке скроллинга загружаем фото видимых друзей или групп.
-                notifyDataSetChanged();
-                fetchVisibleFriendsPhoto();
-            }
-        }
-
-        @Override
-        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        }
-    };
+    public interface Callbacks {
+        void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -81,25 +62,30 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_list, container, false);
         mListView = (ListView) view.findViewById(android.R.id.list);
-        mListView.setOnScrollListener(mListViewOnScrollListener);
+        mListView.setOnScrollListener(new AbsListView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(AbsListView view, int scrollState) {
+                mListViewScrollState = scrollState;
+                if (mListViewScrollState == SCROLL_STATE_IDLE) {
+                    // при остановке скроллинга загружаем фото видимых друзей или групп.
+                    notifyDataSetChanged();
+                    fetchVisibleFriendsPhoto();
+                }
+            }
+
+            @Override
+            public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+                Activity activity = getActivity();
+                if (activity instanceof Callbacks) {
+                    ((Callbacks) activity).onListViewScroll(view, firstVisibleItem, visibleItemCount, totalItemCount);
+                }
+            }
+        });
 
         TextView empty_list_text_view = (TextView) view.findViewById(android.R.id.empty);
         empty_list_text_view.setText(getEmptyListText());
 
         mListView.setEmptyView(empty_list_text_view);
-
-        mActionButton = (FloatingActionButton) view.findViewById(R.id.fragment_list_action_button);
-
-        // Прикрепляем actionButton к CoordinatorLayout активности, чтобы actionButton смещался при появлении Snackbar.
-        CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT);
-        layoutParams.gravity = Gravity.END | Gravity.BOTTOM;
-        int margin = (int) getResources().getDimension(R.dimen.floatingActionButtonMargin);
-        layoutParams.bottomMargin = layoutParams.rightMargin = margin;
-        layoutParams.setBehavior(new FloatingActionButtonBehavior(getActivity(), null));
-
-        ((ViewGroup) mActionButton.getParent()).removeView(mActionButton);
-        CoordinatorLayout coordinatorLayout = ((BaseVkActivity) getActivity()).getCoordinatorLayout();
-        coordinatorLayout.addView(mActionButton, layoutParams);
 
         return view;
     }

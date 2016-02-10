@@ -13,7 +13,7 @@ import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
 
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.BaseVkActivity;
+import com.qwert2603.vkmutualgroups.activities.AbstractVkListActivity;
 import com.qwert2603.vkmutualgroups.activities.FriendGroupsListActivity;
 import com.qwert2603.vkmutualgroups.activities.MutualGroupsListActivity;
 import com.qwert2603.vkmutualgroups.adapters.FriendAdapter;
@@ -25,24 +25,18 @@ import com.vk.sdk.api.model.VKUsersArray;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список друзей, переданный в {@link #newInstance(int, VKUsersArray)}.
+ * Отображает список друзей, переданный в {@link #newInstance(VKUsersArray)}.
  */
 public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
     @SuppressWarnings("unused")
     private static final String TAG = "FriendsListFragment";
 
-    private static final String groupIdKey = "groupIdKey";
     private static final String friendsKey = "friendsKey";
 
-    /**
-     * groupId - id группы. В списке будут выведены друзья в этой группе.
-     * Если groupId == 0, будут выведены друзья пользователя в текущем порядке сортировки из mDataManager.
-     */
-    public static FriendsListFragment newInstance(int groupId, VKUsersArray friends) {
+    public static FriendsListFragment newInstance(VKUsersArray friends) {
         FriendsListFragment result = new FriendsListFragment();
         Bundle args = new Bundle();
-        args.putInt(groupIdKey, groupId);
         args.putParcelable(friendsKey, friends);
         result.setArguments(args);
         return result;
@@ -52,7 +46,6 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
     private PhotoManager mPhotoManager;
 
     private VKUsersArray mFriends;
-    private int mGroupId;
 
     private FriendAdapter mFriendAdapter;
 
@@ -84,7 +77,6 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
 
-        mGroupId = getArguments().getInt(groupIdKey);
         mFriends = getArguments().getParcelable(friendsKey);
     }
 
@@ -98,7 +90,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                 VKApiUserFull friend = (VKApiUserFull) mListView.getAdapter().getItem(position);
                 if (mDataManager.getUsersFriendById(friend.id) != null) {
                     Intent intent = new Intent(getActivity(), MutualGroupsListActivity.class);
-                    intent.putExtra(MutualGroupsListActivity.EXTRA_FRIEND_ID, friend.id);
+                    intent.putExtra(MutualGroupsListActivity.EXTRA_FRIEND, friend);
                     startActivity(intent);
                 }
             }
@@ -135,20 +127,20 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
             @Override
             public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                int friendId = mFriends.get(mActionedPosition).id;
+                VKApiUserFull friend = mFriends.get(mActionedPosition);
                 switch (item.getItemId()) {
                     case R.id.menu_message:
-                        ((BaseVkActivity) getActivity()).sendMessage(friendId);
+                        ((AbstractVkListActivity) getActivity()).sendMessage(friend.id);
                         mode.finish();
                         return true;
                     case R.id.menu_view_groups:
                         Intent intent = new Intent(getActivity(), FriendGroupsListActivity.class);
-                        intent.putExtra(MutualGroupsListActivity.EXTRA_FRIEND_ID, friendId);
+                        intent.putExtra(FriendGroupsListActivity.EXTRA_FRIEND, friend);
                         startActivity(intent);
                         mode.finish();
                         return true;
                     case R.id.menu_delete_friend:
-                        ((BaseVkActivity) getActivity()).deleteFriend(friendId);
+                        ((AbstractVkListActivity) getActivity()).deleteFriend(friend);
                         mode.finish();
                         return true;
                     default:
@@ -163,8 +155,6 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
         mFriendAdapter = new FriendAdapter(getActivity(), mFriends);
         mListView.setAdapter(mFriendAdapter);
-
-        mActionButton.setVisibility(View.INVISIBLE);
 
         return view;
     }

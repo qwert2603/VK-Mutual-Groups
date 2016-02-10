@@ -3,10 +3,10 @@ package com.qwert2603.vkmutualgroups.activities;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
-import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKUsersArray;
@@ -16,23 +16,31 @@ import com.vk.sdk.api.model.VKUsersArray;
  */
 public class FriendsInGroupListActivity extends AbstractVkListActivity {
 
-    public static final String EXTRA_GROUP_ID = "com.alex.vkcommonpublics.EXTRA_GROUP_ID";
+    public static final String EXTRA_GROUP = "com.alex.vkcommonpublics.EXTRA_GROUP";
 
-    private int mGroupId;
+    private VKApiCommunityFull mGroup;
 
     private DataManager mDataManager;
 
     @Override
-    protected String getActionBarTitle() {
-        VKApiCommunityFull group = DataManager.get(this).getUsersGroupById(mGroupId);
-        return (group == null) ? getString(R.string.app_name) : group.name;
-    }
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-    @Override
-    protected AbstractVkListFragment createListFragment() {
+        mGroup = getIntent().getParcelableExtra(EXTRA_GROUP);
+        mDataManager = DataManager.get(this);
+
+        if (getSupportActionBar() != null) {
+            VKApiCommunityFull group = mDataManager.getUsersGroupById(mGroup.id);
+            getSupportActionBar().setTitle((group == null) ? getString(R.string.app_name) : group.name);
+        }
+
+        getErrorTextView().setVisibility(View.INVISIBLE);
+        getRefreshLayout().setEnabled(false);
+        getActionButton().setVisibility(View.INVISIBLE);
+
         VKUsersArray friends = null;
-        if (mGroupId != 0) {
-            VKApiCommunityFull group = mDataManager.getUsersGroupById(mGroupId);
+        if (mGroup.id != 0) {
+            VKApiCommunityFull group = mDataManager.getUsersGroupById(mGroup.id);
             if (group != null) {
                 friends = mDataManager.getFriendsInGroup(group.id);
             }
@@ -43,16 +51,7 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
         if (friends == null) {
             friends = new VKUsersArray();
         }
-        return FriendsListFragment.newInstance(mGroupId, friends);
-    }
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        // mFriendId и mDataManager будет нужен в super.onCreate, поэтому его надо получить сейчас.
-        mGroupId = getIntent().getIntExtra(EXTRA_GROUP_ID, 0);
-        mDataManager = DataManager.get(this);
-
-        super.onCreate(savedInstanceState);
+        setListFragment(FriendsListFragment.newInstance(friends));
     }
 
     @Override
@@ -61,9 +60,14 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
 
         getMenuInflater().inflate(R.menu.friends_list_activity, menu);
 
-        // если это список друзей пользователя
-        // или группа, друзья в которой отображаются, была покинута, то выйти из нее нельзя.
-        if (mGroupId == 0 || DataManager.get(this).getUsersGroupById(mGroupId) == null) {
+        if (mGroup.id == 0) {
+            menu.findItem(R.id.menu_join_group).setVisible(false);
+            menu.findItem(R.id.menu_leave_group).setVisible(false);
+        }
+
+        if (mDataManager.getUsersGroupById(mGroup.id) != null) {
+            menu.findItem(R.id.menu_join_group).setVisible(false);
+        } else {
             menu.findItem(R.id.menu_leave_group).setVisible(false);
         }
         return true;
@@ -73,15 +77,19 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_leave_group:
-                leaveGroup(mGroupId);
+                leaveGroup(mGroup);
+                return true;
+            case R.id.menu_join_group:
+                joinGroup(mGroup);
                 return true;
         }
         return super.onOptionsItemSelected(item);
     }
 
     @Override
-    protected void notifyDataSetChanged() {
-        super.notifyDataSetChanged();
+    protected void notifyOperationCompleted() {
+        super.notifyOperationCompleted();
         invalidateOptionsMenu();
     }
+
 }
