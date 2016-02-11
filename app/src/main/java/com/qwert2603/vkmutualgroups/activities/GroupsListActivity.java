@@ -49,7 +49,7 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
             menu.findItem(R.id.menu_leave_group).setVisible(false);
         }
 
-        if (mDataManager.getUsersGroupById(mFriend.id) != null) {
+        if (mDataManager.getUsersFriendById(mFriend.id) != null) {
             menu.findItem(R.id.menu_add_friend).setVisible(false);
         } else {
             menu.findItem(R.id.menu_delete_friend).setVisible(false);
@@ -79,8 +79,6 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
     protected void notifyOperationCompleted() {
         super.notifyOperationCompleted();
         invalidateOptionsMenu();
-        if (mDataManager.getUsersFriendById(mFriend.id) == null) {
-            mActionButton.setVisibility(View.INVISIBLE);
-        }
+        mActionButton.setVisibility((mDataManager.getUsersFriendById(mFriend.id) != null) ? View.VISIBLE : View.INVISIBLE);
     }
 }

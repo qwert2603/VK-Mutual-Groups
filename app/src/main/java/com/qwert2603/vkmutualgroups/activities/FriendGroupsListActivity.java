@@ -44,7 +44,6 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
         mErrorTextView.setVisibility(View.INVISIBLE);
 
         mRefreshLayout = getRefreshLayout();
-        mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
         mRefreshLayout.setOnRefreshListener(this::fetchFriendGroups);
 
         if (getSupportActionBar() != null) {
@@ -65,7 +64,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
         mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
             @Override
             public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
-                setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls));
+                setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls, getString(R.string.no_groups)));
                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 mRefreshLayout.setEnabled(true);
                 Snackbar.make(mCoordinatorLayout, R.string.groups_list_loaded, Snackbar.LENGTH_SHORT).show();

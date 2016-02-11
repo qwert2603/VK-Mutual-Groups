@@ -25,7 +25,7 @@ import com.vk.sdk.api.model.VKUsersArray;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список друзей, переданный в {@link #newInstance(VKUsersArray)}.
+ * Отображает список друзей, переданный в {@link #newInstance(VKUsersArray, String)}.
  */
 public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
@@ -33,11 +33,13 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
     private static final String TAG = "FriendsListFragment";
 
     private static final String friendsKey = "friendsKey";
+    private static final String emptyListTextKey = "emptyListTextKey";
 
-    public static FriendsListFragment newInstance(VKUsersArray friends) {
+    public static FriendsListFragment newInstance(VKUsersArray friends, String emptyListText) {
         FriendsListFragment result = new FriendsListFragment();
         Bundle args = new Bundle();
         args.putParcelable(friendsKey, friends);
+        args.putString(emptyListTextKey, emptyListText);
         result.setArguments(args);
         return result;
     }
@@ -51,7 +53,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
 
     @Override
     protected String getEmptyListText() {
-        return getString(R.string.no_friends);
+        return getArguments().getString(emptyListTextKey);
     }
 
     @Override
@@ -102,11 +104,16 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 // чтобы выделялось не более 1 друга.
-                // И чтобы не выделялись те люди, которых нет в друзьях.
-                if (mListView.getCheckedItemCount() > 1 || mDataManager.getUsersFriendById(mFriends.get(position).id) == null) {
+                if (mListView.getCheckedItemCount() > 1) {
                     mode.finish();
                 } else {
                     mActionedPosition = position;
+
+                    if (mDataManager.getUsersFriendById(mFriends.get(mActionedPosition).id) != null) {
+                        mode.getMenu().findItem(R.id.menu_add_friend).setVisible(false);
+                    } else {
+                        mode.getMenu().findItem(R.id.menu_delete_friend).setVisible(false);
+                    }
                 }
             }
 
@@ -141,6 +148,10 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                         return true;
                     case R.id.menu_delete_friend:
                         ((AbstractVkListActivity) getActivity()).deleteFriend(friend);
+                        mode.finish();
+                        return true;
+                    case R.id.menu_add_friend:
+                        ((AbstractVkListActivity) getActivity()).addFriend(friend);
                         mode.finish();
                         return true;
                     default:

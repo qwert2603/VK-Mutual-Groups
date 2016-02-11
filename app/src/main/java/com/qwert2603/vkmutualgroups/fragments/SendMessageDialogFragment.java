@@ -23,14 +23,13 @@ import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
 import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 /**
- * Диалог фрагмент для отправки сообщения о кол-ве общих групп.
+ * Диалог фрагмент для отправки сообщения другу о кол-ве общих групп.
  * Если отправка сообщения пользователю невозможна (он закрыл личные сообщения),
  * выводится соответствующая надпись.
- *
- * Для работы необходимо, чтобы {@link DataManager#getUsersFriendById(int)} для friendId возвращал объект друга, а не null.
  */
 public class SendMessageDialogFragment extends DialogFragment {
 
@@ -95,6 +94,10 @@ public class SendMessageDialogFragment extends DialogFragment {
             text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);
             if (mutual == 0) {
                 text = text.replace("0", getString(R.string.no));
+            }
+            String groupFormat = "\n* %1$s (http://vk.com/%2$s)";
+            for (VKApiCommunityFull group : groupsMutualWithFriend) {
+                text +=String.format(groupFormat, group.name, group.screen_name);
             }
         }
         editText.setText(text);

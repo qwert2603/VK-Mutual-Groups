@@ -20,9 +20,9 @@
 
     <EditText android:id="@+id/edit_text"
         android:layout_width="match_parent"
-        android:layout_height="128dp"
+        android:layout_height="160dp"
         android:gravity="top"
-        android:textSize="16sp"
+        android:textSize="14sp"
         android:text="rtgrtg\nrtgyrg\nqwert"/>
 
     <LinearLayout

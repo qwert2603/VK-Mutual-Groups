@@ -1,7 +1,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item android:id="@+id/menu_message"
-        android:title="@string/send_message" />
+        android:title="@string/send_message"
+        android:icon="@drawable/message"/>
 
     <item android:id="@+id/menu_view_groups"
         android:title="@string/view_groups"/>

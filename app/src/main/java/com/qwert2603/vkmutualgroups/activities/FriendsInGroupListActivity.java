@@ -30,20 +30,16 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
         mDataManager = DataManager.get(this);
 
         if (getSupportActionBar() != null) {
-            VKApiCommunityFull group = mDataManager.getUsersGroupById(mGroup.id);
-            getSupportActionBar().setTitle((group == null) ? getString(R.string.app_name) : group.name);
+            getSupportActionBar().setTitle(mGroup.name);
         }
 
         getErrorTextView().setVisibility(View.INVISIBLE);
         getRefreshLayout().setEnabled(false);
         getActionButton().setVisibility(View.INVISIBLE);
 
-        VKUsersArray friends = null;
+        VKUsersArray friends;
         if (mGroup.id != 0) {
-            VKApiCommunityFull group = mDataManager.getUsersGroupById(mGroup.id);
-            if (group != null) {
-                friends = mDataManager.getFriendsInGroup(group.id);
-            }
+            friends = mDataManager.getFriendsInGroup(mGroup.id);
         } else {
             friends = mDataManager.getUsersFriends();
         }
@@ -51,7 +47,7 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
         if (friends == null) {
             friends = new VKUsersArray();
         }
-        setListFragment(FriendsListFragment.newInstance(friends));
+        setListFragment(FriendsListFragment.newInstance(friends, getString(R.string.no_friends_in_group)));
     }
 
     @Override

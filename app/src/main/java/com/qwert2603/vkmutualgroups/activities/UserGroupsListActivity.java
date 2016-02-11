@@ -55,7 +55,7 @@ public class UserGroupsListActivity extends AbstractVkListActivity {
     }
 
     private void refreshGroupsListFragment() {
-        setListFragment(GroupsListFragment.newInstance(mDataManager.getUsersGroups()));
+        setListFragment(GroupsListFragment.newInstance(mDataManager.getUsersGroups(), getString(R.string.no_groups)));
     }
 
 }

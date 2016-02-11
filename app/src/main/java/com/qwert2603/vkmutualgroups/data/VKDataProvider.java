@@ -58,7 +58,7 @@ public class VKDataProvider implements DataProvider {
 
     @Override
     public void loadGroups(final Listener<VKApiCommunityArray> listener) {
-        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50"));
+        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {

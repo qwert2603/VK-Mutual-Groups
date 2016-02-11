@@ -62,7 +62,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
         mErrorTextView.setVisibility(View.INVISIBLE);
 
         mRefreshLayout = getRefreshLayout();
-        mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
         mRefreshLayout.setOnRefreshListener(this::refreshData);
 
         mActionButton = getActionButton();
@@ -204,7 +203,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
         VKUsersArray friends = mDataManager.getUsersFriends();
         if (friends != null) {
-            setListFragment(FriendsListFragment.newInstance(friends));
+            setListFragment(FriendsListFragment.newInstance(friends, getString(R.string.no_friends)));
             mActionButton.setVisibility(View.VISIBLE);
         } else {
             removeFriendsListFragment();

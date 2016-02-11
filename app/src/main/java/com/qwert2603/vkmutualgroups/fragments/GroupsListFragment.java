@@ -24,7 +24,7 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список групп, переданный в {@link #newInstance(VKApiCommunityArray)}
+ * Отображает список групп, переданный в {@link #newInstance(VKApiCommunityArray, String)}
  */
 public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFull> {
 
@@ -32,11 +32,13 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     private static final String TAG = "GroupsListFragment";
 
     private static final String groupsKey = "groupsKey";
+    private static final String emptyListTextKey = "emptyListTextKey";
 
-    public static GroupsListFragment newInstance(VKApiCommunityArray groups) {
+    public static GroupsListFragment newInstance(VKApiCommunityArray groups, String emptyListText) {
         GroupsListFragment result = new GroupsListFragment();
         Bundle args = new Bundle();
         args.putParcelable(groupsKey, groups);
+        args.putString(emptyListTextKey, emptyListText);
         result.setArguments(args);
         return result;
     }
@@ -50,7 +52,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
 
     @Override
     protected String getEmptyListText() {
-        return getString(R.string.no_groups);
+        return getArguments().getString(emptyListTextKey);
     }
 
     @Override

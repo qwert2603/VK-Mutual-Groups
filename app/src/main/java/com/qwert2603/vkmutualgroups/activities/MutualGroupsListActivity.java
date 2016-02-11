@@ -10,7 +10,7 @@ import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 /**
- * Группы, общте с другом.
+ * Группы, общие с другом.
  */
 public class MutualGroupsListActivity extends GroupsListActivity {
 
@@ -18,34 +18,27 @@ public class MutualGroupsListActivity extends GroupsListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        VKApiUserFull mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
+        VKApiUserFull friend = getIntent().getParcelableExtra(EXTRA_FRIEND);
         DataManager mDataManager = DataManager.get(this);
 
         if (getSupportActionBar() != null) {
-            VKApiUserFull friend = mDataManager.getUsersFriendById(mFriend.id);
-            String title = (friend == null)
-                    ? getString(R.string.app_name)
-                    : getString(R.string.friend_name, friend.first_name, friend.last_name);
-            getSupportActionBar().setTitle(title);
+            getSupportActionBar().setTitle(getString(R.string.friend_name, friend.first_name, friend.last_name));
         }
 
         getErrorTextView().setVisibility(View.INVISIBLE);
         getRefreshLayout().setEnabled(false);
 
-        VKApiCommunityArray group = null;
-        if (mFriend.id != 0) {
-            VKApiUserFull friend = mDataManager.getUsersFriendById(mFriend.id);
-            if (friend != null) {
-                group = mDataManager.getGroupsMutualWithFriend(friend.id);
-            }
+        VKApiCommunityArray groups;
+        if (friend.id != 0) {
+            groups = mDataManager.getGroupsMutualWithFriend(friend.id);
         } else {
-            group = mDataManager.getUsersGroups();
+            groups = mDataManager.getUsersGroups();
         }
 
-        if (group == null) {
-            group = new VKApiCommunityArray();
+        if (groups == null) {
+            groups = new VKApiCommunityArray();
         }
-        setListFragment(GroupsListFragment.newInstance(group));
+        setListFragment(GroupsListFragment.newInstance(groups, getString(R.string.no_mutual_groups)));
     }
 
 }

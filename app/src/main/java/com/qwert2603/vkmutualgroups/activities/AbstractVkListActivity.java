@@ -29,7 +29,7 @@ import com.vk.sdk.api.model.VKApiUserFull;
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
  * Это самая базовая Activity.
- * Она позволяет отправлять сообщения, удалять из друзей и выходить из групп, вступать в группы.
+ * Она позволяет отправлять сообщения, удалять и добавлять друзей, выходить из групп, вступать в группы.
  * Также она предоставлят доступ к элементам UI: TextView-ошибка, RefreshLayout, ActionButton.
  */
 public abstract class AbstractVkListActivity extends AppCompatActivity {
@@ -69,6 +69,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         setListFragment(null);
 
         mRefreshLayout = getRefreshLayout();
+        mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
     }
 
     protected void setListFragment(AbstractVkListFragment fragment) {
