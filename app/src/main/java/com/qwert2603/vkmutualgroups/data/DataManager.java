@@ -291,13 +291,44 @@ public class DataManager {
             @Override
             public void onComplete(VKResponse response) {
                 deleteFriendFromData(friendId);
-                new DeviceDataSaver(mContext).clear();
+                clearDataOnDevice();
                 listener.onCompleted(null);
             }
 
             @Override
             public void onError(VKError error) {
                 Log.e(TAG, "deleteFriend ERROR!!! == " + error);
+                listener.onError(String.valueOf(error));
+            }
+        });
+    }
+
+    /**
+     * Добавить в друзья.
+     */
+    public void addFriend(VKApiUserFull friend, Listener<Void> listener) {
+        VKRequest request = VKApi.friends().add(VKParameters.from(VKApiConst.USER_ID, friend.id));
+        request.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                clearDataOnDevice();
+                addFriendToData(friend, new Listener<Void>() {
+                    @Override
+                    public void onCompleted(Void o) {
+                        listener.onCompleted(null);
+                    }
+
+                    @Override
+                    public void onError(String e) {
+                        Log.e(TAG, "addFriend ## ERROR == " + e);
+                        listener.onError(e);
+                    }
+                });
+            }
+
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "addFriend ERROR!!! == " + error);
                 listener.onError(String.valueOf(error));
             }
         });
@@ -312,7 +343,7 @@ public class DataManager {
             @Override
             public void onComplete(VKResponse response) {
                 deleteGroupFromData(groupId);
-                new DeviceDataSaver(mContext).clear();
+                clearDataOnDevice();
                 listener.onCompleted(null);
             }
 
@@ -332,7 +363,7 @@ public class DataManager {
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
-                new DeviceDataSaver(mContext).clear();
+                clearDataOnDevice();
                 addGroupToData(group, new Listener<Void>() {
                     @Override
                     public void onCompleted(Void aVoid) {
@@ -345,7 +376,6 @@ public class DataManager {
                         listener.onError(e);
                     }
                 });
-                listener.onCompleted(null);
             }
 
             @Override
@@ -397,11 +427,7 @@ public class DataManager {
         mUserGroupsMap.remove(groupId);
     }
 
-    /**
-     * Добавить данные о группе, в которую вступил пользователь.
-     * При этом загрузить через vkapi список друзей, которые уже есть в этой группе.
-     */
-    private void addGroupToData(VKApiCommunityFull group, Listener<Void> listener) {
+    private void fetchAndAddDataAboutMutuals(VKUsersArray friends, VKApiCommunityArray groups, Listener<Void> listener) {
         mFetchingState = FetchingState.calculatingMutual;
         new AsyncTask<Void, Void, Void>(){
             /**
@@ -417,23 +443,28 @@ public class DataManager {
 
             @Override
             protected Void doInBackground(Void... params) {
-                mUsersGroupsByDefault.add(group);
-                mUsersGroupsByFriends.add(group);
-                mUserGroupsMap.put(group.id, group);
-                mFriendsInGroup.put(group.id, new VKUsersArray());
-
-                VKApiCommunityArray groups = new VKApiCommunityArray();
-                groups.add(group);
-
-                stepsRemain = new VKDataProvider(null).loadIsMembers(mUsersFriendsByAlphabet, groups,
+                stepsRemain = new VKDataProvider(null).loadIsMembers(friends, groups,
                         new DataProvider.LoadIsMemberListener() {
-                    @Override
-                    public void onProgress(@Nullable JSONObject jsonObject) {
-                        if (jsonObject == null || doInBackgroundErrorMessage != null || mNeedClearing) {
-                            --stepsRemain;
-                            return;
-                        }
-                        parseIsMemberJSON(jsonObject, new Listener<Void>() {
+                            @Override
+                            public void onProgress(@Nullable JSONObject jsonObject) {
+                                if (jsonObject == null || doInBackgroundErrorMessage != null || mNeedClearing) {
+                                    --stepsRemain;
+                                    return;
+                                }
+                                parseIsMemberJSON(jsonObject, new Listener<Void>() {
+                                    @Override
+                                    public void onCompleted(Void aVoid) {
+                                        --stepsRemain;
+                                    }
+
+                                    @Override
+                                    public void onError(String e) {
+                                        doInBackgroundErrorMessage = e;
+                                        --stepsRemain;
+                                    }
+                                });
+                            }
+
                             @Override
                             public void onCompleted(Void aVoid) {
                                 --stepsRemain;
@@ -445,19 +476,6 @@ public class DataManager {
                                 --stepsRemain;
                             }
                         });
-                    }
-
-                    @Override
-                    public void onCompleted(Void aVoid) {
-                        --stepsRemain;
-                    }
-
-                    @Override
-                    public void onError(String e) {
-                        doInBackgroundErrorMessage = e;
-                        --stepsRemain;
-                    }
-                });
 
                 while (stepsRemain > 0) {
                     try {
@@ -486,6 +504,38 @@ public class DataManager {
                 }
             }
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+    }
+
+    /**
+     * Добавить данные о друге, который только что был добавлен.
+     * При этом загрузить через vkapi список общих групп с ним.
+     */
+    private void addFriendToData(VKApiUserFull friend, Listener<Void> listener) {
+        mUsersFriendsByAlphabet.add(friend);
+        mUsersFriendsByMutual.add(friend);
+        mUserFriendsMap.put(friend.id, friend);
+        mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray());
+
+        VKUsersArray friends = new VKUsersArray();
+        friends.add(friend);
+
+        fetchAndAddDataAboutMutuals(friends, mUsersGroupsByDefault, listener);
+    }
+
+    /**
+     * Добавить данные о группе, в которую вступил пользователь.
+     * При этом загрузить через vkapi список друзей, которые уже есть в этой группе.
+     */
+    private void addGroupToData(VKApiCommunityFull group, Listener<Void> listener) {
+        mUsersGroupsByDefault.add(group);
+        mUsersGroupsByFriends.add(group);
+        mUserGroupsMap.put(group.id, group);
+        mFriendsInGroup.put(group.id, new VKUsersArray());
+
+        VKApiCommunityArray groups = new VKApiCommunityArray();
+        groups.add(group);
+
+        fetchAndAddDataAboutMutuals(mUsersFriendsByAlphabet, groups, listener);
     }
 
     /**

@@ -58,7 +58,7 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
 
-        getMenuInflater().inflate(R.menu.friends_list_activity, menu);
+        getMenuInflater().inflate(R.menu.one_group, menu);
 
         if (mGroup.id == 0) {
             menu.findItem(R.id.menu_join_group).setVisible(false);

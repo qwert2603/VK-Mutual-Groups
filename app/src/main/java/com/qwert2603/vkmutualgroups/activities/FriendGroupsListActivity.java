@@ -4,8 +4,6 @@ import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.TextView;
@@ -21,7 +19,7 @@ import com.vk.sdk.api.model.VKApiUserFull;
 /**
  * Все группы друга.
  */
-public class FriendGroupsListActivity extends AbstractVkListActivity implements AbstractVkListFragment.Callbacks {
+public class FriendGroupsListActivity extends GroupsListActivity implements AbstractVkListFragment.Callbacks {
 
     public static final String EXTRA_FRIEND = "com.alex.vkcommonpublics.EXTRA_FRIEND";
 
@@ -49,8 +47,6 @@ public class FriendGroupsListActivity extends AbstractVkListActivity implements 
         mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
         mRefreshLayout.setOnRefreshListener(this::fetchFriendGroups);
 
-        getActionButton().setVisibility(View.INVISIBLE);
-
         if (getSupportActionBar() != null) {
             VKApiUserFull friend = DataManager.get(this).getUsersFriendById(mFriend.id);
             String title = (friend == null)
@@ -70,7 +66,7 @@ public class FriendGroupsListActivity extends AbstractVkListActivity implements 
             @Override
             public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
                 setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls));
-                mRefreshLayout.setRefreshing(false);
+                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 mRefreshLayout.setEnabled(true);
                 Snackbar.make(mCoordinatorLayout, R.string.groups_list_loaded, Snackbar.LENGTH_SHORT).show();
             }
@@ -78,43 +74,13 @@ public class FriendGroupsListActivity extends AbstractVkListActivity implements 
             @Override
             public void onError(String e) {
                 mErrorTextView.setVisibility(View.VISIBLE);
-                mRefreshLayout.setRefreshing(false);
+                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 mRefreshLayout.setEnabled(true);
                 Snackbar.make(mCoordinatorLayout, R.string.loading_failed, Snackbar.LENGTH_SHORT)
                         .setAction(R.string.refresh, (v) -> fetchFriendGroups())
                         .show();
             }
         });
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-
-        getMenuInflater().inflate(R.menu.groups_list_activity, menu);
-
-        // если это список групп пользователя
-        // или пользователь, общие группы с которым отображаются, был удален, то удалить его нельзя.
-        if (mFriend.id == 0 || DataManager.get(this).getUsersFriendById(mFriend.id) == null) {
-            menu.findItem(R.id.menu_delete_friend).setVisible(false);
-        }
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_delete_friend:
-                deleteFriend(mFriend);
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    protected void notifyOperationCompleted() {
-        super.notifyOperationCompleted();
-        invalidateOptionsMenu();
     }
 
     @Override

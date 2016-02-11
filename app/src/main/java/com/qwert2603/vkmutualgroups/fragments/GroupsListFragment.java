@@ -120,7 +120,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
                     mode.finish();
                     return false;
                 }
-                mode.getMenuInflater().inflate(R.menu.groups_list_item_action_mode, menu);
+                mode.getMenuInflater().inflate(R.menu.one_group, menu);
                 return true;
             }
 

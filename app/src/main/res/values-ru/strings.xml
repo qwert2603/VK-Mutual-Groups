@@ -34,4 +34,7 @@
     <string name="group_join_successfully">Вы успешно вступили в группу.</string>
     <string name="group_joining_error">Вы НЕ вступили в группу.</string>
     <string name="join_group">Вступить в группу</string>
+    <string name="add_to_friends">Добавить в друзья</string>
+    <string name="friend_added_successfully">Пользователь успешно добавлен в друзья.</string>
+    <string name="friend_adding_error">Пользователь НЕ добавлен в друзья!</string>
 </resources>

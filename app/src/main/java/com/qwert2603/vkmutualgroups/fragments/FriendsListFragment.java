@@ -116,7 +116,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                     mode.finish();
                     return false;
                 }
-                mode.getMenuInflater().inflate(R.menu.friends_list_item_action_mode, menu);
+                mode.getMenuInflater().inflate(R.menu.one_friend, menu);
                 return true;
             }
 

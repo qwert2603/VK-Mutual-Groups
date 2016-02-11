@@ -125,7 +125,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             @Override
             public void onCompleted(Void v) {
                 notifyOperationCompleted();
-                mRefreshLayout.setRefreshing(false);
+                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
@@ -137,7 +137,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             @Override
             public void onError(String e) {
                 Log.e("AASSDD", e);
-                mRefreshLayout.setRefreshing(false);
+                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 fetchFromVK();
             }
         });
@@ -156,7 +156,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             @Override
             public void onCompleted(Void v) {
                 notifyOperationCompleted();
-                mRefreshLayout.setRefreshing(false);
+                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
@@ -177,7 +177,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
                 } else {
                     mErrorTextView.setVisibility(View.VISIBLE);
                 }
-                mRefreshLayout.setRefreshing(false);
+                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 mRefreshLayout.setEnabled(true);
             }
         });
@@ -195,7 +195,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             Snackbar.make(mCoordinatorLayout, R.string.no_internet_connection, Snackbar.LENGTH_SHORT)
                     .setAction(R.string.refresh, (v) -> refreshData())
                     .show();
-            mRefreshLayout.setRefreshing(false);
+            mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
         }
     }
 

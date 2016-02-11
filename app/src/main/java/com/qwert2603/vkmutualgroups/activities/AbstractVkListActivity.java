@@ -39,10 +39,12 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
 
     private static final int REQUEST_SEND_MESSAGE = 1;
     private static final int REQUEST_DELETE_FRIEND = 2;
-    private static final int REQUEST_LEAVE_GROUP = 3;
-    private static final int REQUEST_JOIN_GROUP = 4;
+    private static final int REQUEST_ADD_FRIEND = 3;
+    private static final int REQUEST_LEAVE_GROUP = 4;
+    private static final int REQUEST_JOIN_GROUP = 5;
 
     private static final String friendToDeleteId = "friendToDeleteId";
+    private static final String friendToAdd = "friendToAdd";
     private static final String groupToLeaveId = "groupToLeaveId";
     private static final String groupToJoin = "groupToJoin";
 
@@ -151,6 +153,16 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
+    public void addFriend(VKApiUserFull friend) {
+        mArgs.putParcelable(friendToAdd, friend);
+
+        String title = getString(R.string.friend_name, friend.first_name, friend.last_name);
+        String question = getString(R.string.add_to_friends) + "?";
+        ConfirmationDialogFragment dialogFragment = ConfirmationDialogFragment.newInstance(title, question);
+        dialogFragment.setTargetFragment(mTargetFragment, REQUEST_ADD_FRIEND);
+        dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
+    }
+
     public void leaveGroup(VKApiCommunityFull group) {
         mArgs.putInt(groupToLeaveId, group.id);
 
@@ -180,30 +192,53 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                         showSnackbar(R.string.message_sent);
                         break;
                     case REQUEST_DELETE_FRIEND:
+                        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
                         mDataManager.deleteFriend(mArgs.getInt(friendToDeleteId), new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.friend_deleted_successfully);
                                 notifyOperationCompleted();
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 
                             @Override
                             public void onError(String e) {
                                 showSnackbar(R.string.friend_deleting_error);
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
+                            }
+                        });
+                        break;
+                    case REQUEST_ADD_FRIEND:
+                        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
+                        mDataManager.addFriend(mArgs.getParcelable(friendToAdd), new Listener<Void>() {
+                            @Override
+                            public void onCompleted(Void aVoid) {
+                                showSnackbar(R.string.friend_added_successfully);
+                                notifyOperationCompleted();
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
+                            }
+
+                            @Override
+                            public void onError(String e) {
+                                showSnackbar(R.string.friend_adding_error);
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
                         });
                         break;
                     case REQUEST_LEAVE_GROUP:
+                        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
                         mDataManager.leaveGroup(mArgs.getInt(groupToLeaveId), new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.group_left_successfully);
                                 notifyOperationCompleted();
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 
                             @Override
                             public void onError(String e) {
                                 showSnackbar(R.string.group_leaving_error);
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
                         });
                         break;
@@ -214,13 +249,13 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.group_join_successfully);
                                 notifyOperationCompleted();
-                                mRefreshLayout.setRefreshing(false);
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 
                             @Override
                             public void onError(String e) {
                                 showSnackbar(R.string.group_joining_error);
-                                mRefreshLayout.setRefreshing(false);
+                                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
                         });
                         break;
