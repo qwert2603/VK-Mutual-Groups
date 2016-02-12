@@ -36,8 +36,10 @@
     <string name="join_group">Join group</string>
     <string name="group_joining_error">You did NOT join group!</string>
     <string name="group_join_successfully">You join group successfully.</string>
+    <string name="group_request_sent_successfully">Request to join group sent successfully.</string>
     <string name="add_to_friends">Add to friends</string>
     <string name="friend_added_successfully">User added to friends successfully.</string>
+    <string name="friend_request_sent_successfully">Friend request sent successfully.</string>
     <string name="friend_adding_error">User was NOT added to friends!</string>
     <string name="search">Search</string>
     <string name="search_friends">Search friend</string>

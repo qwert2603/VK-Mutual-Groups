@@ -305,25 +305,41 @@ public class DataManager {
 
     /**
      * Добавить в друзья.
+     * Результат передается в listener.
+     * 1 - заявка отправлена.
+     * 2 - пользователь добавлен в друзья.
      */
-    public void addFriend(VKApiUserFull friend, Listener<Void> listener) {
+    public void addFriend(VKApiUserFull friend, Listener<Integer> listener) {
         VKRequest request = VKApi.friends().add(VKParameters.from(VKApiConst.USER_ID, friend.id));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
-                clearDataOnDevice();
-                addFriendToData(friend, new Listener<Void>() {
-                    @Override
-                    public void onCompleted(Void o) {
-                        listener.onCompleted(null);
-                    }
+                int result = 0;
+                try {
+                    result = response.json.getInt("response");
+                } catch (JSONException e) {
+                    Log.e(TAG, e.toString(), e);
+                }
+                switch (result) {
+                    case 1:
+                        listener.onCompleted(1);
+                        break;
+                    case 2:
+                        clearDataOnDevice();
+                        addFriendToData(friend, new Listener<Void>() {
+                            @Override
+                            public void onCompleted(Void o) {
+                                listener.onCompleted(2);
+                            }
 
-                    @Override
-                    public void onError(String e) {
-                        Log.e(TAG, "addFriend ## ERROR == " + e);
-                        listener.onError(e);
-                    }
-                });
+                            @Override
+                            public void onError(String e) {
+                                Log.e(TAG, "addFriend ## ERROR == " + e);
+                                listener.onError(e);
+                            }
+                        });
+                        break;
+                }
             }
 
             @Override
@@ -357,23 +373,52 @@ public class DataManager {
 
     /**
      * Вступить в группу.
+     * Результат передается в listener.
+     * 1 - заявка отправлена.
+     * 2 - пользователь вступил в группу.
      */
-    public void joinGroup(VKApiCommunityFull group, Listener<Void> listener) {
+    public void joinGroup(VKApiCommunityFull group, Listener<Integer> listener) {
         VKRequest request = VKApi.groups().join(VKParameters.from(VKApiConst.GROUP_ID, group.id));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
-                clearDataOnDevice();
-                addGroupToData(group, new Listener<Void>() {
+                VKParameters parameters = VKParameters.from(VKApiConst.GROUP_ID, group.id, VKApiConst.EXTENDED, 0);
+                VKRequest requestIsMember = VKApi.groups().isMember(parameters);
+                requestIsMember.executeWithListener(new VKRequest.VKRequestListener() {
                     @Override
-                    public void onCompleted(Void aVoid) {
-                        listener.onCompleted(null);
+                    public void onComplete(VKResponse response) {
+                        int result = -1;
+                        try {
+                            result = response.json.getInt("response");
+                        } catch (JSONException e) {
+                            Log.e(TAG, e.toString(), e);
+                        }
+                        switch (result) {
+                            case 0:
+                                listener.onCompleted(1);
+                                break;
+                            case 1:
+                                clearDataOnDevice();
+                                addGroupToData(group, new Listener<Void>() {
+                                    @Override
+                                    public void onCompleted(Void aVoid) {
+                                        listener.onCompleted(2);
+                                    }
+
+                                    @Override
+                                    public void onError(String e) {
+                                        Log.e(TAG, "joinGroup ## ERROR == " + e);
+                                        listener.onError(e);
+                                    }
+                                });
+                                break;
+                        }
                     }
 
                     @Override
-                    public void onError(String e) {
-                        Log.e(TAG, "joinGroup ## ERROR == " + e);
-                        listener.onError(e);
+                    public void onError(VKError error) {
+                        Log.e(TAG, "joinGroup ERROR!!! == " + error);
+                        listener.onError(String.valueOf(error));
                     }
                 });
             }

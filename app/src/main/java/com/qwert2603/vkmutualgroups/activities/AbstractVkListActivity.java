@@ -219,10 +219,17 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                         break;
                     case REQUEST_ADD_FRIEND:
                         mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
-                        mDataManager.addFriend(mArgs.getParcelable(friendToAdd), new Listener<Void>() {
+                        mDataManager.addFriend(mArgs.getParcelable(friendToAdd), new Listener<Integer>() {
                             @Override
-                            public void onCompleted(Void aVoid) {
-                                showSnackbar(R.string.friend_added_successfully);
+                            public void onCompleted(Integer integer) {
+                                switch (integer) {
+                                    case 1:
+                                        showSnackbar(R.string.friend_request_sent_successfully, true);
+                                        break;
+                                    case 2:
+                                        showSnackbar(R.string.friend_added_successfully);
+                                        break;
+                                }
                                 notifyDataSetChanged();
                                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
@@ -253,10 +260,17 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                         break;
                     case REQUEST_JOIN_GROUP:
                         mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
-                        mDataManager.joinGroup(mArgs.getParcelable(groupToJoin), new Listener<Void>() {
+                        mDataManager.joinGroup(mArgs.getParcelable(groupToJoin), new Listener<Integer>() {
                             @Override
-                            public void onCompleted(Void aVoid) {
-                                showSnackbar(R.string.group_join_successfully);
+                            public void onCompleted(Integer integer) {
+                                switch (integer) {
+                                    case 1:
+                                        showSnackbar(R.string.group_request_sent_successfully, true);
+                                        break;
+                                    case 2:
+                                        showSnackbar(R.string.group_join_successfully);
+                                        break;
+                                }
                                 notifyDataSetChanged();
                                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
@@ -274,7 +288,11 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     };
 
     private void showSnackbar(int stringRes) {
-        Snackbar.make(getCoordinatorLayout(), stringRes, Snackbar.LENGTH_SHORT).show();
+        showSnackbar(stringRes, false);
+    }
+
+    private void showSnackbar(int stringRes, boolean isLong) {
+        Snackbar.make(getCoordinatorLayout(), stringRes, (isLong ? Snackbar.LENGTH_LONG : Snackbar.LENGTH_SHORT)).show();
     }
 
 }
