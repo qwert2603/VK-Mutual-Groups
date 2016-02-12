@@ -4,9 +4,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.vk.sdk.api.model.VKApiUserFull;
@@ -22,8 +20,6 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
 
     private DataManager mDataManager;
 
-    private FloatingActionButton mActionButton;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -31,9 +27,15 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
         mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
         mDataManager = DataManager.get(this);
 
-        mActionButton = getActionButton();
-        mActionButton.setIcon(R.drawable.message);
-        mActionButton.setOnClickListener((v) -> sendMessage(mFriend.id));
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(getString(R.string.friend_name, mFriend.first_name, mFriend.last_name));
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        invalidateOptionsMenu();
     }
 
     @Override
@@ -76,9 +78,8 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
     }
 
     @Override
-    protected void notifyOperationCompleted() {
-        super.notifyOperationCompleted();
+    protected void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
         invalidateOptionsMenu();
-        mActionButton.setVisibility((mDataManager.getUsersFriendById(mFriend.id) != null) ? View.VISIBLE : View.INVISIBLE);
     }
 }

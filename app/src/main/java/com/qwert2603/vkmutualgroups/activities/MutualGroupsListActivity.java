@@ -3,6 +3,7 @@ package com.qwert2603.vkmutualgroups.activities;
 import android.os.Bundle;
 import android.view.View;
 
+import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
@@ -14,23 +15,29 @@ import com.vk.sdk.api.model.VKApiUserFull;
  */
 public class MutualGroupsListActivity extends GroupsListActivity {
 
+    private VKApiUserFull mFriend;
+
+    private DataManager mDataManager;
+
+    private FloatingActionButton mActionButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        VKApiUserFull friend = getIntent().getParcelableExtra(EXTRA_FRIEND);
-        DataManager mDataManager = DataManager.get(this);
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(getString(R.string.friend_name, friend.first_name, friend.last_name));
-        }
+        mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
+        mDataManager = DataManager.get(this);
 
         getErrorTextView().setVisibility(View.INVISIBLE);
         getRefreshLayout().setEnabled(false);
 
+        mActionButton = getActionButton();
+        mActionButton.setIcon(R.drawable.message);
+        mActionButton.setOnClickListener((v) -> sendMessage(mFriend.id));
+
         VKApiCommunityArray groups;
-        if (friend.id != 0) {
-            groups = mDataManager.getGroupsMutualWithFriend(friend.id);
+        if (mFriend.id != 0) {
+            groups = mDataManager.getGroupsMutualWithFriend(mFriend.id);
         } else {
             groups = mDataManager.getUsersGroups();
         }
@@ -41,4 +48,21 @@ public class MutualGroupsListActivity extends GroupsListActivity {
         setListFragment(GroupsListFragment.newInstance(groups, getString(R.string.no_mutual_groups)));
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateActionButtonVisibility();
+    }
+
+    @Override
+    protected void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
+        updateActionButtonVisibility();
+    }
+
+    private void updateActionButtonVisibility() {
+        mActionButton.setVisibility((mDataManager.getUsersFriendById(mFriend.id) != null) ? View.VISIBLE : View.INVISIBLE);
+    }
+
 }
+

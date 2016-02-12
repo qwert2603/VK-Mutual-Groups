@@ -17,6 +17,8 @@ public class UserGroupsListActivity extends AbstractVkListActivity {
 
     private FloatingActionButton mActionButton;
 
+    private String mQuery;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

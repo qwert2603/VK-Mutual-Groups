@@ -72,6 +72,12 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        notifyDataSetChanged();
+    }
+
     protected void setListFragment(AbstractVkListFragment fragment) {
         Fragment newFragment = fragment;
         if (newFragment == null) {
@@ -84,7 +90,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         getFragmentManager().beginTransaction().replace(R.id.fragment_container, newFragment).commitAllowingStateLoss();
     }
 
-    protected Fragment getListFragment() {
+    protected final Fragment getListFragment() {
         return getFragmentManager().findFragmentById(R.id.fragment_container);
     }
 
@@ -92,30 +98,31 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
      * Уведомляет о том, что операция (удаления из друзей или выхода из группы) успешно завершилась.
      */
     @CallSuper
-    protected void notifyOperationCompleted() {
+    protected void notifyDataSetChanged() {
         Fragment fragment = getListFragment();
         if (fragment instanceof AbstractVkListFragment) {
             ((AbstractVkListFragment) fragment).notifyDataSetChanged();
         }
     }
 
-    protected TextView getErrorTextView() {
+    protected final TextView getErrorTextView() {
         return (TextView) findViewById(R.id.error_text_view);
     }
 
-    protected CoordinatorLayout getCoordinatorLayout() {
+    protected final CoordinatorLayout getCoordinatorLayout() {
         return (CoordinatorLayout) findViewById(R.id.coordinator_layout);
     }
 
-    protected SwipeRefreshLayout getRefreshLayout() {
+    protected final SwipeRefreshLayout getRefreshLayout() {
         return (SwipeRefreshLayout) findViewById(R.id.refresh_layout);
     }
 
-    protected FloatingActionButton getActionButton() {
+    protected final FloatingActionButton getActionButton() {
         return (FloatingActionButton) findViewById(R.id.action_button);
     }
 
     @Override
+    @CallSuper
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         if (NavUtils.getParentActivityName(this) != null) {
@@ -125,6 +132,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     }
 
     @Override
+    @CallSuper
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case android.R.id.home:
@@ -138,13 +146,13 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         }
     }
 
-    public void sendMessage(int friendId) {
+    public final void sendMessage(int friendId) {
         SendMessageDialogFragment sendMessageDialogFragment = SendMessageDialogFragment.newInstance(friendId);
         sendMessageDialogFragment.setTargetFragment(mTargetFragment, REQUEST_SEND_MESSAGE);
         sendMessageDialogFragment.show(getFragmentManager(), SendMessageDialogFragment.TAG);
     }
 
-    public void deleteFriend(VKApiUserFull friend) {
+    public final void deleteFriend(VKApiUserFull friend) {
         mArgs.putInt(friendToDeleteId, friend.id);
 
         String title = getString(R.string.friend_name, friend.first_name, friend.last_name);
@@ -154,7 +162,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
-    public void addFriend(VKApiUserFull friend) {
+    public final void addFriend(VKApiUserFull friend) {
         mArgs.putParcelable(friendToAdd, friend);
 
         String title = getString(R.string.friend_name, friend.first_name, friend.last_name);
@@ -164,7 +172,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
-    public void leaveGroup(VKApiCommunityFull group) {
+    public final void leaveGroup(VKApiCommunityFull group) {
         mArgs.putInt(groupToLeaveId, group.id);
 
         String title = group.name;
@@ -174,7 +182,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
-    public void joinGroup(VKApiCommunityFull group) {
+    public final void joinGroup(VKApiCommunityFull group) {
         mArgs.putParcelable(groupToJoin, group);
 
         String title = group.name;
@@ -184,7 +192,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
-    private Fragment mTargetFragment = new Fragment() {
+    private final Fragment mTargetFragment = new Fragment() {
         @Override
         public void onActivityResult(int requestCode, int resultCode, Intent data) {
             if (resultCode == Activity.RESULT_OK) {
@@ -198,7 +206,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.friend_deleted_successfully);
-                                notifyOperationCompleted();
+                                notifyDataSetChanged();
                                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 
@@ -215,7 +223,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.friend_added_successfully);
-                                notifyOperationCompleted();
+                                notifyDataSetChanged();
                                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 
@@ -232,7 +240,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.group_left_successfully);
-                                notifyOperationCompleted();
+                                notifyDataSetChanged();
                                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 
@@ -249,7 +257,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 showSnackbar(R.string.group_join_successfully);
-                                notifyOperationCompleted();
+                                notifyDataSetChanged();
                                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                             }
 

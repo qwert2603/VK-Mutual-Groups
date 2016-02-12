@@ -51,6 +51,12 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     }
 
     @Override
+    protected void onResume() {
+        super.onResume();
+        invalidateOptionsMenu();
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
 
@@ -83,8 +89,8 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     }
 
     @Override
-    protected void notifyOperationCompleted() {
-        super.notifyOperationCompleted();
+    protected void notifyDataSetChanged() {
+        super.notifyDataSetChanged();
         invalidateOptionsMenu();
     }
 

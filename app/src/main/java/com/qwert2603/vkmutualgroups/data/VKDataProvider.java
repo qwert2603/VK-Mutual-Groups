@@ -88,7 +88,7 @@ public class VKDataProvider implements DataProvider {
          * Кол-во друзей, обрабатываемое в 1 запросе.
          * Не больше 500.
          */
-        private static final int friendsPerRequest = 100;
+        private static final int friendsPerRequest = 200;
 
         /**
          * Кол-во групп, обрабатываемое в 1 запросе.

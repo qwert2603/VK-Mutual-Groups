@@ -7,12 +7,4 @@
         app:actionViewClass="android.widget.SearchView"
         app:showAsAction="ifRoom"/>
 
-    <item android:id="@+id/menu_groups_list"
-        android:title="@string/group_list"
-        app:showAsAction="never"/>
-
-    <item android:id="@+id/menu_logout"
-        android:title="@string/log_out"
-        app:showAsAction="never"/>
-
 </menu>

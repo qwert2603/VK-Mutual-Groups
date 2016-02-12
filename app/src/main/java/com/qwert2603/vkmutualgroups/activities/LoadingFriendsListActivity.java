@@ -11,6 +11,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
+import android.widget.SearchView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -26,6 +27,7 @@ import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.api.VKError;
+import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
@@ -47,6 +49,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     private TextView mErrorTextView;
     private SwipeRefreshLayout mRefreshLayout;
     private FloatingActionButton mActionButton;
+    private String mQuery = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,14 +126,14 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
             @Override
             public void onCompleted(Void v) {
-                notifyOperationCompleted();
+                notifyDataSetChanged();
                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
             public void onProgress() {
-                notifyOperationCompleted();
+                notifyDataSetChanged();
             }
 
             @Override
@@ -154,14 +157,14 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
             @Override
             public void onCompleted(Void v) {
-                notifyOperationCompleted();
+                notifyDataSetChanged();
                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
             }
 
             @Override
             public void onProgress() {
-                notifyOperationCompleted();
+                notifyDataSetChanged();
             }
 
             @Override
@@ -188,7 +191,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
         }
         if (InternetUtils.isInternetConnected(this)) {
             fetchFromVK();
-            notifyOperationCompleted();
+            notifyDataSetChanged();
         }
         else {
             Snackbar.make(mCoordinatorLayout, R.string.no_internet_connection, Snackbar.LENGTH_SHORT)
@@ -203,8 +206,22 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
         VKUsersArray friends = mDataManager.getUsersFriends();
         if (friends != null) {
-            setListFragment(FriendsListFragment.newInstance(friends, getString(R.string.no_friends)));
             mActionButton.setVisibility(View.VISIBLE);
+            VKUsersArray showingFriends;
+            if (mQuery == null || mQuery.equals("")) {
+                showingFriends = friends;
+            } else {
+                showingFriends = new VKUsersArray();
+
+                // поиск не зависит от регистра.
+                mQuery = mQuery.toLowerCase();
+                for (VKApiUserFull friend : friends) {
+                    if (friend.first_name.toLowerCase().startsWith(mQuery) || friend.last_name.toLowerCase().startsWith(mQuery)) {
+                        showingFriends.add(friend);
+                    }
+                }
+            }
+            setListFragment(FriendsListFragment.newInstance(showingFriends, getString(R.string.no_friends)));
         } else {
             removeFriendsListFragment();
         }
@@ -221,6 +238,25 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     public boolean onCreateOptionsMenu(Menu menu) {
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
+
+        MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
+        SearchView searchView = (SearchView) searchMenuItem.getActionView();
+        searchView.setSubmitButtonEnabled(false);
+        searchView.setQueryHint(getString(R.string.search_friends));
+        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                return false;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                mQuery = newText;
+                refreshFriendsListFragment();
+                return true;
+            }
+        });
+
         return true;
     }
 

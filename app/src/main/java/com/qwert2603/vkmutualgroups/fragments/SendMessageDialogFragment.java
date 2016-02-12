@@ -95,9 +95,8 @@ public class SendMessageDialogFragment extends DialogFragment {
             if (mutual == 0) {
                 text = text.replace("0", getString(R.string.no));
             }
-            String groupFormat = "\n* %1$s (http://vk.com/%2$s)";
             for (VKApiCommunityFull group : groupsMutualWithFriend) {
-                text +=String.format(groupFormat, group.name, group.screen_name);
+                text += getString(R.string.message_format_in_groups, group.name, group.screen_name);
             }
         }
         editText.setText(text);

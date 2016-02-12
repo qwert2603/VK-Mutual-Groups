@@ -104,7 +104,6 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
                 }
             }
         }
-        notifyDataSetChanged();
     }
 
     /**

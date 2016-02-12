@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.view.Menu;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.TextView;
@@ -20,8 +21,6 @@ import com.vk.sdk.api.model.VKApiUserFull;
  * Все группы друга.
  */
 public class FriendGroupsListActivity extends GroupsListActivity implements AbstractVkListFragment.Callbacks {
-
-    public static final String EXTRA_FRIEND = "com.alex.vkcommonpublics.EXTRA_FRIEND";
 
     private VKApiUserFull mFriend;
 
@@ -46,13 +45,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
         mRefreshLayout = getRefreshLayout();
         mRefreshLayout.setOnRefreshListener(this::fetchFriendGroups);
 
-        if (getSupportActionBar() != null) {
-            VKApiUserFull friend = DataManager.get(this).getUsersFriendById(mFriend.id);
-            String title = (friend == null)
-                    ? getString(R.string.app_name)
-                    : getString(R.string.friend_name, friend.first_name, friend.last_name);
-            getSupportActionBar().setTitle(title);
-        }
+        getActionButton().setVisibility(View.INVISIBLE);
 
         setListFragment(null);
         fetchFriendGroups();
@@ -64,6 +57,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
         mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
             @Override
             public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
+                mErrorTextView.setVisibility(View.INVISIBLE);
                 setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls, getString(R.string.no_groups)));
                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 mRefreshLayout.setEnabled(true);
@@ -72,7 +66,9 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
             @Override
             public void onError(String e) {
-                mErrorTextView.setVisibility(View.VISIBLE);
+                if (! (getListFragment() instanceof AbstractVkListFragment)) {
+                    mErrorTextView.setVisibility(View.VISIBLE);
+                }
                 mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
                 mRefreshLayout.setEnabled(true);
                 Snackbar.make(mCoordinatorLayout, R.string.loading_failed, Snackbar.LENGTH_SHORT)
@@ -80,6 +76,13 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
                         .show();
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        menu.findItem(R.id.menu_view_groups).setVisible(false);
+        return true;
     }
 
     @Override

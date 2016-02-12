@@ -37,4 +37,7 @@
     <string name="add_to_friends">Добавить в друзья</string>
     <string name="friend_added_successfully">Пользователь успешно добавлен в друзья.</string>
     <string name="friend_adding_error">Пользователь НЕ добавлен в друзья!</string>
+    <string name="search_friends">Поиск друзей</string>
+    <string name="search">Поиск</string>
+    <string name="search_groups">Поиск групп</string>
 </resources>
