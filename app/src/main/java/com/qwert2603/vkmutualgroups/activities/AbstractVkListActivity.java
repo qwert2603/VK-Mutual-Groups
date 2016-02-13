@@ -13,6 +13,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
@@ -30,7 +31,7 @@ import com.vk.sdk.api.model.VKApiUserFull;
  * Activity, отображающая фрагмент-список (друзей или групп).
  * Это самая базовая Activity.
  * Она позволяет отправлять сообщения, удалять и добавлять друзей, выходить из групп, вступать в группы.
- * Также она предоставлят доступ к элементам UI: TextView-ошибка, RefreshLayout, ActionButton.
+ * Также она предоставлят доступ к элементам UI: TextView-ошибка, RefreshLayout, ActionButton и методы для показа Snackbar.
  */
 public abstract class AbstractVkListActivity extends AppCompatActivity {
 
@@ -52,7 +53,10 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
 
     private Bundle mArgs;
 
+    private TextView mErrorTextView;
     private SwipeRefreshLayout mRefreshLayout;
+    private FloatingActionButton mActionButton;
+    private CoordinatorLayout mCoordinatorLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,8 +72,14 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
 
         setListFragment(null);
 
-        mRefreshLayout = getRefreshLayout();
+        mErrorTextView = (TextView) findViewById(R.id.error_text_view);
+
+        mRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.refresh_layout);
         mRefreshLayout.setColorSchemeResources(R.color.colorAccent, R.color.colorPrimary);
+
+        mActionButton = (FloatingActionButton) findViewById(R.id.action_button);
+
+        mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinator_layout);
     }
 
     @Override
@@ -79,6 +89,9 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     }
 
     protected void setListFragment(AbstractVkListFragment fragment) {
+        if (isFinishing()) {
+            return;
+        }
         Fragment newFragment = fragment;
         if (newFragment == null) {
             // Чтобы mRefreshLayout нормально отображался.
@@ -105,20 +118,52 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         }
     }
 
-    protected final TextView getErrorTextView() {
-        return (TextView) findViewById(R.id.error_text_view);
+    protected void setErrorTextViewVisibility(int visibility) {
+        mErrorTextView.setVisibility(visibility);
     }
 
-    protected final CoordinatorLayout getCoordinatorLayout() {
-        return (CoordinatorLayout) findViewById(R.id.coordinator_layout);
+    protected void setErrorTextViewText(String text) {
+        mErrorTextView.setText(text);
     }
 
-    protected final SwipeRefreshLayout getRefreshLayout() {
-        return (SwipeRefreshLayout) findViewById(R.id.refresh_layout);
+    protected void setRefreshLayoutEnable(boolean enable) {
+        mRefreshLayout.setEnabled(enable);
     }
 
-    protected final FloatingActionButton getActionButton() {
-        return (FloatingActionButton) findViewById(R.id.action_button);
+    protected void setRefreshLayoutRefreshing(boolean refreshing) {
+        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(refreshing));
+    }
+
+    protected void setRefreshLayoutOnRefreshListener(SwipeRefreshLayout.OnRefreshListener listener) {
+        mRefreshLayout.setOnRefreshListener(listener);
+    }
+
+    protected void setActionButtonVisibility(int visibility) {
+        mActionButton.setVisibility(visibility);
+    }
+
+    protected void setActionButtonIcon(int icon) {
+        mActionButton.setIcon(icon);
+    }
+
+    protected void setActionButtonOnClickListener(View.OnClickListener listener) {
+        mActionButton.setOnClickListener(listener);
+    }
+
+    protected void showSnackbar(int stringRes) {
+        showSnackbar(stringRes, Snackbar.LENGTH_SHORT, 0, null);
+    }
+
+    protected void showSnackbar(int stringRes, int duration) {
+        showSnackbar(stringRes, duration, 0, null);
+    }
+
+    protected void showSnackbar(int stringRes, int duration, int actionText, View.OnClickListener listener) {
+        Snackbar snackbar = Snackbar.make(mCoordinatorLayout, stringRes, duration);
+        if (listener != null) {
+            snackbar.setAction(actionText, listener);
+        }
+        snackbar.show();
     }
 
     @Override
@@ -224,7 +269,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             public void onCompleted(Integer integer) {
                                 switch (integer) {
                                     case 1:
-                                        showSnackbar(R.string.friend_request_sent_successfully, true);
+                                        showSnackbar(R.string.friend_request_sent_successfully, Snackbar.LENGTH_LONG);
                                         break;
                                     case 2:
                                         showSnackbar(R.string.friend_added_successfully);
@@ -265,7 +310,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                             public void onCompleted(Integer integer) {
                                 switch (integer) {
                                     case 1:
-                                        showSnackbar(R.string.group_request_sent_successfully, true);
+                                        showSnackbar(R.string.group_request_sent_successfully, Snackbar.LENGTH_LONG);
                                         break;
                                     case 2:
                                         showSnackbar(R.string.group_join_successfully);
@@ -286,13 +331,5 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
             }
         }
     };
-
-    private void showSnackbar(int stringRes) {
-        showSnackbar(stringRes, false);
-    }
-
-    private void showSnackbar(int stringRes, boolean isLong) {
-        Snackbar.make(getCoordinatorLayout(), stringRes, (isLong ? Snackbar.LENGTH_LONG : Snackbar.LENGTH_SHORT)).show();
-    }
 
 }

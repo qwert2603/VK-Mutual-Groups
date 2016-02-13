@@ -1,13 +1,10 @@
 package com.qwert2603.vkmutualgroups.activities;
 
 import android.os.Bundle;
-import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.view.Menu;
 import android.view.View;
 import android.widget.AbsListView;
-import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
@@ -26,54 +23,45 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
     private DataManager mDataManager;
 
-    private CoordinatorLayout mCoordinatorLayout;
-    private TextView mErrorTextView;
-    private SwipeRefreshLayout mRefreshLayout;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        mCoordinatorLayout = getCoordinatorLayout();
         mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
         mDataManager = DataManager.get(this);
 
-        mErrorTextView = getErrorTextView();
-        mErrorTextView.setText(R.string.loading_failed);
-        mErrorTextView.setVisibility(View.INVISIBLE);
+        setErrorTextViewText(getString(R.string.loading_failed));
+        setErrorTextViewVisibility(View.INVISIBLE);
 
-        mRefreshLayout = getRefreshLayout();
-        mRefreshLayout.setOnRefreshListener(this::fetchFriendGroups);
+        setRefreshLayoutOnRefreshListener(this::fetchFriendGroups);
 
-        getActionButton().setVisibility(View.INVISIBLE);
+        setActionButtonVisibility(View.INVISIBLE);
 
         setListFragment(null);
         fetchFriendGroups();
     }
 
     private void fetchFriendGroups() {
-        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
+        setRefreshLayoutRefreshing(true);
 
         mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
             @Override
             public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
-                mErrorTextView.setVisibility(View.INVISIBLE);
+                setErrorTextViewVisibility(View.INVISIBLE);
                 setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls, getString(R.string.no_groups)));
-                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
-                mRefreshLayout.setEnabled(true);
-                Snackbar.make(mCoordinatorLayout, R.string.groups_list_loaded, Snackbar.LENGTH_SHORT).show();
+                setRefreshLayoutRefreshing(false);
+                setRefreshLayoutEnable(true);
+                showSnackbar(R.string.groups_list_loaded);
             }
 
             @Override
             public void onError(String e) {
                 if (! (getListFragment() instanceof AbstractVkListFragment)) {
-                    mErrorTextView.setVisibility(View.VISIBLE);
+                    setErrorTextViewVisibility(View.VISIBLE);
                 }
-                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
-                mRefreshLayout.setEnabled(true);
-                Snackbar.make(mCoordinatorLayout, R.string.loading_failed, Snackbar.LENGTH_SHORT)
-                        .setAction(R.string.refresh, (v) -> fetchFriendGroups())
-                        .show();
+                setRefreshLayoutRefreshing(false);
+                setRefreshLayoutEnable(true);
+                showSnackbar(R.string.loading_failed, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> fetchFriendGroups());
             }
         });
     }
@@ -88,7 +76,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
         boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
-        mRefreshLayout.setEnabled(b);
+        setRefreshLayoutEnable(b);
     }
 
 }

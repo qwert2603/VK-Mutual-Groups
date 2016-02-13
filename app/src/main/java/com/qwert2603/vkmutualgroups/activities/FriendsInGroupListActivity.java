@@ -33,9 +33,9 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
             getSupportActionBar().setTitle(mGroup.name);
         }
 
-        getErrorTextView().setVisibility(View.INVISIBLE);
-        getRefreshLayout().setEnabled(false);
-        getActionButton().setVisibility(View.INVISIBLE);
+        setErrorTextViewVisibility(View.INVISIBLE);
+        setRefreshLayoutEnable(false);
+        setActionButtonVisibility(View.INVISIBLE);
 
         VKUsersArray friends;
         if (mGroup.id != 0) {

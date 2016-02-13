@@ -3,7 +3,6 @@ package com.qwert2603.vkmutualgroups.activities;
 import android.os.Bundle;
 import android.view.View;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
@@ -19,8 +18,6 @@ public class MutualGroupsListActivity extends GroupsListActivity {
 
     private DataManager mDataManager;
 
-    private FloatingActionButton mActionButton;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -28,12 +25,11 @@ public class MutualGroupsListActivity extends GroupsListActivity {
         mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
         mDataManager = DataManager.get(this);
 
-        getErrorTextView().setVisibility(View.INVISIBLE);
-        getRefreshLayout().setEnabled(false);
+        setErrorTextViewVisibility(View.INVISIBLE);
+        setRefreshLayoutEnable(false);
 
-        mActionButton = getActionButton();
-        mActionButton.setIcon(R.drawable.message);
-        mActionButton.setOnClickListener((v) -> sendMessage(mFriend.id));
+        setActionButtonIcon(R.drawable.message);
+        setActionButtonOnClickListener((v) -> sendMessage(mFriend.id));
 
         VKApiCommunityArray groups;
         if (mFriend.id != 0) {
@@ -61,7 +57,7 @@ public class MutualGroupsListActivity extends GroupsListActivity {
     }
 
     private void updateActionButtonVisibility() {
-        mActionButton.setVisibility((mDataManager.getUsersFriendById(mFriend.id) != null) ? View.VISIBLE : View.INVISIBLE);
+        setActionButtonVisibility((mDataManager.getUsersFriendById(mFriend.id) != null) ? View.VISIBLE : View.INVISIBLE);
     }
 
 }

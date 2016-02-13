@@ -6,7 +6,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.SearchView;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
@@ -20,8 +19,6 @@ public class UserGroupsListActivity extends AbstractVkListActivity {
 
     private DataManager mDataManager;
 
-    private FloatingActionButton mActionButton;
-
     private String mQuery;
 
     @Override
@@ -32,27 +29,26 @@ public class UserGroupsListActivity extends AbstractVkListActivity {
         }
         mDataManager = DataManager.get(this);
 
-        getErrorTextView().setVisibility(View.INVISIBLE);
-        getRefreshLayout().setEnabled(false);
+        setErrorTextViewVisibility(View.INVISIBLE);
+        setRefreshLayoutEnable(false);
 
-        mActionButton = getActionButton();
         switch (mDataManager.getGroupsSortState()) {
             case byDefault:
-                mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
                 break;
             case byFriends:
-                mActionButton.setIcon(android.R.drawable.ic_menu_sort_by_size);
+                setActionButtonIcon(android.R.drawable.ic_menu_sort_by_size);
                 break;
         }
-        mActionButton.setOnClickListener((v) -> {
+        setActionButtonOnClickListener((v) -> {
             switch (mDataManager.getGroupsSortState()) {
                 case byDefault:
                     mDataManager.sortGroupsByFriends();
-                    mActionButton.setIcon(android.R.drawable.ic_menu_sort_by_size);
+                    setActionButtonIcon(android.R.drawable.ic_menu_sort_by_size);
                     break;
                 case byFriends:
                     mDataManager.sortGroupsByDefault();
-                    mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                    setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
                     break;
             }
             refreshGroupsListFragment();

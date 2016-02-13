@@ -3,19 +3,15 @@ package com.qwert2603.vkmutualgroups.activities;
 import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
-import android.support.v4.widget.SwipeRefreshLayout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.SearchView;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
@@ -45,10 +41,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
-    private CoordinatorLayout mCoordinatorLayout;
-    private TextView mErrorTextView;
-    private SwipeRefreshLayout mRefreshLayout;
-    private FloatingActionButton mActionButton;
     private String mQuery = "";
 
     @Override
@@ -58,27 +50,22 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
         mDataManager = DataManager.get(this);
         mPhotoManager = PhotoManager.get(this);
 
-        mCoordinatorLayout = getCoordinatorLayout();
+        setErrorTextViewText(getString(R.string.loading_failed));
+        setErrorTextViewVisibility(View.INVISIBLE);
 
-        mErrorTextView = getErrorTextView();
-        mErrorTextView.setText(R.string.loading_failed);
-        mErrorTextView.setVisibility(View.INVISIBLE);
+        setRefreshLayoutOnRefreshListener(this::refreshData);
 
-        mRefreshLayout = getRefreshLayout();
-        mRefreshLayout.setOnRefreshListener(this::refreshData);
-
-        mActionButton = getActionButton();
-        mActionButton.setVisibility(View.INVISIBLE);
-        mActionButton.setOnClickListener((v) -> {
+        setActionButtonVisibility(View.INVISIBLE);
+        setActionButtonOnClickListener((v) -> {
             if (mDataManager.getFetchingState() == finished) {
                 switch (mDataManager.getFriendsSortState()) {
                     case byAlphabet:
                         mDataManager.sortFriendsByMutual();
-                        mActionButton.setIcon(android.R.drawable.ic_menu_sort_by_size);
+                        setActionButtonIcon(android.R.drawable.ic_menu_sort_by_size);
                         break;
                     case byMutual:
                         mDataManager.sortFriendsByAlphabet();
-                        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
                         break;
                 }
                 refreshFriendsListFragment();
@@ -115,9 +102,9 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     }
 
     private void loadFromDevice() {
-        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
-        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
-        mErrorTextView.setVisibility(View.INVISIBLE);
+        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
+        setRefreshLayoutRefreshing(true);
+        setErrorTextViewVisibility(View.INVISIBLE);
         mDataManager.loadFromDevice(new DataManager.DataManagerListener() {
             @Override
             public void onFriendsLoaded() {
@@ -127,8 +114,8 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             @Override
             public void onCompleted(Void v) {
                 notifyDataSetChanged();
-                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
-                Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
+                setRefreshLayoutRefreshing(false);
+                showSnackbar(R.string.loading_completed);
             }
 
             @Override
@@ -139,16 +126,16 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             @Override
             public void onError(String e) {
                 Log.e("AASSDD", e);
-                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
+                setRefreshLayoutRefreshing(false);
                 fetchFromVK();
             }
         });
     }
 
     private void fetchFromVK() {
-        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
-        mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(true));
-        mErrorTextView.setVisibility(View.INVISIBLE);
+        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
+        setRefreshLayoutRefreshing(true);
+        setErrorTextViewVisibility(View.INVISIBLE);
         mDataManager.fetchFromVK(new DataManager.DataManagerListener() {
             @Override
             public void onFriendsLoaded() {
@@ -158,8 +145,8 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             @Override
             public void onCompleted(Void v) {
                 notifyDataSetChanged();
-                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
-                Snackbar.make(mCoordinatorLayout, R.string.loading_completed, Snackbar.LENGTH_SHORT).show();
+                setRefreshLayoutRefreshing(false);
+                showSnackbar(R.string.loading_completed);
             }
 
             @Override
@@ -173,14 +160,12 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
                 Fragment fragment = getListFragment();
                 if (fragment instanceof AbstractVkListFragment) {
                     ((AbstractVkListFragment) fragment).notifyDataSetChanged();
-                    Snackbar.make(mCoordinatorLayout, R.string.loading_failed, Snackbar.LENGTH_SHORT)
-                            .setAction(R.string.refresh, (v) -> refreshData())
-                            .show();
+                    showSnackbar(R.string.loading_failed, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> refreshData());
                 } else {
-                    mErrorTextView.setVisibility(View.VISIBLE);
+                    setErrorTextViewVisibility(View.VISIBLE);
                 }
-                mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
-                mRefreshLayout.setEnabled(true);
+                setRefreshLayoutRefreshing(false);
+                setRefreshLayoutEnable(true);
             }
         });
     }
@@ -194,19 +179,17 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             notifyDataSetChanged();
         }
         else {
-            Snackbar.make(mCoordinatorLayout, R.string.no_internet_connection, Snackbar.LENGTH_SHORT)
-                    .setAction(R.string.refresh, (v) -> refreshData())
-                    .show();
-            mRefreshLayout.post(() -> mRefreshLayout.setRefreshing(false));
+            showSnackbar(R.string.no_internet_connection, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> refreshData());
+            setRefreshLayoutRefreshing(false);
         }
     }
 
     private void refreshFriendsListFragment() {
-        mRefreshLayout.setEnabled(true);
+        setRefreshLayoutEnable(true);
 
         VKUsersArray friends = mDataManager.getUsersFriends();
         if (friends != null) {
-            mActionButton.setVisibility(View.VISIBLE);
+            setActionButtonVisibility(View.VISIBLE);
             VKUsersArray showingFriends;
             if (mQuery == null || mQuery.equals("")) {
                 showingFriends = friends;
@@ -229,9 +212,9 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
     private void removeFriendsListFragment() {
         setListFragment(null);
-        mRefreshLayout.setEnabled(true);
-        mActionButton.setVisibility(View.INVISIBLE);
-        mActionButton.setIcon(android.R.drawable.ic_menu_sort_alphabetically);
+        setRefreshLayoutEnable(true);
+        setActionButtonVisibility(View.INVISIBLE);
+        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
     }
 
     @Override
@@ -287,7 +270,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
         boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
-        mRefreshLayout.setEnabled(b);
+        setRefreshLayoutEnable(b);
     }
 
 }
