@@ -481,13 +481,9 @@ public class DataManager {
      * При этом загрузить через vkapi список общих групп с ним.
      */
     private void addFriendToData(VKApiUserFull friend, Listener<Void> listener) {
-        for (int i = 0; i < mUsersFriendsByAlphabet.size(); ++i) {
-            //todo mUsersFriendsByAlphabet.add(friend);
-        }
-
-        for (int i = 0; i < mUsersFriendsByMutual.size(); ++i) {
-            //todo mUsersFriendsByMutual.add(friend);
-        }
+        mUsersFriendsByAlphabet.add(friend);
+        doSortFriendsByAlphabet();
+        mUsersFriendsByMutual.add(friend);
 
         mUserFriendsMap.put(friend.id, friend);
         mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray());
@@ -495,7 +491,18 @@ public class DataManager {
         VKUsersArray friends = new VKUsersArray();
         friends.add(friend);
 
-        fetchAndAddDataAboutMutuals(new VKDataProvider(null), friends, mUsersGroupsByDefault, listener);
+        fetchAndAddDataAboutMutuals(new VKDataProvider(null), friends, mUsersGroupsByDefault, new Listener<Void>() {
+            @Override
+            public void onCompleted(Void aVoid) {
+                doSortFriendsByMutuals();
+                listener.onCompleted(aVoid);
+            }
+
+            @Override
+            public void onError(String e) {
+                listener.onError(e);
+            }
+        });
     }
 
     /**
@@ -504,10 +511,7 @@ public class DataManager {
      */
     private void addGroupToData(VKApiCommunityFull group, Listener<Void> listener) {
         mUsersGroupsByDefault.add(group);
-
-        for (int i = 0; i < mUsersGroupsByFriends.size(); ++i) {
-            //todo mUsersGroupsByFriends.add(group);
-        }
+        mUsersGroupsByFriends.add(group);
 
         mUserGroupsMap.put(group.id, group);
         mFriendsInGroup.put(group.id, new VKUsersArray());
@@ -515,7 +519,18 @@ public class DataManager {
         VKApiCommunityArray groups = new VKApiCommunityArray();
         groups.add(group);
 
-        fetchAndAddDataAboutMutuals(new VKDataProvider(null), mUsersFriendsByAlphabet, groups, listener);
+        fetchAndAddDataAboutMutuals(new VKDataProvider(null), mUsersFriendsByAlphabet, groups, new Listener<Void>() {
+            @Override
+            public void onCompleted(Void aVoid) {
+                doSortGroupsByMutuals();
+                listener.onCompleted(aVoid);
+            }
+
+            @Override
+            public void onError(String e) {
+                listener.onError(e);
+            }
+        });
     }
 
     /**
@@ -720,14 +735,7 @@ public class DataManager {
          * Действия выполняемые по случаю окончания загрузки друзей.
          */
         private void onFriendsLoaded() {
-            // Отсортировать друзей в алфавитном порядке.
-            Collections.sort(mUsersFriendsByAlphabet, (lhs, rhs) -> {
-                int r = lhs.first_name.compareTo(rhs.first_name);
-                if (r != 0) {
-                    return r;
-                }
-                return lhs.last_name.compareTo(rhs.last_name);
-            });
+            doSortFriendsByAlphabet();
             mFriendsSortState = FriendsSortState.byAlphabet;
 
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
@@ -757,40 +765,14 @@ public class DataManager {
             for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
                 mUsersFriendsByMutual.add(friend);
             }
-            Collections.sort(mUsersFriendsByMutual, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
-                @Override
-                public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                    VKApiCommunityArray lg = mGroupsMutualWithFriend.get(lhs.id);
-                    VKApiCommunityArray rg = mGroupsMutualWithFriend.get(rhs.id);
-                    if (lg == null || rg == null) {
-                        Log.e(TAG, "ERROR!!! UNKNOWN FRIEND!!! SORT FAILED!!!");
-                        return 0;
-                    }
-                    int l = lg.size();
-                    int r = rg.size();
-                    return (l == r) ? 0 : ((l > r) ? 1 : -1);
-                }
-            }));
+            doSortFriendsByMutuals();
 
             // Копировать группы в mUsersGroupsByFriends и отсортировать их по убыванию кол-ва друзей.
             mUsersGroupsByFriends = new VKApiCommunityArray();
             for (VKApiCommunityFull group : mUsersGroupsByDefault) {
                 mUsersGroupsByFriends.add(group);
             }
-            Collections.sort(mUsersGroupsByFriends, Collections.reverseOrder(new Comparator<VKApiCommunityFull>() {
-                @Override
-                public int compare(VKApiCommunityFull lhs, VKApiCommunityFull rhs) {
-                    VKUsersArray lf = mFriendsInGroup.get(lhs.id);
-                    VKUsersArray rf = mFriendsInGroup.get(rhs.id);
-                    if (lf == null || rf == null) {
-                        Log.e(TAG, "ERROR!!! UNKNOWN GROUP!!! SORT FAILED!!!");
-                        return 0;
-                    }
-                    int l = lf.size();
-                    int r = rf.size();
-                    return (l == r) ? 0 : ((l > r) ? 1 : -1);
-                }
-            }));
+            doSortGroupsByMutuals();
         }
 
         private static final int PROGRESS_FRIENDS_LOADED = 1;
@@ -826,6 +808,59 @@ public class DataManager {
                 Log.e(TAG, doInBackgroundErrorMessage);
             }
         }
+    }
+
+    /**
+     * Отсортировать mUsersFriendsByAlphabet в алфавитном порядке.
+     */
+    private void doSortFriendsByAlphabet() {
+        Collections.sort(mUsersFriendsByAlphabet, (lhs, rhs) -> {
+            int r = lhs.first_name.compareTo(rhs.first_name);
+            if (r != 0) {
+                return r;
+            }
+            return lhs.last_name.compareTo(rhs.last_name);
+        });
+    }
+
+    /**
+     * Отсортировать mUsersFriendsByMutual убыванию кол-ва общих групп.
+     */
+    private void doSortFriendsByMutuals() {
+        Collections.sort(mUsersFriendsByMutual, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
+            @Override
+            public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
+                VKApiCommunityArray lg = mGroupsMutualWithFriend.get(lhs.id);
+                VKApiCommunityArray rg = mGroupsMutualWithFriend.get(rhs.id);
+                if (lg == null || rg == null) {
+                    Log.e(TAG, "ERROR!!! UNKNOWN FRIEND!!! SORT FAILED!!!");
+                    return 0;
+                }
+                int l = lg.size();
+                int r = rg.size();
+                return (l == r) ? 0 : ((l > r) ? 1 : -1);
+            }
+        }));
+    }
+
+    /**
+     * Отсортировать mUsersGroupsByFriends по убыванию друзей в группе.
+     */
+    private void doSortGroupsByMutuals() {
+        Collections.sort(mUsersGroupsByFriends, Collections.reverseOrder(new Comparator<VKApiCommunityFull>() {
+            @Override
+            public int compare(VKApiCommunityFull lhs, VKApiCommunityFull rhs) {
+                VKUsersArray lf = mFriendsInGroup.get(lhs.id);
+                VKUsersArray rf = mFriendsInGroup.get(rhs.id);
+                if (lf == null || rf == null) {
+                    Log.e(TAG, "ERROR!!! UNKNOWN GROUP!!! SORT FAILED!!!");
+                    return 0;
+                }
+                int l = lf.size();
+                int r = rf.size();
+                return (l == r) ? 0 : ((l > r) ? 1 : -1);
+            }
+        }));
     }
 
     /**
@@ -920,7 +955,6 @@ public class DataManager {
             }
         }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
-
 
     /**
      * Разобрать resultedJSONObject с информацией о наличии друзей в группах.

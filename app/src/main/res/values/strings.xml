@@ -45,4 +45,5 @@
     <string name="search_friends">Search friend</string>
     <string name="search_groups">Search groups</string>
     <string name="message_format_in_groups" translatable="false">\n* %1$s (http://vk.com/%2$s)</string>
+    <string name="cache_images">Cache images</string>
 </resources>

@@ -42,4 +42,5 @@
     <string name="search_groups">Поиск групп</string>
     <string name="friend_request_sent_successfully">Заявка на добавление в друзья успешно отправлена.</string>
     <string name="group_request_sent_successfully">Заявка на вступление в группу успешно отправлена.</string>
+    <string name="cache_images">Кешировать изображения</string>
 </resources>

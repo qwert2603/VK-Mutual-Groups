@@ -86,6 +86,7 @@ public class UserGroupsListActivity extends AbstractVkListActivity {
         getMenuInflater().inflate(R.menu.user_groups_list_activity, menu);
         MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
         SearchView searchView = (SearchView) searchMenuItem.getActionView();
+        searchView.setQuery(mQuery, false);
         searchView.setSubmitButtonEnabled(false);
         searchView.setQueryHint(getString(R.string.search_groups));
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
