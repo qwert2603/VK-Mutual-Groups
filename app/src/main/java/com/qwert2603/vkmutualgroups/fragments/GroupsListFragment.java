@@ -10,11 +10,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.ArrayAdapter;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.activities.AbstractVkListActivity;
 import com.qwert2603.vkmutualgroups.activities.FriendsInGroupListActivity;
+import com.qwert2603.vkmutualgroups.adapters.AbstractAdapter;
 import com.qwert2603.vkmutualgroups.adapters.GroupAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
@@ -66,7 +66,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     }
 
     @Override
-    protected ArrayAdapter<VKApiCommunityFull> getListAdapter() {
+    protected AbstractAdapter<VKApiCommunityFull> getListAdapter() {
         return mGroupsAdapter;
     }
 
@@ -86,9 +86,9 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     public View onCreateView(LayoutInflater inflater, ViewGroup container, final Bundle savedInstanceState) {
         View view = super.onCreateView(inflater, container, savedInstanceState);
 
-        mListView.setOnItemClickListener((parent, view1, position, id) -> {
+        setListViewOnItemClickListener((parent, view1, position, id) -> {
             if (mDataManager.getFetchingState() == finished) {
-                VKApiCommunityFull group = (VKApiCommunityFull) mListView.getAdapter().getItem(position);
+                VKApiCommunityFull group = mGroups.get(position);
                 if (mDataManager.getUsersGroupById(group.id) != null) {
                     Intent intent = new Intent(getActivity(), FriendsInGroupListActivity.class);
                     intent.putExtra(FriendsInGroupListActivity.EXTRA_GROUP, group);
@@ -96,14 +96,14 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
                 }
             }
         });
-        mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
-        mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+        setListViewChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
+        setListViewMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
             private int mActionedPosition;
 
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 // чтобы выделялось не более 1 группы.
-                if (mListView.getCheckedItemCount() > 1) {
+                if (getListViewCheckedItemCount() > 1) {
                     mode.finish();
                 } else {
                     mActionedPosition = position;
@@ -154,7 +154,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
         });
 
         mGroupsAdapter = new GroupAdapter(getActivity(), mGroups);
-        mListView.setAdapter(mGroupsAdapter);
+        setListViewAdapter(mGroupsAdapter);
 
         return view;
     }

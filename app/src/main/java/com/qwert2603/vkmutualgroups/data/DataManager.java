@@ -382,45 +382,49 @@ public class DataManager {
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
-                VKParameters parameters = VKParameters.from(VKApiConst.GROUP_ID, group.id, VKApiConst.EXTENDED, 0);
-                VKRequest requestIsMember = VKApi.groups().isMember(parameters);
-                requestIsMember.executeWithListener(new VKRequest.VKRequestListener() {
-                    @Override
-                    public void onComplete(VKResponse response) {
-                        int result = -1;
-                        try {
-                            result = response.json.getInt("response");
-                        } catch (JSONException e) {
-                            Log.e(TAG, e.toString(), e);
-                        }
-                        switch (result) {
-                            case 0:
-                                listener.onCompleted(1);
-                                break;
-                            case 1:
-                                clearDataOnDevice();
-                                addGroupToData(group, new Listener<Void>() {
-                                    @Override
-                                    public void onCompleted(Void aVoid) {
-                                        listener.onCompleted(2);
-                                    }
+               checkIsMember(group, listener);
+            }
 
-                                    @Override
-                                    public void onError(String e) {
-                                        Log.e(TAG, "joinGroup ## ERROR == " + e);
-                                        listener.onError(e);
-                                    }
-                                });
-                                break;
-                        }
-                    }
+            @Override
+            public void onError(VKError error) {
+                Log.e(TAG, "joinGroup ERROR!!! == " + error);
+                listener.onError(String.valueOf(error));
+            }
+        });
+    }
 
-                    @Override
-                    public void onError(VKError error) {
-                        Log.e(TAG, "joinGroup ERROR!!! == " + error);
-                        listener.onError(String.valueOf(error));
-                    }
-                });
+    private void checkIsMember(VKApiCommunityFull group, Listener<Integer> listener) {
+        VKParameters parameters = VKParameters.from(VKApiConst.GROUP_ID, group.id, VKApiConst.EXTENDED, 0);
+        VKRequest requestIsMember = VKApi.groups().isMember(parameters);
+        requestIsMember.executeWithListener(new VKRequest.VKRequestListener() {
+            @Override
+            public void onComplete(VKResponse response) {
+                int result = -1;
+                try {
+                    result = response.json.getInt("response");
+                } catch (JSONException e) {
+                    Log.e(TAG, e.toString(), e);
+                }
+                switch (result) {
+                    case 0:
+                        listener.onCompleted(1);
+                        break;
+                    case 1:
+                        clearDataOnDevice();
+                        addGroupToData(group, new Listener<Void>() {
+                            @Override
+                            public void onCompleted(Void aVoid) {
+                                listener.onCompleted(2);
+                            }
+
+                            @Override
+                            public void onError(String e) {
+                                Log.e(TAG, "joinGroup ## ERROR == " + e);
+                                listener.onError(e);
+                            }
+                        });
+                        break;
+                }
             }
 
             @Override
@@ -477,8 +481,14 @@ public class DataManager {
      * При этом загрузить через vkapi список общих групп с ним.
      */
     private void addFriendToData(VKApiUserFull friend, Listener<Void> listener) {
-        mUsersFriendsByAlphabet.add(friend);
-        mUsersFriendsByMutual.add(friend);
+        for (int i = 0; i < mUsersFriendsByAlphabet.size(); ++i) {
+            //todo mUsersFriendsByAlphabet.add(friend);
+        }
+
+        for (int i = 0; i < mUsersFriendsByMutual.size(); ++i) {
+            //todo mUsersFriendsByMutual.add(friend);
+        }
+
         mUserFriendsMap.put(friend.id, friend);
         mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray());
 
@@ -494,7 +504,11 @@ public class DataManager {
      */
     private void addGroupToData(VKApiCommunityFull group, Listener<Void> listener) {
         mUsersGroupsByDefault.add(group);
-        mUsersGroupsByFriends.add(group);
+
+        for (int i = 0; i < mUsersGroupsByFriends.size(); ++i) {
+            //todo mUsersGroupsByFriends.add(group);
+        }
+
         mUserGroupsMap.put(group.id, group);
         mFriendsInGroup.put(group.id, new VKUsersArray());
 
@@ -817,7 +831,8 @@ public class DataManager {
     /**
      * Загрузить и добавить данные об общих группах.
      */
-    private void fetchAndAddDataAboutMutuals(DataProvider dataProvider, VKUsersArray friends, VKApiCommunityArray groups, Listener<Void> listener) {
+    private void fetchAndAddDataAboutMutuals(DataProvider dataProvider, VKUsersArray friends,
+                                             VKApiCommunityArray groups, Listener<Void> listener) {
         mFetchingState = FetchingState.calculatingMutual;
         new AsyncTask<Void, Void, Void>(){
             /**
@@ -839,25 +854,7 @@ public class DataManager {
                         new DataProvider.LoadIsMemberListener() {
                             @Override
                             public void onProgress(@Nullable JSONObject jsonObject) {
-                                if (jsonObject == null || doInBackgroundErrorMessage != null || mNeedClearing) {
-                                    --stepsRemain;
-                                    return;
-                                }
-                                parseIsMemberJSON(jsonObject, new Listener<Void>() {
-                                    @Override
-                                    public void onCompleted(Void aVoid) {
-                                        if ((doInBackgroundErrorMessage == null) && !mNeedClearing && (listener instanceof DataManagerListener)) {
-                                            ((DataManagerListener) listener).onProgress();
-                                        }
-                                        --stepsRemain;
-                                    }
-
-                                    @Override
-                                    public void onError(String e) {
-                                        doInBackgroundErrorMessage = e;
-                                        --stepsRemain;
-                                    }
-                                });
+                                onJsonGetted(jsonObject);
                             }
 
                             @Override
@@ -872,6 +869,7 @@ public class DataManager {
                             }
                         });
 
+                // ждем когда обработаются все запросы.
                 while (stepsRemain > 0) {
                     try {
                         Thread.sleep(15);
@@ -879,6 +877,28 @@ public class DataManager {
                     }
                 }
                 return null;
+            }
+
+            private void onJsonGetted(@Nullable JSONObject jsonObject) {
+                if (jsonObject == null || doInBackgroundErrorMessage != null || mNeedClearing) {
+                    --stepsRemain;
+                    return;
+                }
+                parseIsMemberJSON(jsonObject, new Listener<Void>() {
+                    @Override
+                    public void onCompleted(Void aVoid) {
+                        if ((doInBackgroundErrorMessage == null) && !mNeedClearing && (listener instanceof DataManagerListener)) {
+                            ((DataManagerListener) listener).onProgress();
+                        }
+                        --stepsRemain;
+                    }
+
+                    @Override
+                    public void onError(String e) {
+                        doInBackgroundErrorMessage = e;
+                        --stepsRemain;
+                    }
+                });
             }
 
             @Override

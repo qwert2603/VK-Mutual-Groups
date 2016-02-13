@@ -10,12 +10,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
+import com.qwert2603.vkmutualgroups.adapters.AbstractAdapter;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.api.model.Identifiable;
 import com.vk.sdk.api.model.VKApiModel;
@@ -35,7 +37,7 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
 
     private PhotoManager mPhotoManager;
 
-    protected ListView mListView;
+    private ListView mListView;
     private int mListViewScrollState;
 
     protected abstract String getEmptyListText();
@@ -44,10 +46,26 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
 
     protected abstract String getPhotoURL(int index);
 
-    protected abstract ArrayAdapter<T> getListAdapter();
+    protected abstract AbstractAdapter<T> getListAdapter();
 
     public interface Callbacks {
         void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount);
+    }
+
+    protected void setListViewAdapter(AbstractAdapter<T> adapter) {
+        mListView.setAdapter(adapter);
+    }
+
+    protected void setListViewOnItemClickListener(AdapterView.OnItemClickListener listener) {
+        mListView.setOnItemClickListener(listener);
+    }
+
+    protected void setListViewChoiceMode(int choiceMode) {
+        mListView.setChoiceMode(choiceMode);
+    }
+
+    protected void setListViewMultiChoiceModeListener(AbsListView.MultiChoiceModeListener listener) {
+        mListView.setMultiChoiceModeListener(listener);
     }
 
     @Override
@@ -88,6 +106,10 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
         mListView.setEmptyView(empty_list_text_view);
 
         return view;
+    }
+
+    protected int getListViewCheckedItemCount() {
+        return mListView.getCheckedItemCount();
     }
 
     private boolean isEverResumed = false;

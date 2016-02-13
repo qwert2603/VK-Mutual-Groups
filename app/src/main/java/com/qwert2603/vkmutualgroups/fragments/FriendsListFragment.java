@@ -10,12 +10,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.ArrayAdapter;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.activities.AbstractVkListActivity;
 import com.qwert2603.vkmutualgroups.activities.FriendGroupsListActivity;
 import com.qwert2603.vkmutualgroups.activities.MutualGroupsListActivity;
+import com.qwert2603.vkmutualgroups.adapters.AbstractAdapter;
 import com.qwert2603.vkmutualgroups.adapters.FriendAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
@@ -67,7 +67,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
     }
 
     @Override
-    protected ArrayAdapter<VKApiUserFull> getListAdapter() {
+    protected AbstractAdapter<VKApiUserFull> getListAdapter() {
         return mFriendAdapter;
     }
 
@@ -87,9 +87,9 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = super.onCreateView(inflater, container, savedInstanceState);
 
-        mListView.setOnItemClickListener((parent, view1, position, id) -> {
+        setListViewOnItemClickListener((parent, view1, position, id) -> {
             if (mDataManager.getFetchingState() == finished) {
-                VKApiUserFull friend = (VKApiUserFull) mListView.getAdapter().getItem(position);
+                VKApiUserFull friend = mFriends.get(position);
                 if (mDataManager.getUsersFriendById(friend.id) != null) {
                     Intent intent = new Intent(getActivity(), MutualGroupsListActivity.class);
                     intent.putExtra(MutualGroupsListActivity.EXTRA_FRIEND, friend);
@@ -97,14 +97,14 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                 }
             }
         });
-        mListView.setChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
-        mListView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+        setListViewChoiceMode(AbsListView.CHOICE_MODE_MULTIPLE_MODAL);
+        setListViewMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
             private int mActionedPosition;
 
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
                 // чтобы выделялось не более 1 друга.
-                if (mListView.getCheckedItemCount() > 1) {
+                if (getListViewCheckedItemCount() > 1) {
                     mode.finish();
                 } else {
                     mActionedPosition = position;
@@ -165,7 +165,7 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
         });
 
         mFriendAdapter = new FriendAdapter(getActivity(), mFriends);
-        mListView.setAdapter(mFriendAdapter);
+        setListViewAdapter(mFriendAdapter);
 
         return view;
     }

@@ -11,20 +11,9 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <FrameLayout
+        <FrameLayout android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-
-            <FrameLayout android:id="@+id/fragment_container"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-            </FrameLayout>
-
-            <FrameLayout android:id="@+id/fake_fragment_container"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-            </FrameLayout>
-
         </FrameLayout>
 
     </android.support.v4.widget.SwipeRefreshLayout>
@@ -33,7 +22,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:text="@string/loading_failed"
+        android:text="ОШИБКА !!!!"
         android:textColor="@color/vk_black"
         android:textSize="24sp"/>
 

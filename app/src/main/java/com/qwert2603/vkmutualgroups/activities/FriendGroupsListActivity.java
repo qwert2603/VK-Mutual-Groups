@@ -11,8 +11,12 @@ import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
+import com.qwert2603.vkmutualgroups.util.InternetUtils;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
+
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadingFriends;
 
 /**
  * Все группы друга.
@@ -42,28 +46,35 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
     }
 
     private void fetchFriendGroups() {
-        setRefreshLayoutRefreshing(true);
-
-        mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
-            @Override
-            public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
-                setErrorTextViewVisibility(View.INVISIBLE);
-                setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls, getString(R.string.no_groups)));
-                setRefreshLayoutRefreshing(false);
-                setRefreshLayoutEnable(true);
-                showSnackbar(R.string.groups_list_loaded);
-            }
-
-            @Override
-            public void onError(String e) {
-                if (! (getListFragment() instanceof AbstractVkListFragment)) {
-                    setErrorTextViewVisibility(View.VISIBLE);
+        if (mDataManager.getFetchingState() == loadingFriends || mDataManager.getFetchingState() == calculatingMutual) {
+            return;
+        }
+        if (InternetUtils.isInternetConnected(this)) {
+            setRefreshLayoutRefreshing(true);
+            mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
+                @Override
+                public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
+                    setErrorTextViewVisibility(View.INVISIBLE);
+                    setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls, getString(R.string.no_groups)));
+                    setRefreshLayoutRefreshing(false);
+                    setRefreshLayoutEnable(true);
+                    showSnackbar(R.string.groups_list_loaded);
                 }
-                setRefreshLayoutRefreshing(false);
-                setRefreshLayoutEnable(true);
-                showSnackbar(R.string.loading_failed, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> fetchFriendGroups());
-            }
-        });
+
+                @Override
+                public void onError(String e) {
+                    if (!(getListFragment() instanceof AbstractVkListFragment)) {
+                        setErrorTextViewVisibility(View.VISIBLE);
+                    }
+                    setRefreshLayoutRefreshing(false);
+                    setRefreshLayoutEnable(true);
+                    showSnackbar(R.string.loading_failed, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> fetchFriendGroups());
+                }
+            });
+        } else {
+            showSnackbar(R.string.no_internet_connection, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> fetchFriendGroups());
+            setRefreshLayoutRefreshing(false);
+        }
     }
 
     @Override
