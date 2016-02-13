@@ -51,6 +51,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
         }
         if (InternetUtils.isInternetConnected(this)) {
             setRefreshLayoutRefreshing(true);
+            setErrorTextViewVisibility(View.INVISIBLE);
             mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
                 @Override
                 public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
@@ -74,6 +75,9 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
         } else {
             showSnackbar(R.string.no_internet_connection, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> fetchFriendGroups());
             setRefreshLayoutRefreshing(false);
+            if (!(getListFragment() instanceof AbstractVkListFragment)) {
+                setErrorTextViewVisibility(View.VISIBLE);
+            }
         }
     }
 
