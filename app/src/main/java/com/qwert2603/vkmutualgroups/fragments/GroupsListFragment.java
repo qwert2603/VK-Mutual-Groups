@@ -135,6 +135,9 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
             public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
                 VKApiCommunityFull group = mGroups.get(mActionedPosition);
                 switch (item.getItemId()) {
+                    case R.id.menu_open_in_browser:
+                        ((AbstractVkListActivity) getActivity()).navigateTo("http://vk.com/" + group.screen_name);
+                        return true;
                     case R.id.menu_leave_group:
                         ((AbstractVkListActivity) getActivity()).leaveGroup(group);
                         mode.finish();

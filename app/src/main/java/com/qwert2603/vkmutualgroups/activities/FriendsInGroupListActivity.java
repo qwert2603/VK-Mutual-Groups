@@ -78,6 +78,9 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.menu_open_in_browser:
+                navigateTo("http://vk.com/" + mGroup.screen_name);
+                return true;
             case R.id.menu_leave_group:
                 leaveGroup(mGroup);
                 return true;

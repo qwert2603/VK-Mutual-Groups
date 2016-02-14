@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.ListFragment;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.design.widget.CoordinatorLayout;
@@ -30,7 +31,8 @@ import com.vk.sdk.api.model.VKApiUserFull;
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
  * Это самая базовая Activity.
- * Она позволяет отправлять сообщения, удалять и добавлять друзей, выходить из групп, вступать в группы.
+ * Она позволяет отправлять сообщения, удалять и добавлять друзей,
+ * выходить из групп, вступать в группы, переходить по переданному url.
  * Также она предоставлят доступ к элементам UI: TextView-ошибка, RefreshLayout, ActionButton и методы для показа Snackbar.
  */
 public abstract class AbstractVkListActivity extends AppCompatActivity {
@@ -189,6 +191,13 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    public void navigateTo(String url) {
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setData(Uri.parse(url));
+        intent = Intent.createChooser(intent, getString(R.string.open_link_with));
+        startActivity(intent);
     }
 
     public final void sendMessage(int friendId) {

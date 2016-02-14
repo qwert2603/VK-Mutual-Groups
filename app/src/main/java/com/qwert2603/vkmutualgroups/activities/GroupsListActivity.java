@@ -67,6 +67,9 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
                 intent.putExtra(FriendGroupsListActivity.EXTRA_FRIEND, mFriend);
                 startActivity(intent);
                 return true;
+            case R.id.menu_open_in_browser:
+                navigateTo("http://vk.com/" + mFriend.screen_name);
+                return true;
             case R.id.menu_delete_friend:
                 deleteFriend(mFriend);
                 return true;

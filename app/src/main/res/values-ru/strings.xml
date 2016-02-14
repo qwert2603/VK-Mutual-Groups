@@ -43,4 +43,6 @@
     <string name="friend_request_sent_successfully">Заявка на добавление в друзья успешно отправлена.</string>
     <string name="group_request_sent_successfully">Заявка на вступление в группу успешно отправлена.</string>
     <string name="cache_images">Кешировать изображения</string>
+    <string name="open_in_browser">Открыть в браузере</string>
+    <string name="open_link_with">Открыть ссылку с помощью</string>
 </resources>

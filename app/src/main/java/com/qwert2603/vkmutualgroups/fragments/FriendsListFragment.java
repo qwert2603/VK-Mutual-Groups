@@ -146,6 +146,9 @@ public class FriendsListFragment extends AbstractVkListFragment<VKApiUserFull> {
                         startActivity(intent);
                         mode.finish();
                         return true;
+                    case R.id.menu_open_in_browser:
+                        ((AbstractVkListActivity) getActivity()).navigateTo("http://vk.com/" + friend.screen_name);
+                        return true;
                     case R.id.menu_delete_friend:
                         ((AbstractVkListActivity) getActivity()).deleteFriend(friend);
                         mode.finish();

@@ -7,6 +7,9 @@
     <item android:id="@+id/menu_view_groups"
         android:title="@string/view_groups"/>
 
+    <item android:id="@+id/menu_open_in_browser"
+        android:title="@string/open_in_browser"/>
+
     <item android:id="@+id/menu_delete_friend"
         android:title="@string/delete_friend" />
 

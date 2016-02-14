@@ -46,4 +46,6 @@
     <string name="search_groups">Search groups</string>
     <string name="message_format_in_groups" translatable="false">\n* %1$s (http://vk.com/%2$s)</string>
     <string name="cache_images">Cache images</string>
+    <string name="open_in_browser">Open in browser</string>
+    <string name="open_link_with">Open link with</string>
 </resources>
