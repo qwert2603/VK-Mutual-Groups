@@ -12,9 +12,6 @@ public class ClearImageCacheDialogPreference extends DialogPreference {
 
     public ClearImageCacheDialogPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
-
-        setNegativeButtonText(R.string.cancel);
-        setPositiveButtonText(R.string.ok);
         setDialogMessage(context.getString(R.string.clear_images_cache_on_device) + "?");
     }
 
@@ -27,4 +24,5 @@ public class ClearImageCacheDialogPreference extends DialogPreference {
             Toast.makeText(getContext(), R.string.image_cache_cleared, Toast.LENGTH_SHORT).show();
         }
     }
+
 }

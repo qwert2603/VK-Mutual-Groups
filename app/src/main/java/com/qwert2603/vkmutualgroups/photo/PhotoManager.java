@@ -67,12 +67,9 @@ public class PhotoManager {
 
     public void setIsCacheImagesOnDevice(boolean cacheImages) {
         mIsCacheImagesOnDevice = cacheImages;
-        if (!mIsCacheImagesOnDevice) {
-            clearPhotosOnDevice();
-        }
-
     }
 
+    @SuppressWarnings("unused")
     public boolean getIsCacheImagesOnDevice() {
         return mIsCacheImagesOnDevice;
     }
