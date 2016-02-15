@@ -10,7 +10,6 @@ import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
-import com.qwert2603.vkmutualgroups.photo.ImageViewHolder;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.vk.sdk.api.model.Identifiable;
 import com.vk.sdk.api.model.VKApiModel;
@@ -54,10 +53,8 @@ public abstract class AbstractAdapter<T extends VKApiModel & Identifiable> exten
         String photoUrl = getPhotoUrl(item);
         if (mPhotoManager.getPhoto(photoUrl) != null) {
             viewHolder.mPhotoImageView.setImageBitmap(mPhotoManager.getPhoto(photoUrl));
-        }
-        else {
+        } else {
             viewHolder.mPhotoImageView.setImageBitmap(null);
-            //mPhotoManager.setPhotoToImageViewHolder(viewHolder, photoUrl);
         }
 
         viewHolder.mTitleTextView.setText(getTitle(item));
@@ -71,21 +68,11 @@ public abstract class AbstractAdapter<T extends VKApiModel & Identifiable> exten
         return convertView;
     }
 
-    private static class ViewHolder implements ImageViewHolder {
+    private static class ViewHolder {
         int mPosition;
         ImageView mPhotoImageView;
         TextView mTitleTextView;
         TextView mMutualsTextView;
-
-        @Override
-        public int getPosition() {
-            return mPosition;
-        }
-
-        @Override
-        public ImageView getImageView() {
-            return mPhotoImageView;
-        }
     }
 
 }

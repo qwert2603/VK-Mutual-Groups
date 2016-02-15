@@ -6,7 +6,7 @@
         <SwitchPreference android:key="is_cache_images_on_device"
             android:title="@string/images_caching"
             android:summary="@string/cache_images"
-            android:defaultValue="false"/>
+            android:defaultValue="true"/>
 
         <com.qwert2603.vkmutualgroups.fragments.ClearImageCacheDialogPreference
             android:key="clear_images_cache_on_device"

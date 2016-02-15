@@ -172,7 +172,7 @@ public class DataManager {
     }
 
     /**
-     * Загрузить список групп пользователя.
+     * Загрузить список групп пользователя (друга, например) по его id.
      */
     public void fetchUsersGroups(int userId, Listener<VKApiCommunityArray> listener) {
         VKParameters parameters = VKParameters.from(VKApiConst.USER_ID, userId, VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50");
@@ -570,7 +570,7 @@ public class DataManager {
      * Удалить все сохраненные на устройстве данные.
      */
     public void clearDataOnDevice() {
-        new DeviceDataSaver(mContext).clear();
+        DeviceDataSaver.get(mContext).clear();
     }
 
     /**
@@ -585,7 +585,7 @@ public class DataManager {
      * Загрузить данные с помощью vkapi.
      */
     public void fetchFromVK(DataManagerListener listener) {
-        load(new VKDataProvider(new DeviceDataSaver(mContext)), listener);
+        load(new VKDataProvider(DeviceDataSaver.get(mContext)), listener);
     }
 
     /**
