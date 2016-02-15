@@ -3,13 +3,14 @@ package com.qwert2603.vkmutualgroups.fragments;
 import android.content.Context;
 import android.preference.DialogPreference;
 import android.util.AttributeSet;
+import android.widget.Toast;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 
-public class ClearImageCachesDialogPreference extends DialogPreference {
+public class ClearImageCacheDialogPreference extends DialogPreference {
 
-    public ClearImageCachesDialogPreference(Context context, AttributeSet attrs) {
+    public ClearImageCacheDialogPreference(Context context, AttributeSet attrs) {
         super(context, attrs);
 
         setNegativeButtonText(R.string.cancel);
@@ -23,6 +24,7 @@ public class ClearImageCachesDialogPreference extends DialogPreference {
 
         if (positiveResult) {
             PhotoManager.get(getContext()).clearPhotosOnDevice();
+            Toast.makeText(getContext(), R.string.image_cache_cleared, Toast.LENGTH_SHORT).show();
         }
     }
 }

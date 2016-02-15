@@ -48,4 +48,5 @@
     <string name="settings">Настройки</string>
     <string name="clear_images_cache_on_device">Очистить кеш сохраненных изображений</string>
     <string name="images_caching">Кеширование изображений</string>
+    <string name="image_cache_cleared">Кеш изображений очищен.</string>
 </resources>

@@ -8,7 +8,7 @@
             android:summary="@string/cache_images"
             android:defaultValue="false"/>
 
-        <com.qwert2603.vkmutualgroups.fragments.ClearImageCachesDialogPreference
+        <com.qwert2603.vkmutualgroups.fragments.ClearImageCacheDialogPreference
             android:key="clear_images_cache_on_device"
             android:title="@string/clear_images_cache_on_device"/>
 
