@@ -21,8 +21,9 @@
     <TextView android:id="@+id/error_text_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:foregroundGravity="center"
         android:gravity="center"
-        android:text="ОШИБКА !!!!"
+        android:text="@string/groups_of_friend_empty_list"
         android:textColor="@color/vk_black"
         android:textSize="24sp"/>
 

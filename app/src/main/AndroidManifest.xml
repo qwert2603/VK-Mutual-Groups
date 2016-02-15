@@ -52,6 +52,14 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
         </activity>
+
+        <activity android:name=".activities.SettingsActivity"
+            android:label="@string/settings"
+            android:parentActivityName="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.qwert2603.vkmutualgroups.activities.LoadingFriendsListActivity" />
+        </activity>
     </application>
 
 </manifest>

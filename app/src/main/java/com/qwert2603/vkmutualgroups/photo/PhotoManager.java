@@ -1,7 +1,6 @@
 package com.qwert2603.vkmutualgroups.photo;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -11,6 +10,7 @@ import android.util.Log;
 import android.util.LruCache;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.qwert2603.vkmutualgroups.fragments.SettingsFragment;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
@@ -27,16 +27,15 @@ public class PhotoManager {
 
     private static final String TAG = "PhotoManager";
 
-    private static final String PREF_IS_CACHE_IMAGES_ON_DEVICE = "is_cache_images_on_device";
-
     private static PhotoManager sPhotoManager;
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     private PhotoManager(Context context) {
         mPhotoFolder = new File(context.getApplicationContext().getFilesDir(), PHOTOS_FOLDER);
         mPhotoFolder.mkdirs();
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(context);
-        mIsCacheImagesOnDevice = mPrefs.getBoolean(PREF_IS_CACHE_IMAGES_ON_DEVICE, false);
+
+        mIsCacheImagesOnDevice = PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(SettingsFragment.PREF_IS_CACHE_IMAGES_ON_DEVICE, false);
     }
 
     public static PhotoManager get(Context context) {
@@ -61,8 +60,6 @@ public class PhotoManager {
      */
     private LruCache<String, Bitmap> mPhotos = new LruCache<>(2048);
 
-    SharedPreferences mPrefs;
-
     /**
      * Кешировать ли изображения в памяти телефона.
      */
@@ -70,7 +67,6 @@ public class PhotoManager {
 
     public void setIsCacheImagesOnDevice(boolean cacheImages) {
         mIsCacheImagesOnDevice = cacheImages;
-        mPrefs.edit().putBoolean(PREF_IS_CACHE_IMAGES_ON_DEVICE, mIsCacheImagesOnDevice).apply();
         if (!mIsCacheImagesOnDevice) {
             clearPhotosOnDevice();
         }

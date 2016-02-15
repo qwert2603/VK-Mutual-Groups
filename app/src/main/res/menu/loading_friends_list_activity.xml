@@ -11,9 +11,8 @@
         android:title="@string/group_list"
         app:showAsAction="never"/>
 
-    <item android:id="@+id/menu_cache_images"
-        android:title="@string/cache_images"
-        android:checkable="true"/>
+    <item android:id="@+id/menu_setting"
+        android:title="@string/settings"/>
 
     <item android:id="@+id/menu_logout"
         android:title="@string/log_out"

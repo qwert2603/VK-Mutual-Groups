@@ -222,8 +222,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
         super.onCreateOptionsMenu(menu);
         getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
 
-        menu.findItem(R.id.menu_cache_images).setChecked(mPhotoManager.getIsCacheImagesOnDevice());
-
         MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
         SearchView searchView = (SearchView) searchMenuItem.getActionView();
         searchView.setQuery(mQuery, false);
@@ -255,9 +253,9 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
                     startActivity(intent);
                 }
                 return true;
-            case R.id.menu_cache_images:
-                mPhotoManager.setIsCacheImagesOnDevice(! mPhotoManager.getIsCacheImagesOnDevice());
-                invalidateOptionsMenu();
+            case R.id.menu_setting:
+                Intent intent = new Intent(this, SettingsActivity.class);
+                startActivity(intent);
                 return true;
             case R.id.menu_logout:
                 if (VKSdk.isLoggedIn()) {

@@ -24,6 +24,7 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadin
 public class FriendGroupsListActivity extends GroupsListActivity implements AbstractVkListFragment.Callbacks {
 
     private VKApiUserFull mFriend;
+    private VKApiCommunityArray mGroups;
 
     private DataManager mDataManager;
 
@@ -55,8 +56,9 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
             mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
                 @Override
                 public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
+                    mGroups = vkApiCommunityFulls;
                     setErrorTextViewVisibility(View.INVISIBLE);
-                    setListFragment(GroupsListFragment.newInstance(vkApiCommunityFulls, getString(R.string.no_groups)));
+                    setListFragment(GroupsListFragment.newInstance(mGroups, getString(R.string.groups_of_friend_empty_list)));
                     setRefreshLayoutRefreshing(false);
                     setRefreshLayoutEnable(true);
                     showSnackbar(R.string.groups_list_loaded);
@@ -90,7 +92,10 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
+        boolean b = mGroups == null
+                || mGroups.isEmpty()
+                || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
+
         setRefreshLayoutEnable(b);
     }
 

@@ -45,7 +45,10 @@
     <string name="search_friends">Search friend</string>
     <string name="search_groups">Search groups</string>
     <string name="message_format_in_groups" translatable="false">\n* %1$s (http://vk.com/%2$s)</string>
-    <string name="cache_images">Cache images</string>
+    <string name="cache_images">Cache images on device</string>
     <string name="open_in_browser">Open in browser</string>
     <string name="open_link_with">Open link with</string>
+    <string name="settings">Settings</string>
+    <string name="clear_images_cache_on_device">Clear images cache on device</string>
+    <string name="images_caching">Images caching</string>
 </resources>
