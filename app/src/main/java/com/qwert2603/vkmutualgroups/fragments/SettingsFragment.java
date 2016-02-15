@@ -31,6 +31,7 @@ public class SettingsFragment extends PreferenceFragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRetainInstance(true);
         mPhotoManager = PhotoManager.get(getActivity());
         addPreferencesFromResource(R.xml.preferences);
         PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);

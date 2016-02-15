@@ -274,7 +274,11 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        boolean b = (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
+        VKUsersArray friends = mDataManager.getUsersFriends();
+        boolean b = friends == null
+                || friends.isEmpty()
+                || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
+
         setRefreshLayoutEnable(b);
     }
 
