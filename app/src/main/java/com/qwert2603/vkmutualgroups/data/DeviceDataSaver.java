@@ -13,10 +13,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Random;
 
 /**
- * Класс для сохранения jsonObject в файл в фоновом режиме.
+ * Класс для сохранения данных в файлы в фоновом режиме.
  * И для удаления сохраненных файлов с устройства.
  */
 public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
@@ -44,31 +45,8 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
     }
 
     @Override
-    public void saveFriends(JSONObject friends) {
-        File file = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
-        saveToJSONFile(file, friends);
-    }
-
-    @Override
-    public void saveGroups(JSONObject groups) {
-        File file = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
-        saveToJSONFile(file, groups);
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Override
-    public void saveIsMember(JSONObject jsonObject) {
-        File folder = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
-        folder.mkdirs();
-        File file = new File(folder, new Random().nextInt() + JSON_FILENAME_SUFFIX);
-        saveToJSONFile(file, jsonObject);
-    }
-
-    /**
-     * Сохранить jsonObject в файл в фоновом режиме.
-     */
-    private void saveToJSONFile(File file, JSONObject jsonObject) {
-        mDeviceDataSavingThread.saveToJSONFile(file, jsonObject);
+    public void save(Data data) {
+        mDeviceDataSavingThread.save(data);
     }
 
     /**
@@ -102,8 +80,7 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
                 public void handleMessage(Message msg) {
                     switch (msg.what) {
                         case MESSAGE_SAVE:
-                            Blob blob = (Blob) msg.obj;
-                            handleSaveToJSONFile(blob.mFile, blob.mJSONObject);
+                            handleSave((Data) msg.obj);
                             break;
                         case MESSAGE_CLEAR:
                             handleClear();
@@ -113,20 +90,12 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
             };
         }
 
-        private class Blob {
-            File mFile;
-            JSONObject mJSONObject;
-        }
-
-        public void saveToJSONFile(File file, JSONObject jsonObject) {
+        public void save(Data data) {
             while (mHandler == null) {
                 Thread.yield();
             }
 
-            Blob blob = new Blob();
-            blob.mFile = file;
-            blob.mJSONObject = jsonObject;
-            mHandler.obtainMessage(MESSAGE_SAVE, blob).sendToTarget();
+            mHandler.obtainMessage(MESSAGE_SAVE, data).sendToTarget();
         }
 
         public void clear() {
@@ -138,14 +107,52 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
             mHandler.obtainMessage(MESSAGE_CLEAR).sendToTarget();
         }
 
-        private void handleSaveToJSONFile(File file, JSONObject jsonObject) {
+        private class Blob {
+            File mFile;
+            JSONObject mJSONObject;
+        }
+
+        @SuppressWarnings("ResultOfMethodCallIgnored")
+        private void handleSave(Data data) {
+            ArrayList<Blob> arrayList = new ArrayList<>();
+
+            Blob blob = new Blob();
+            blob.mFile = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
+            blob.mJSONObject = data.mFriends.fields;
+            arrayList.add(blob);
+
+            blob = new Blob();
+            blob.mFile = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
+            blob.mJSONObject = data.mGroups.fields;
+            arrayList.add(blob);
+
+            File folder = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
+            folder.mkdirs();
+            for (JSONObject jsonObject : data.mIsMember) {
+                blob = new Blob();
+                blob.mFile = new File(folder, new Random().nextInt() + JSON_FILENAME_SUFFIX);
+                blob.mJSONObject = jsonObject;
+                arrayList.add(blob);
+            }
+
+            for (Blob b : arrayList) {
+                if (! doSave(b.mFile, b.mJSONObject)) {
+                    handleClear();
+                    return;
+                }
+            }
+        }
+
+        private boolean doSave(File file, JSONObject jsonObject) {
             OutputStream outputStream = null;
             try {
                 outputStream = new FileOutputStream(file);
                 outputStream.write(jsonObject.toString().getBytes());
+                return true;
             }
             catch (IOException e) {
                 Log.e(TAG, e.toString(), e);
+                return false;
             }
             finally {
                 if (outputStream != null) {

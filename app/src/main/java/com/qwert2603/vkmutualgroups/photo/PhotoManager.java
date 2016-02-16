@@ -125,7 +125,6 @@ public class PhotoManager {
         @SuppressLint("HandlerLeak")
         protected void onLooperPrepared() {
             super.onLooperPrepared();
-            getLooper().getThread().setPriority(Thread.NORM_PRIORITY - 2);
             mHandler = new Handler() {
                 @Override
                 public void handleMessage(Message msg) {

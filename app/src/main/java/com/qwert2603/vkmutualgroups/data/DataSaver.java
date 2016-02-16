@@ -1,13 +1,9 @@
 package com.qwert2603.vkmutualgroups.data;
 
-import org.json.JSONObject;
-
 /**
- * Класс для сохранения и удаления jsonObject.
+ * Класс для сохранения и удаления данных.
  */
 public interface DataSaver {
-    void saveFriends(JSONObject friends);
-    void saveGroups(JSONObject groups);
-    void saveIsMember(JSONObject jsonObject);
+    void save(Data data);
     void clear();
 }

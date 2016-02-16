@@ -51,30 +51,11 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
     }
 
     @Override
-    public void loadFriends(final Listener<VKUsersArray> listener) {
-        File file = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
-        mLoadingThread.loadFriends(file, listener);
-    }
-
-    @Override
-    public void loadGroups(final Listener<VKApiCommunityArray> listener) {
-        File file = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
-        mLoadingThread.loadGroups(file, listener);
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Override
-    public void loadIsMembers(VKUsersArray friends, VKApiCommunityArray groups, Listener<ArrayList<JSONObject>> listener) {
-        File folder = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
-        folder.mkdirs();
-        mLoadingThread.loadIsMember(folder, listener);
+    public void load(Listener<Data> listener) {
+        mLoadingThread.load(listener);
     }
 
     private class LoadingThread extends HandlerThread {
-
-        private static final int MESSAGE_LOAD_FRIENDS = 1;
-        private static final int MESSAGE_LOAD_GROUPS = 2;
-        private static final int MESSAGE_LOAD_IS_MEMBER = 3;
 
         private volatile Handler mHandler;
         private Handler mResponseHandler;
@@ -86,120 +67,52 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
 
         @Override
         @SuppressLint("HandlerLeak")
+        @SuppressWarnings("unchecked")
         protected void onLooperPrepared() {
             super.onLooperPrepared();
             mHandler = new Handler() {
                 @Override
                 public void handleMessage(Message msg) {
-                    switch (msg.what) {
-                        case MESSAGE_LOAD_FRIENDS:
-                            BlobFriends blobFriends = (BlobFriends) msg.obj;
-                            handleLoadFriends(blobFriends.mFile, blobFriends.mListener);
-                            break;
-                        case MESSAGE_LOAD_GROUPS:
-                            BlobGroups blobGroups = (BlobGroups) msg.obj;
-                            handleLoadGroups(blobGroups.mFile, blobGroups.mListener);
-                            break;
-                        case MESSAGE_LOAD_IS_MEMBER:
-                            BlobIsMember blobIsMember = (BlobIsMember) msg.obj;
-                            handleLoadIsMember(blobIsMember.mDir, blobIsMember.mListener);
-                            break;
-                    }
+                    handleLoad((Listener<Data>) msg.obj);
                 }
             };
         }
 
-        private class BlobFriends {
-            File mFile;
-            Listener<VKUsersArray> mListener;
-        }
-
-        public void loadFriends(File file, Listener<VKUsersArray> listener) {
+        public void load(Listener<Data> listener) {
             while (mHandler == null) {
                 Thread.yield();
             }
 
-            BlobFriends blob = new BlobFriends();
-            blob.mFile = file;
-            blob.mListener = listener;
-            mHandler.obtainMessage(MESSAGE_LOAD_FRIENDS, blob).sendToTarget();
+            mHandler.obtainMessage(0, listener).sendToTarget();
         }
 
-        private class BlobGroups {
-            File mFile;
-            Listener<VKApiCommunityArray> mListener;
-        }
-
-        public void loadGroups(File file, Listener<VKApiCommunityArray> listener) {
-            while (mHandler == null) {
-                Thread.yield();
-            }
-
-            BlobGroups blob = new BlobGroups();
-            blob.mFile = file;
-            blob.mListener = listener;
-            mHandler.obtainMessage(MESSAGE_LOAD_GROUPS, blob).sendToTarget();
-        }
-
-        private class BlobIsMember {
-            File mDir;
-            Listener<ArrayList<JSONObject>> mListener;
-        }
-
-        public void loadIsMember(File dir, Listener<ArrayList<JSONObject>> listener) {
-            while (mHandler == null) {
-                Thread.yield();
-            }
-
-            BlobIsMember blob = new BlobIsMember();
-            blob.mDir = dir;
-            blob.mListener = listener;
-            mHandler.obtainMessage(MESSAGE_LOAD_IS_MEMBER, blob).sendToTarget();
-        }
-
-        private void handleLoadFriends(File file, Listener<VKUsersArray> listener) {
+        private void handleLoad(Listener<Data> listener) {
             try {
-                JSONObject jsonObject = loadJSONObjectFromJSONFile(file);
+                Data data = new Data();
+
+                File friendsFile = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
                 VKUsersArray friends = new VKUsersArray();
-                friends.parse(jsonObject);
-                mResponseHandler.post(() -> listener.onCompleted(friends));
-            } catch (IOException | JSONException e) {
-                mResponseHandler.post(() -> listener.onError(String.valueOf(e)));
-            }
-        }
+                JSONObject jsonObjectFriends = loadJSONObjectFromJSONFile(friendsFile);
+                friends.parse(jsonObjectFriends);
+                data.mFriends = friends;
 
-        private void handleLoadGroups(File file, Listener<VKApiCommunityArray> listener) {
-            try {
-                JSONObject jsonObject = loadJSONObjectFromJSONFile(file);
+                File groupsFile = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
                 VKApiCommunityArray groups = new VKApiCommunityArray();
-                groups.parse(jsonObject);
-                mResponseHandler.post(() -> listener.onCompleted(groups));
+                JSONObject jsonObjectGroups = loadJSONObjectFromJSONFile(groupsFile);
+                groups.parse(jsonObjectGroups);
+                data.mGroups = groups;
+
+                File dir = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
+                ArrayList<JSONObject> arrayList = new ArrayList<>();
+                for (File file : dir.listFiles()) {
+                    JSONObject jsonObject = loadJSONObjectFromJSONFile(file);
+                    arrayList.add(jsonObject);
+                }
+                data.mIsMember = arrayList;
+
+                mResponseHandler.post(() -> listener.onCompleted(data));
             } catch (IOException | JSONException e) {
                 mResponseHandler.post(() -> listener.onError(String.valueOf(e)));
-            }
-        }
-
-        private void handleLoadIsMember(File dir, Listener<ArrayList<JSONObject>> listener) {
-            String errorMessage = null;
-            ArrayList<JSONObject> result = new ArrayList<>();
-            for (File file : dir.listFiles()) {
-                if (errorMessage != null) {
-                    continue;
-                }
-                JSONObject jsonObject = null;
-                try {
-                    jsonObject = loadJSONObjectFromJSONFile(file);
-                } catch (IOException | JSONException e) {
-                    errorMessage = String.valueOf(e);
-                }
-                result.add(jsonObject);
-            }
-            if (errorMessage == null) {
-                mResponseHandler.post(() -> listener.onCompleted(result));
-            }
-            else {
-                String err = errorMessage;
-                mResponseHandler.post(() -> listener.onError(err));
             }
         }
 

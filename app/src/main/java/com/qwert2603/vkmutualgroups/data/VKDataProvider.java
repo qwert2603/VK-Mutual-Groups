@@ -1,7 +1,6 @@
 package com.qwert2603.vkmutualgroups.data;
 
 import android.os.AsyncTask;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.qwert2603.vkmutualgroups.Listener;
@@ -13,8 +12,6 @@ import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKUsersArray;
-
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 
@@ -30,7 +27,7 @@ public class VKDataProvider implements DataProvider {
      * Объект-сохранятель json в память устройства.
      * Если == null, сохранение не происходит.
      */
-    private DataSaver mDataSaver;
+    private volatile DataSaver mDataSaver;
 
     public VKDataProvider(@Nullable DataSaver dataSaver) {
         mDataSaver = dataSaver;
@@ -40,50 +37,11 @@ public class VKDataProvider implements DataProvider {
     }
 
     @Override
-    public void loadFriends(Listener<VKUsersArray> listener) {
-        VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message"));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                listener.onCompleted((VKUsersArray) response.parsedModel);
-                if (mDataSaver != null) {
-                    mDataSaver.saveFriends(response.json);
-                }
-            }
-
-            @Override
-            public void onError(VKError error) {
-                listener.onError(String.valueOf(error));
-            }
-        });
+    public void load(Listener<Data> listener) {
+        new LoadTask(listener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    @Override
-    public void loadGroups(Listener<VKApiCommunityArray> listener) {
-        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
-            @Override
-            public void onComplete(VKResponse response) {
-                listener.onCompleted((VKApiCommunityArray) response.parsedModel);
-                if (mDataSaver != null) {
-                    mDataSaver.saveGroups(response.json);
-                }
-            }
-
-            @Override
-            public void onError(VKError error) {
-                listener.onError(String.valueOf(error));
-            }
-        });
-    }
-
-    @Override
-    public void loadIsMembers(@NonNull VKUsersArray friends, @NonNull VKApiCommunityArray groups,
-                              Listener<ArrayList<JSONObject>> listener) {
-        new LoadIsMemberTask(friends, groups, listener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
-
-    private class LoadIsMemberTask extends AsyncTask<Void, Void, ArrayList<JSONObject>> {
+    private class LoadTask extends AsyncTask<Void, Void, Data> {
         /**
          * Кол-во друзей, обрабатываемое в 1 запросе.
          * Не больше 500.
@@ -97,15 +55,21 @@ public class VKDataProvider implements DataProvider {
         private static final int groupPerRequest = 25;
 
         /**
+         * Задержка перед следующим запросом.
+         * Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
+         */
+        private static final long nextRequestDelay = 350;
+
+        /**
          * Слушатель выполнения загрузки.
          */
-        private volatile Listener<ArrayList<JSONObject>> mListener;
+        private volatile Listener<Data> mListener;
 
         /**
          * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
          * Если == null, то ошибок не было.
          */
-        private volatile String mErrorMessage;
+        private volatile String mErrorMessage = null;
 
         /**
          * Сколько запросов осталось выполнить (vkapi.execute).
@@ -113,46 +77,84 @@ public class VKDataProvider implements DataProvider {
         private volatile int mRequestsRemain;
 
         /**
-         * Друзья, которые обрабатываются.
+         * Время, когда можно отправлять следующий запрос.
          */
-        private VKUsersArray mFriends;
+        private volatile long mNextRequestTime = 0;
 
-        /**
-         * Группы, которые обрабатываются.
-         */
-        private VKApiCommunityArray mGroups;
-
-        public LoadIsMemberTask(@NonNull VKUsersArray friends, @NonNull VKApiCommunityArray groups,
-                                Listener<ArrayList<JSONObject>> listener) {
+        public LoadTask(Listener<Data> listener) {
             mListener = listener;
-            mFriends = friends;
-            mGroups = groups;
-            mRequestsRemain = calculateRequestCount();
-            mErrorMessage = null;
         }
 
         @Override
-        protected ArrayList<JSONObject> doInBackground(Void... params) {
-            ArrayList<JSONObject> result = new ArrayList<>();
-            for (int friendNumber = 0; friendNumber < mFriends.size(); friendNumber += friendsPerRequest) {
-                String varFriends = getVarFriends(friendNumber);
-                for (int groupNumber = 0; groupNumber < mGroups.size(); groupNumber += groupPerRequest) {
+        protected Data doInBackground(Void... params) {
+            Data data = new Data();
+
+            mRequestsRemain = 1;
+
+            VKParameters friendsParameters = VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message");
+            VKRequest requestFriends = VKApi.friends().get(friendsParameters);
+            requestFriends.executeWithListener(new VKRequest.VKRequestListener() {
+                @Override
+                public void onComplete(VKResponse response) {
+                    data.mFriends = (VKUsersArray) response.parsedModel;
+                    --mRequestsRemain;
+                }
+
+                @Override
+                public void onError(VKError error) {
+                    mErrorMessage = String.valueOf(error);
+                    --mRequestsRemain;
+                }
+            });
+
+            waitNextRequestDelay();
+            waitRequestsRemain();
+            if (mErrorMessage != null) {
+                return null;
+            }
+
+            mRequestsRemain = 1;
+
+            VKRequest requestGroups = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
+            requestGroups.executeWithListener(new VKRequest.VKRequestListener() {
+                @Override
+                public void onComplete(VKResponse response) {
+                    data.mGroups = (VKApiCommunityArray) response.parsedModel;
+                    --mRequestsRemain;
+                }
+
+                @Override
+                public void onError(VKError error) {
+                    mErrorMessage = String.valueOf(error);
+                    --mRequestsRemain;
+                }
+            });
+
+            waitNextRequestDelay();
+            waitRequestsRemain();
+            if (mErrorMessage != null) {
+                return null;
+            }
+
+            mRequestsRemain = calculateRequestCount(data);
+
+            data.mIsMember = new ArrayList<>();
+            for (int friendNumber = 0; friendNumber < data.mFriends.size(); friendNumber += friendsPerRequest) {
+                String varFriends = getVarFriends(data, friendNumber);
+                for (int groupNumber = 0; groupNumber < data.mGroups.size(); groupNumber += groupPerRequest) {
                     if (mErrorMessage != null) {
                         --mRequestsRemain;
                         continue;
                     }
-                    long nextQueryTime = System.currentTimeMillis() + 350;
-                    String varGroups = getVarGroups(groupNumber);
+                    String varGroups = getVarGroups(data, groupNumber);
                     String code = getCodeToExecute(varFriends, varGroups);
                     VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
+                    request.setUseLooperForCallListener(false);
                     request.executeWithListener(new VKRequest.VKRequestListener() {
                         @Override
                         public void onComplete(VKResponse response) {
-                            result.add(response.json);
+                            data.mIsMember.add(response.json);
                             --mRequestsRemain;
-                            if (mDataSaver != null) {
-                                mDataSaver.saveIsMember(response.json);
-                            }
                         }
 
                         @Override
@@ -161,35 +163,51 @@ public class VKDataProvider implements DataProvider {
                             --mRequestsRemain;
                         }
                     });
-                    // Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
-                    while (System.currentTimeMillis() < nextQueryTime) {
-                        Thread.yield();
-                    }
+                    waitNextRequestDelay();
                 }
             }
 
-            // Ждем, пока не выполнятся все запросы.
+            waitRequestsRemain();
+            if (mErrorMessage != null) {
+                return null;
+            }
+
+            if (mDataSaver != null) {
+                mDataSaver.save(data);
+            }
+
+            return data;
+        }
+
+        private void waitNextRequestDelay() {
+            while (System.currentTimeMillis() < mNextRequestTime) {
+                Thread.yield();
+            }
+            mNextRequestTime = System.currentTimeMillis() + nextRequestDelay;
+        }
+
+        /**
+         * Ждем, пока не выполнятся все выполняемые запросы.
+         */
+        private void waitRequestsRemain() {
             while (mRequestsRemain > 0) {
                 try {
                     Thread.sleep(15);
                 } catch (InterruptedException ignored) {
                 }
-
             }
-            return result;
         }
 
         /**
-         * Посчтитать кол-во запросов, учитывая размеры {@link @mFriends} и {@link #mGroups}.
          * @return кол-во запросов, которое надо выполнить.
          */
-        private int calculateRequestCount() {
-            int partsOfFriends = mFriends.size() / friendsPerRequest;
-            if (mFriends.size() % friendsPerRequest > 0) {
+        private int calculateRequestCount(Data data) {
+            int partsOfFriends = data.mFriends.size() / friendsPerRequest;
+            if (data.mFriends.size() % friendsPerRequest > 0) {
                 ++partsOfFriends;
             }
-            int partsOfGroups = mGroups.size() / groupPerRequest;
-            if (mGroups.size() % groupPerRequest > 0) {
+            int partsOfGroups = data.mGroups.size() / groupPerRequest;
+            if (data.mGroups.size() % groupPerRequest > 0) {
                 ++partsOfGroups;
             }
             return partsOfFriends * partsOfGroups;
@@ -199,12 +217,12 @@ public class VKDataProvider implements DataProvider {
          * Получить значение для переменной в запросе - id друзей
          * @param friendStart - друг, начиная с которого формируется список id.
          */
-        private String getVarFriends(int friendStart) {
+        private String getVarFriends(Data data, int friendStart) {
             StringBuilder s = new StringBuilder();
             s.append("\"");
-            int friendEnd = Math.min(friendStart + friendsPerRequest, mFriends.size());
+            int friendEnd = Math.min(friendStart + friendsPerRequest, data.mFriends.size());
             for (int i = friendStart; i < friendEnd; ++i) {
-                s.append(mFriends.get(i).id).append(',');
+                s.append(data.mFriends.get(i).id).append(',');
             }
             s.append("\"");
             return s.toString();
@@ -214,12 +232,12 @@ public class VKDataProvider implements DataProvider {
          * Получить значение для переменной в запросе - id групп
          * @param groupStart - группа, начиная с которого формируется список id.
          */
-        private String getVarGroups(int groupStart) {
+        private String getVarGroups(Data data, int groupStart) {
             StringBuilder s = new StringBuilder();
-            int groupEnd = Math.min(groupStart + groupPerRequest, mGroups.size());
+            int groupEnd = Math.min(groupStart + groupPerRequest, data.mGroups.size());
             s.append("{count:\"").append(groupEnd - groupStart).append("\",items:[");
             for (int i = groupStart; i < groupEnd; ++i) {
-                s.append(mGroups.get(i).id).append(',');
+                s.append(data.mGroups.get(i).id).append(',');
             }
             s.append("]}");
             return s.toString();
@@ -242,9 +260,9 @@ public class VKDataProvider implements DataProvider {
         }
 
         @Override
-        protected void onPostExecute(ArrayList<JSONObject> result) {
+        protected void onPostExecute(Data data) {
             if (mErrorMessage == null) {
-                mListener.onCompleted(result);
+                mListener.onCompleted(data);
             }
             else {
                 mListener.onError(mErrorMessage);

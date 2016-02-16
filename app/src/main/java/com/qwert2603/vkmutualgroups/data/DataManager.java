@@ -1,6 +1,10 @@
 package com.qwert2603.vkmutualgroups.data;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -40,6 +44,9 @@ public class DataManager {
 
     private DataManager(Context context) {
         mContext = context.getApplicationContext();
+        mDataHandlerThread = new DataHandlerThread();
+        mDataHandlerThread.start();
+        mDataHandlerThread.getLooper();
         clear();
     }
 
@@ -49,6 +56,8 @@ public class DataManager {
         }
         return sDataManager;
     }
+
+    private DataHandlerThread mDataHandlerThread;
 
     private Context mContext;
 
@@ -453,8 +462,10 @@ public class DataManager {
         mGroupsMutualWithFriend.remove(friend.id);
 
         mUserFriendsMap.remove(friendId);
-    }
 
+        doSortFriendsByMutuals();
+        doSortGroupsByMutuals();
+    }
 
     /**
      * Удалить все данные о группе.
@@ -474,6 +485,9 @@ public class DataManager {
         mFriendsInGroup.remove(group.id);
 
         mUserGroupsMap.remove(groupId);
+
+        doSortFriendsByMutuals();
+        doSortGroupsByMutuals();
     }
 
     /**
@@ -491,7 +505,8 @@ public class DataManager {
         VKUsersArray friends = new VKUsersArray();
         friends.add(friend);
 
-        fetchAndAddDataAboutMutuals(new VKDataProvider(null), friends, mUsersGroupsByDefault, new Listener<Void>() {
+        fetchAndAddDataAboutMutuals(new VKDataProvider(null), friends, mUsersGroupsByDefault,
+                new ErrorListener<Void, Void>(listener) {
             @Override
             public void onCompleted(Void aVoid) {
                 if (checkAndClear()) {
@@ -500,13 +515,6 @@ public class DataManager {
                 doSortFriendsByMutuals();
                 doSortGroupsByMutuals();
                 listener.onCompleted(aVoid);
-            }
-
-            @Override
-            public void onError(String e) {
-                mNeedClearing = true;
-                checkAndClear();
-                listener.onError(e);
             }
         });
     }
@@ -525,7 +533,8 @@ public class DataManager {
         VKApiCommunityArray groups = new VKApiCommunityArray();
         groups.add(group);
 
-        fetchAndAddDataAboutMutuals(new VKDataProvider(null), mUsersFriendsByAlphabet, groups, new Listener<Void>() {
+        fetchAndAddDataAboutMutuals(new VKDataProvider(null), mUsersFriendsByAlphabet, groups,
+                new ErrorListener<Void, Void>(listener) {
             @Override
             public void onCompleted(Void aVoid) {
                 if (checkAndClear()) {
@@ -534,13 +543,6 @@ public class DataManager {
                 doSortFriendsByMutuals();
                 doSortGroupsByMutuals();
                 listener.onCompleted(aVoid);
-            }
-
-            @Override
-            public void onError(String e) {
-                mNeedClearing = true;
-                checkAndClear();
-                listener.onError(e);
             }
         });
     }
@@ -606,6 +608,30 @@ public class DataManager {
     }
 
     /**
+     * Класс-слушатель загрузки. В случае ошибки всегда происходит одно и то же.
+     * @param <C> - параметр слушателя окончания загрузки.
+     * @param <E> - параметр слушателя, которому надо передать ошибку.
+     */
+    private abstract class ErrorListener<C, E> implements Listener<C> {
+        private Listener<E> mListener;
+
+        public ErrorListener(Listener<E> listener) {
+            mListener = listener;
+        }
+
+        @Override
+        public abstract void onCompleted(C c);
+
+        @Override
+        public final void onError(String e) {
+            mNeedClearing = true;
+            checkAndClear();
+            mListener.onError(e);
+            Log.e(TAG, e);
+        }
+    }
+
+    /**
      * Загрузить данные с помощью vkapi.
      */
     public void fetchFromVK(DataManagerListener listener) {
@@ -633,22 +659,14 @@ public class DataManager {
         }
         clear();
         mFetchingState = FetchingState.loadingFriends;
-        dataProvider.loadFriends(new Listener<VKUsersArray>() {
+        dataProvider.loadFriends(new ErrorListener<VKUsersArray, Void>(listener) {
             @Override
             public void onCompleted(VKUsersArray vkApiUserFulls) {
                 if (checkAndClear()) {
                     return;
                 }
                 mUsersFriendsByAlphabet = vkApiUserFulls;
-                onFriendsLoaded(dataProvider, listener);
-            }
-
-            @Override
-            public void onError(String e) {
-                mNeedClearing = true;
-                checkAndClear();
-                listener.onError(e);
-                Log.e(TAG, e);
+                mDataHandlerThread.execute(() -> onFriendsLoaded(dataProvider, listener));
             }
         });
     }
@@ -666,23 +684,15 @@ public class DataManager {
         }
 
         mFetchingState = FetchingState.calculatingMutual;
-        listener.onFriendsLoaded();
-        dataProvider.loadGroups(new Listener<VKApiCommunityArray>() {
+        executeOnMainThread(listener::onFriendsLoaded);
+        dataProvider.loadGroups(new ErrorListener<VKApiCommunityArray, Void>(listener) {
             @Override
             public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
                 if (checkAndClear()) {
                     return;
                 }
                 mUsersGroupsByDefault = vkApiCommunityFulls;
-                onGroupsLoaded(dataProvider, listener);
-            }
-
-            @Override
-            public void onError(String e) {
-                mNeedClearing = true;
-                checkAndClear();
-                listener.onError(e);
-                Log.e(TAG, e);
+                mDataHandlerThread.execute(() -> onGroupsLoaded(dataProvider, listener));
             }
         });
     }
@@ -699,23 +709,15 @@ public class DataManager {
         }
 
         fetchAndAddDataAboutMutuals(dataProvider, mUsersFriendsByAlphabet, mUsersGroupsByDefault,
-                new Listener<Void>() {
+                new ErrorListener<Void, Void>(listener) {
                     @Override
                     public void onCompleted(Void result) {
                         if (checkAndClear()) {
                             return;
                         }
-                        onMutualsLoaded();
+                        mDataHandlerThread.execute(DataManager.this::onMutualsLoaded);
                         mFetchingState = FetchingState.finished;
-                        listener.onCompleted(null);
-                    }
-
-                    @Override
-                    public void onError(String e) {
-                        mNeedClearing = true;
-                        checkAndClear();
-                        listener.onError(e);
-                        Log.e(TAG, e);
+                        executeOnMainThread(() -> listener.onCompleted(null));
                     }
                 }
 
@@ -804,7 +806,8 @@ public class DataManager {
             public void onCompleted(ArrayList<JSONObject> result) {
                 for (JSONObject jsonObject : result) {
                     if (!parseIsMemberJSON(jsonObject)) {
-                        onError("parsing is_member error!!!");
+                        listener.onError("parsing is_member error!!!");
+                        Log.e(TAG, "parsing is_member error!!!");
                         return;
                     }
                 }
@@ -813,8 +816,6 @@ public class DataManager {
 
             @Override
             public void onError(String e) {
-                mNeedClearing = true;
-                checkAndClear();
                 listener.onError(e);
                 Log.e(TAG, e);
             }
@@ -848,6 +849,33 @@ public class DataManager {
         } catch (JSONException e) {
             Log.e(TAG, e.toString(), e);
             return false;
+        }
+    }
+
+    private void executeOnMainThread(Runnable runnable) {
+        new Handler(Looper.getMainLooper()).post(runnable);
+    }
+
+    private class DataHandlerThread extends HandlerThread {
+        private volatile Handler mHandler;
+
+        public DataHandlerThread() {
+            super("DataHandlerThread");
+        }
+
+        @SuppressLint("HandlerLeak")
+        @Override
+        protected void onLooperPrepared() {
+            super.onLooperPrepared();
+            mHandler = new Handler();
+        }
+
+        public void execute(Runnable runnable) {
+            while (mHandler == null) {
+                Thread.yield();
+            }
+
+            mHandler.post(runnable);
         }
     }
 
