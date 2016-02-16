@@ -87,7 +87,7 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
         private static final int MESSAGE_SAVE = 1;
         private static final int MESSAGE_CLEAR = 2;
 
-        private Handler mHandler;
+        private volatile Handler mHandler;
 
         public DeviceDataSavingThread() {
             super("DeviceDataSavingThread");
@@ -134,6 +134,7 @@ public class DeviceDataSaver implements DataSaver, DeviceDataFilenames {
                 Thread.yield();
             }
 
+            mHandler.removeMessages(MESSAGE_SAVE);
             mHandler.obtainMessage(MESSAGE_CLEAR).sendToTarget();
         }
 

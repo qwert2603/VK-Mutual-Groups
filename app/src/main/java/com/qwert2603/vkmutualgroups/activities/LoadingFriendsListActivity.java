@@ -36,6 +36,9 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notSta
  */
 public class LoadingFriendsListActivity extends AbstractVkListActivity implements AbstractVkListFragment.Callbacks {
 
+    @SuppressWarnings("unused")
+    public static final String TAG = "LoadingFriendsListActi";
+
     private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
 
     private DataManager mDataManager;
@@ -102,17 +105,20 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     }
 
     private void loadFromDevice() {
+        Log.d(TAG, "loadFromDevice");
         setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
         setRefreshLayoutRefreshing(true);
         setErrorTextViewVisibility(View.INVISIBLE);
         mDataManager.loadFromDevice(new DataManager.DataManagerListener() {
             @Override
             public void onFriendsLoaded() {
+                Log.d(TAG, "loadFromDevice ## onFriendsLoaded");
                 refreshFriendsListFragment();
             }
 
             @Override
             public void onCompleted(Void v) {
+                Log.d(TAG, "loadFromDevice ## onCompleted");
                 notifyDataSetChanged();
                 setRefreshLayoutRefreshing(false);
                 showSnackbar(R.string.loading_completed);
@@ -133,17 +139,20 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     }
 
     private void fetchFromVK() {
+        Log.d(TAG, "fetchFromVK");
         setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
         setRefreshLayoutRefreshing(true);
         setErrorTextViewVisibility(View.INVISIBLE);
         mDataManager.fetchFromVK(new DataManager.DataManagerListener() {
             @Override
             public void onFriendsLoaded() {
+                Log.d(TAG, "fetchFromVK ## onFriendsLoaded");
                 refreshFriendsListFragment();
             }
 
             @Override
             public void onCompleted(Void v) {
+                Log.d(TAG, "fetchFromVK ## onCompleted");
                 notifyDataSetChanged();
                 setRefreshLayoutRefreshing(false);
                 showSnackbar(R.string.loading_completed);

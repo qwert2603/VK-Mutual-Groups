@@ -1,7 +1,12 @@
 package com.qwert2603.vkmutualgroups.data;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Looper;
+import android.os.Message;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -40,6 +45,9 @@ public class DataManager {
 
     private DataManager(Context context) {
         mContext = context.getApplicationContext();
+        mParseIsMemberJSONThread = new ParseIsMemberJSONThread(new Handler(Looper.getMainLooper()));
+        mParseIsMemberJSONThread.start();
+        mParseIsMemberJSONThread.getLooper();
         clear();
     }
 
@@ -51,6 +59,8 @@ public class DataManager {
     }
 
     private Context mContext;
+
+    private ParseIsMemberJSONThread mParseIsMemberJSONThread;
 
     /**
      * Друзья пользователя в алфавитном порядке.
@@ -548,6 +558,8 @@ public class DataManager {
         if (mFetchingState == FetchingState.loadingFriends || mFetchingState == FetchingState.calculatingMutual) {
             mNeedClearing = true;
         } else {
+            mParseIsMemberJSONThread.removeMessages();
+
             mUsersFriendsByAlphabet = null;
             mUsersFriendsByMutual = null;
             mUserFriendsMap = new HashMap<>();
@@ -592,7 +604,7 @@ public class DataManager {
      * Загрузить данные с устройства.
      */
     public void loadFromDevice(DataManagerListener listener) {
-        load(new DeviceDataProvider(mContext), listener);
+        load(DeviceDataProvider.get(mContext), listener);
     }
 
     /**
@@ -919,7 +931,7 @@ public class DataManager {
                     --stepsRemain;
                     return;
                 }
-                parseIsMemberJSON(jsonObject, new Listener<Void>() {
+                mParseIsMemberJSONThread.parse(jsonObject, new Listener<Void>() {
                     @Override
                     public void onCompleted(Void aVoid) {
                         if ((doInBackgroundErrorMessage == null) && !mNeedClearing && (listener instanceof DataManagerListener)) {
@@ -957,53 +969,80 @@ public class DataManager {
     }
 
     /**
-     * Разобрать resultedJSONObject с информацией о наличии друзей в группах.
+     * Поток для парсинга JSONObject с информацией о наличии друзей в группах и добавления ее в DataManager.
      */
-    private void parseIsMemberJSON(final JSONObject resultedJSONObject, final Listener<Void> listener) {
-        new AsyncTask<Void, Void, Void>() {
-            /**
-             * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
-             * Если == null, то ошибок не было.
-             */
-            private volatile String mErrorMessage = null;
+    private class ParseIsMemberJSONThread extends HandlerThread {
 
-            @Override
-            protected Void doInBackground(Void... params) {
-                try {
-                    JSONArray responseJSONArray = resultedJSONObject.getJSONArray("response");
-                    int responseJSONArrayLength = responseJSONArray.length();
-                    for (int i = 0; i < responseJSONArrayLength; ++i) {
-                        JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
-                        int groupId = groupJSONObject.getInt("group_id");
-                        VKApiCommunityFull group = mUserGroupsMap.get(groupId);
-                        JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
-                        int membersJSONArrayLength = membersJSONArray.length();
-                        for (int j = 0; j < membersJSONArrayLength; ++j) {
-                            JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
-                            if (memberJSONObject.getInt("member") == 1) {
-                                int friendId = memberJSONObject.getInt("user_id");
-                                VKApiUserFull friend = mUserFriendsMap.get(friendId);
-                                mGroupsMutualWithFriend.get(friend.id).add(group);
-                                mFriendsInGroup.get(group.id).add(friend);
-                            }
+        private volatile Handler mHandler;
+        private Handler mResponseHandler;
+
+        public ParseIsMemberJSONThread(Handler responseHandler) {
+            super("ParseIsMemberJSONThread");
+            mResponseHandler = responseHandler;
+        }
+
+        @Override
+        @SuppressLint("HandlerLeak")
+        protected void onLooperPrepared() {
+            super.onLooperPrepared();
+            mHandler = new Handler() {
+                @Override
+                public void handleMessage(Message msg) {
+                    Blob blob = (Blob) msg.obj;
+                    handleParse(blob.mJSONObject, blob.mListener);
+                }
+            };
+        }
+
+        private class Blob {
+            JSONObject mJSONObject;
+            Listener<Void> mListener;
+        }
+
+        public void parse(JSONObject jsonObject, Listener<Void> listener) {
+            while (mHandler == null) {
+                Thread.yield();
+            }
+
+            Blob blob = new Blob();
+            blob.mJSONObject = jsonObject;
+            blob.mListener = listener;
+            mHandler.obtainMessage(0, blob).sendToTarget();
+        }
+
+        void removeMessages() {
+            while (mHandler == null) {
+                Thread.yield();
+            }
+
+            mHandler.removeMessages(0);
+        }
+
+        private void handleParse(JSONObject jsonObject, Listener<Void> listener) {
+            try {
+                JSONArray responseJSONArray = jsonObject.getJSONArray("response");
+                int responseJSONArrayLength = responseJSONArray.length();
+                for (int i = 0; i < responseJSONArrayLength; ++i) {
+                    JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
+                    int groupId = groupJSONObject.getInt("group_id");
+                    VKApiCommunityFull group = mUserGroupsMap.get(groupId);
+                    JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
+                    int membersJSONArrayLength = membersJSONArray.length();
+                    for (int j = 0; j < membersJSONArrayLength; ++j) {
+                        JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
+                        if (memberJSONObject.getInt("member") == 1) {
+                            int friendId = memberJSONObject.getInt("user_id");
+                            VKApiUserFull friend = mUserFriendsMap.get(friendId);
+                            mGroupsMutualWithFriend.get(friend.id).add(group);
+                            mFriendsInGroup.get(group.id).add(friend);
                         }
                     }
-                } catch (JSONException e) {
-                    mErrorMessage = String.valueOf(e);
                 }
-                return null;
+                mResponseHandler.post(() -> listener.onCompleted(null));
+            } catch (JSONException e) {
+                mResponseHandler.post(() -> listener.onError(String.valueOf(e)));
             }
-
-            @Override
-            protected void onPostExecute(Void aVoid) {
-                if (mErrorMessage == null) {
-                    listener.onCompleted(null);
-                }
-                else {
-                    listener.onError(mErrorMessage);
-                }
-            }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        }
     }
 
 }

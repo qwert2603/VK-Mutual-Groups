@@ -4,9 +4,9 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -41,7 +41,8 @@ public class PhotoManager {
         mIsCacheImagesOnDevice = PreferenceManager.getDefaultSharedPreferences(context)
                 .getBoolean(SettingsFragment.PREF_IS_CACHE_IMAGES_ON_DEVICE, false);
 
-        mPhotoFetchingThread = new PhotoFetchingThread(new Handler());
+        mPhotoFetchingThread = new PhotoFetchingThread(new Handler(Looper.getMainLooper()));
+        mPhotoFetchingThread.setPriority(Thread.NORM_PRIORITY - 2);
         mPhotoFetchingThread.start();
         mPhotoFetchingThread.getLooper();
     }
@@ -103,23 +104,17 @@ public class PhotoManager {
      * Удалить сохраненные на устройстве фото.
      */
     public void clearPhotosOnDevice() {
-        new AsyncTask<Void, Void, Void>() {
-            @SuppressWarnings("ResultOfMethodCallIgnored")
-            @Override
-            protected Void doInBackground(Void... params) {
-                for (File f : mPhotoFolder.listFiles()) {
-                    f.delete();
-                }
-                return null;
-            }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+        mPhotoFetchingThread.clearPhotosOnDevice();
     }
 
     /**
-     * Поток для загрузки фото.
+     * Поток для загрузки фото и удаления фото с устройства.
      */
     private class PhotoFetchingThread extends HandlerThread {
-        private Handler mHandler;
+        private static final int MESSAGE_FETCH_PHOTO = 1;
+        private static final int MESSAGE_CLEAR_PHOTO_ON_DEVICE = 2;
+
+        private volatile Handler mHandler;
         private Handler mResponseHandler;
 
         public PhotoFetchingThread(Handler responseHandler) {
@@ -134,8 +129,15 @@ public class PhotoManager {
             mHandler = new Handler() {
                 @Override
                 public void handleMessage(Message msg) {
-                    Blob blob = (Blob) msg.obj;
-                    handleFetch(blob.mUrl, blob.mListener);
+                    switch (msg.what) {
+                        case MESSAGE_FETCH_PHOTO:
+                            Blob blob = (Blob) msg.obj;
+                            handleFetch(blob.mUrl, blob.mListener);
+                            break;
+                        case MESSAGE_CLEAR_PHOTO_ON_DEVICE:
+                            handleClearPhotosOnDevice();
+                            break;
+                    }
                 }
             };
         }
@@ -153,7 +155,16 @@ public class PhotoManager {
             Blob blob = new Blob();
             blob.mUrl = url;
             blob.mListener = listener;
-            mHandler.obtainMessage(0, blob).sendToTarget();
+            mHandler.obtainMessage(MESSAGE_FETCH_PHOTO, blob).sendToTarget();
+        }
+
+        public void clearPhotosOnDevice() {
+            while (mHandler == null) {
+                Thread.yield();
+            }
+
+            mHandler.removeMessages(MESSAGE_FETCH_PHOTO);
+            mHandler.obtainMessage(MESSAGE_CLEAR_PHOTO_ON_DEVICE).sendToTarget();
         }
 
         private void handleFetch(String url, @Nullable Listener<Bitmap> listener) {
@@ -170,6 +181,13 @@ public class PhotoManager {
                     }
                 }
             });
+        }
+
+        @SuppressWarnings("ResultOfMethodCallIgnored")
+        private void handleClearPhotosOnDevice() {
+            for (File f : mPhotoFolder.listFiles()) {
+                f.delete();
+            }
         }
 
         /**

@@ -3,6 +3,7 @@ package com.qwert2603.vkmutualgroups.data;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.vk.sdk.api.VKApi;
@@ -38,11 +39,13 @@ public class VKDataProvider implements DataProvider {
     }
 
     @Override
-    public void loadFriends(final Listener<VKUsersArray> listener) {
+    public void loadFriends(Listener<VKUsersArray> listener) {
+        Log.d(TAG, "loadFriends");
         VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message"));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
+                Log.d(TAG, "loadFriends ## onComplete");
                 listener.onCompleted((VKUsersArray) response.parsedModel);
                 if (mDataSaver != null) {
                     mDataSaver.saveFriends(response.json);
@@ -57,7 +60,7 @@ public class VKDataProvider implements DataProvider {
     }
 
     @Override
-    public void loadGroups(final Listener<VKApiCommunityArray> listener) {
+    public void loadGroups(Listener<VKApiCommunityArray> listener) {
         VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
@@ -175,6 +178,7 @@ public class VKDataProvider implements DataProvider {
                     Thread.sleep(15);
                 } catch (InterruptedException ignored) {
                 }
+
             }
             return null;
         }
