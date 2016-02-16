@@ -3,7 +3,6 @@ package com.qwert2603.vkmutualgroups.data;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.vk.sdk.api.VKApi;
@@ -17,6 +16,8 @@ import com.vk.sdk.api.model.VKUsersArray;
 
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+
 /**
  * Загрузчик данных их VK (через vkapi).
  */
@@ -26,7 +27,7 @@ public class VKDataProvider implements DataProvider {
     public static final String TAG = "VKDataProvider";
 
     /**
-     * Объект сохранятель json в память устройства.
+     * Объект-сохранятель json в память устройства.
      * Если == null, сохранение не происходит.
      */
     private DataSaver mDataSaver;
@@ -40,12 +41,10 @@ public class VKDataProvider implements DataProvider {
 
     @Override
     public void loadFriends(Listener<VKUsersArray> listener) {
-        Log.d(TAG, "loadFriends");
         VKRequest request = VKApi.friends().get(VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message"));
         request.executeWithListener(new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
-                Log.d(TAG, "loadFriends ## onComplete");
                 listener.onCompleted((VKUsersArray) response.parsedModel);
                 if (mDataSaver != null) {
                     mDataSaver.saveFriends(response.json);
@@ -79,14 +78,12 @@ public class VKDataProvider implements DataProvider {
     }
 
     @Override
-    public int loadIsMembers(@NonNull VKUsersArray friends, @NonNull VKApiCommunityArray groups, LoadIsMemberListener listener) {
-        LoadIsMemberTask loadIsMemberTask = new LoadIsMemberTask(friends, groups, listener);
-        int requestCount = loadIsMemberTask.mRequestsRemain;
-        loadIsMemberTask.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        return requestCount;
+    public void loadIsMembers(@NonNull VKUsersArray friends, @NonNull VKApiCommunityArray groups,
+                              Listener<ArrayList<JSONObject>> listener) {
+        new LoadIsMemberTask(friends, groups, listener).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
 
-    private class LoadIsMemberTask extends AsyncTask<Void, JSONObject, Void> {
+    private class LoadIsMemberTask extends AsyncTask<Void, Void, ArrayList<JSONObject>> {
         /**
          * Кол-во друзей, обрабатываемое в 1 запросе.
          * Не больше 500.
@@ -102,7 +99,7 @@ public class VKDataProvider implements DataProvider {
         /**
          * Слушатель выполнения загрузки.
          */
-        private volatile LoadIsMemberListener mListener;
+        private volatile Listener<ArrayList<JSONObject>> mListener;
 
         /**
          * Ошибка, произошедшая во время {@link #doInBackground(Void...)}.
@@ -125,7 +122,8 @@ public class VKDataProvider implements DataProvider {
          */
         private VKApiCommunityArray mGroups;
 
-        public LoadIsMemberTask(@NonNull VKUsersArray friends, @NonNull VKApiCommunityArray groups, LoadIsMemberListener listener) {
+        public LoadIsMemberTask(@NonNull VKUsersArray friends, @NonNull VKApiCommunityArray groups,
+                                Listener<ArrayList<JSONObject>> listener) {
             mListener = listener;
             mFriends = friends;
             mGroups = groups;
@@ -134,22 +132,23 @@ public class VKDataProvider implements DataProvider {
         }
 
         @Override
-        protected Void doInBackground(Void... params) {
+        protected ArrayList<JSONObject> doInBackground(Void... params) {
+            ArrayList<JSONObject> result = new ArrayList<>();
             for (int friendNumber = 0; friendNumber < mFriends.size(); friendNumber += friendsPerRequest) {
                 String varFriends = getVarFriends(friendNumber);
                 for (int groupNumber = 0; groupNumber < mGroups.size(); groupNumber += groupPerRequest) {
                     if (mErrorMessage != null) {
-                        publishProgress((JSONObject) null);
                         --mRequestsRemain;
                         continue;
                     }
+                    long nextQueryTime = System.currentTimeMillis() + 350;
                     String varGroups = getVarGroups(groupNumber);
                     String code = getCodeToExecute(varFriends, varGroups);
                     VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
                     request.executeWithListener(new VKRequest.VKRequestListener() {
                         @Override
                         public void onComplete(VKResponse response) {
-                            publishProgress(response.json);
+                            result.add(response.json);
                             --mRequestsRemain;
                             if (mDataSaver != null) {
                                 mDataSaver.saveIsMember(response.json);
@@ -159,15 +158,12 @@ public class VKDataProvider implements DataProvider {
                         @Override
                         public void onError(VKError error) {
                             mErrorMessage = String.valueOf(error);
-                            publishProgress((JSONObject) null);
                             --mRequestsRemain;
                         }
                     });
-                    try {
-                        // Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
-                        Thread.sleep(350);
-                    } catch (InterruptedException e) {
-                        mErrorMessage = String.valueOf(e);
+                    // Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
+                    while (System.currentTimeMillis() < nextQueryTime) {
+                        Thread.yield();
                     }
                 }
             }
@@ -180,7 +176,7 @@ public class VKDataProvider implements DataProvider {
                 }
 
             }
-            return null;
+            return result;
         }
 
         /**
@@ -246,14 +242,9 @@ public class VKDataProvider implements DataProvider {
         }
 
         @Override
-        protected void onProgressUpdate(JSONObject... values) {
-            mListener.onProgress(values[0]);
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
+        protected void onPostExecute(ArrayList<JSONObject> result) {
             if (mErrorMessage == null) {
-                mListener.onCompleted(null);
+                mListener.onCompleted(result);
             }
             else {
                 mListener.onError(mErrorMessage);

@@ -1,6 +1,5 @@
 package com.qwert2603.vkmutualgroups.adapters;
 
-
 import android.app.Activity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,7 +14,6 @@ import com.vk.sdk.api.model.Identifiable;
 import com.vk.sdk.api.model.VKApiModel;
 import com.vk.sdk.api.model.VKList;
 
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 public abstract class AbstractAdapter<T extends VKApiModel & Identifiable> extends ArrayAdapter<T> {
@@ -59,7 +57,7 @@ public abstract class AbstractAdapter<T extends VKApiModel & Identifiable> exten
 
         viewHolder.mTitleTextView.setText(getTitle(item));
 
-        if (mDataManager.getFetchingState() == calculatingMutual || mDataManager.getFetchingState() == finished) {
+        if (mDataManager.getFetchingState() == finished) {
             viewHolder.mMutualsTextView.setText(getMutualsText(item));
         } else {
             viewHolder.mMutualsTextView.setText("");

@@ -27,6 +27,9 @@ import java.util.ArrayList;
  */
 public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
 
+    @SuppressWarnings("unused")
+    private static final String TAG = "DeviceDataProvider";
+
     private static DeviceDataProvider sDeviceDataProvider;
 
     public static DeviceDataProvider get(Context context) {
@@ -61,26 +64,10 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
-    public int loadIsMembers(VKUsersArray friends, VKApiCommunityArray groups, final LoadIsMemberListener listener) {
+    public void loadIsMembers(VKUsersArray friends, VKApiCommunityArray groups, Listener<ArrayList<JSONObject>> listener) {
         File folder = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
         folder.mkdirs();
-
-        mLoadingThread.loadIsMember(folder, new Listener<ArrayList<JSONObject>>() {
-            @Override
-            public void onCompleted(ArrayList<JSONObject> jsonObjects) {
-                for (JSONObject jsonObject : jsonObjects) {
-                    listener.onProgress(jsonObject);
-                }
-                listener.onCompleted(null);
-            }
-
-            @Override
-            public void onError(String e) {
-                listener.onError(e);
-            }
-        });
-
-        return folder.list().length;
+        mLoadingThread.loadIsMember(folder, listener);
     }
 
     private class LoadingThread extends HandlerThread {
@@ -196,13 +183,14 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
             String errorMessage = null;
             ArrayList<JSONObject> result = new ArrayList<>();
             for (File file : dir.listFiles()) {
+                if (errorMessage != null) {
+                    continue;
+                }
                 JSONObject jsonObject = null;
-                if (errorMessage == null) {
-                    try {
-                        jsonObject = loadJSONObjectFromJSONFile(file);
-                    } catch (IOException | JSONException e) {
-                        errorMessage = String.valueOf(e);
-                    }
+                try {
+                    jsonObject = loadJSONObjectFromJSONFile(file);
+                } catch (IOException | JSONException e) {
+                    errorMessage = String.valueOf(e);
                 }
                 result.add(jsonObject);
             }
@@ -224,7 +212,9 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
                 stringBuilder.append(line);
             }
             inputStream.close();
-            return new JSONObject(stringBuilder.toString());
+            JSONObject jsonObject = new JSONObject(stringBuilder.toString());
+            new JSONObject();
+            return jsonObject;
         }
     }
 

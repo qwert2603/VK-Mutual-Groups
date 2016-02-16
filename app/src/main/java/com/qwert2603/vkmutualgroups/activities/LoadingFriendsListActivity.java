@@ -125,11 +125,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             }
 
             @Override
-            public void onProgress() {
-                notifyDataSetChanged();
-            }
-
-            @Override
             public void onError(String e) {
                 Log.e("AASSDD", e);
                 setRefreshLayoutRefreshing(false);
@@ -156,11 +151,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
                 notifyDataSetChanged();
                 setRefreshLayoutRefreshing(false);
                 showSnackbar(R.string.loading_completed);
-            }
-
-            @Override
-            public void onProgress() {
-                notifyDataSetChanged();
             }
 
             @Override

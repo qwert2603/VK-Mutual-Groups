@@ -42,7 +42,6 @@ public class PhotoManager {
                 .getBoolean(SettingsFragment.PREF_IS_CACHE_IMAGES_ON_DEVICE, false);
 
         mPhotoFetchingThread = new PhotoFetchingThread(new Handler(Looper.getMainLooper()));
-        mPhotoFetchingThread.setPriority(Thread.NORM_PRIORITY - 2);
         mPhotoFetchingThread.start();
         mPhotoFetchingThread.getLooper();
     }
@@ -126,6 +125,7 @@ public class PhotoManager {
         @SuppressLint("HandlerLeak")
         protected void onLooperPrepared() {
             super.onLooperPrepared();
+            getLooper().getThread().setPriority(Thread.NORM_PRIORITY - 2);
             mHandler = new Handler() {
                 @Override
                 public void handleMessage(Message msg) {
