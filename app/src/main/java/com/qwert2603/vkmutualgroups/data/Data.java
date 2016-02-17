@@ -3,9 +3,8 @@ package com.qwert2603.vkmutualgroups.data;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKUsersArray;
 
-import org.json.JSONObject;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Структура данных, которые надо загрузить или сохранить.
@@ -13,5 +12,5 @@ import java.util.ArrayList;
 public class Data {
     public volatile VKUsersArray mFriends;
     public volatile VKApiCommunityArray mGroups;
-    public volatile ArrayList<JSONObject> mIsMember;
+    public volatile HashMap<Integer, ArrayList<Integer>> mIsMember;
 }

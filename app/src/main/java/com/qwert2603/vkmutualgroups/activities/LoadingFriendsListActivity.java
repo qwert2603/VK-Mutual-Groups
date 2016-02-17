@@ -12,6 +12,7 @@ import android.widget.AbsListView;
 import android.widget.SearchView;
 import android.widget.Toast;
 
+import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
@@ -26,9 +27,8 @@ import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadingFriends;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notStarted;
 
 /**
@@ -105,21 +105,15 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     }
 
     private void loadFromDevice() {
-        Log.d(TAG, "loadFromDevice");
+        long startTime = System.currentTimeMillis();
         setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
         setRefreshLayoutRefreshing(true);
         setErrorTextViewVisibility(View.INVISIBLE);
-        mDataManager.loadFromDevice(new DataManager.DataManagerListener() {
-            @Override
-            public void onFriendsLoaded() {
-                Log.d(TAG, "loadFromDevice ## onFriendsLoaded");
-                refreshFriendsListFragment();
-            }
-
+        mDataManager.loadFromDevice(new Listener<Void>() {
             @Override
             public void onCompleted(Void v) {
-                Log.d(TAG, "loadFromDevice ## onCompleted");
-                notifyDataSetChanged();
+                Log.d(TAG, "loadFromDevice ## onCompleted ## " + (System.currentTimeMillis() - startTime));
+                refreshFriendsListFragment();
                 setRefreshLayoutRefreshing(false);
                 showSnackbar(R.string.loading_completed);
             }
@@ -134,21 +128,15 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     }
 
     private void fetchFromVK() {
-        Log.d(TAG, "fetchFromVK");
+        long startTime = System.currentTimeMillis();
         setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
         setRefreshLayoutRefreshing(true);
         setErrorTextViewVisibility(View.INVISIBLE);
-        mDataManager.fetchFromVK(new DataManager.DataManagerListener() {
-            @Override
-            public void onFriendsLoaded() {
-                Log.d(TAG, "fetchFromVK ## onFriendsLoaded");
-                refreshFriendsListFragment();
-            }
-
+        mDataManager.fetchFromVK(new Listener<Void>() {
             @Override
             public void onCompleted(Void v) {
-                Log.d(TAG, "fetchFromVK ## onCompleted");
-                notifyDataSetChanged();
+                Log.d(TAG, "fetchFromVK ## onCompleted ## " + (System.currentTimeMillis() - startTime));
+                refreshFriendsListFragment();
                 setRefreshLayoutRefreshing(false);
                 showSnackbar(R.string.loading_completed);
             }
@@ -170,7 +158,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     }
 
     private void refreshData() {
-        if (mDataManager.getFetchingState() == loadingFriends || mDataManager.getFetchingState() == calculatingMutual) {
+        if (mDataManager.getFetchingState() == loading) {
             return;
         }
         if (InternetUtils.isInternetConnected(this)) {

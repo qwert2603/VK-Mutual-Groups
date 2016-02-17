@@ -6,11 +6,13 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKUsersArray;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,11 +23,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Загрузчик данных из памяти устройства.
  */
-public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
+public class DeviceDataProvider implements DataProvider, DeviceDataNames {
 
     @SuppressWarnings("unused")
     private static final String TAG = "DeviceDataProvider";
@@ -90,33 +93,30 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
             try {
                 Data data = new Data();
 
-                File friendsFile = new File(mContext.getFilesDir(), JSON_FILENAME_FRIENDS);
+                File friendsFile = new File(mContext.getFilesDir(), FILENAME_FRIENDS);
                 VKUsersArray friends = new VKUsersArray();
-                JSONObject jsonObjectFriends = loadJSONObjectFromJSONFile(friendsFile);
+                JSONObject jsonObjectFriends = new JSONObject(loadFile(friendsFile));
                 friends.parse(jsonObjectFriends);
                 data.mFriends = friends;
 
-                File groupsFile = new File(mContext.getFilesDir(), JSON_FILENAME_GROUPS);
+                File groupsFile = new File(mContext.getFilesDir(), FILENAME_GROUPS);
                 VKApiCommunityArray groups = new VKApiCommunityArray();
-                JSONObject jsonObjectGroups = loadJSONObjectFromJSONFile(groupsFile);
+                JSONObject jsonObjectGroups = new JSONObject(loadFile(groupsFile));
                 groups.parse(jsonObjectGroups);
                 data.mGroups = groups;
 
-                File dir = new File(mContext.getFilesDir(), JSON_FOLDER_MUTUALS);
-                ArrayList<JSONObject> arrayList = new ArrayList<>();
-                for (File file : dir.listFiles()) {
-                    JSONObject jsonObject = loadJSONObjectFromJSONFile(file);
-                    arrayList.add(jsonObject);
-                }
-                data.mIsMember = arrayList;
+                File isMemberFile = new File(mContext.getFilesDir(), FILENAME_IS_MEMBER);
+                JSONArray isMemberJSONArray = new JSONArray(loadFile(isMemberFile));
+                data.mIsMember = parseIsMember(isMemberJSONArray);
 
                 mResponseHandler.post(() -> listener.onCompleted(data));
             } catch (IOException | JSONException e) {
+                Log.e(TAG, e.toString(), e);
                 mResponseHandler.post(() -> listener.onError(String.valueOf(e)));
             }
         }
 
-        private JSONObject loadJSONObjectFromJSONFile(File file) throws IOException, JSONException {
+        private String loadFile(File file) throws IOException {
             InputStream inputStream = new FileInputStream(file);
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder stringBuilder = new StringBuilder();
@@ -125,9 +125,23 @@ public class DeviceDataProvider implements DataProvider, DeviceDataFilenames {
                 stringBuilder.append(line);
             }
             inputStream.close();
-            JSONObject jsonObject = new JSONObject(stringBuilder.toString());
-            new JSONObject();
-            return jsonObject;
+            return stringBuilder.toString();
+        }
+
+        private HashMap<Integer, ArrayList<Integer>> parseIsMember(JSONArray jsonArray) throws JSONException {
+            HashMap<Integer, ArrayList<Integer>> result = new HashMap<>();
+            int jsonArrayLength = jsonArray.length();
+            for (int i = 0; i < jsonArrayLength; ++i) {
+                JSONObject jsonObjectFriend = jsonArray.getJSONObject(i);
+                ArrayList<Integer> groups = new ArrayList<>();
+                JSONArray jsonArrayGroups = jsonObjectFriend.getJSONArray(JSON_GROUPS_ID_LIST);
+                int jsonArrayGroupsLength = jsonArrayGroups.length();
+                for (int j = 0; j < jsonArrayGroupsLength; ++j) {
+                    groups.add(jsonArrayGroups.getInt(j));
+                }
+                result.put(jsonObjectFriend.getInt(JSON_FRIEND_ID), groups);
+            }
+            return result;
         }
     }
 

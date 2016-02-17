@@ -15,8 +15,7 @@ import com.qwert2603.vkmutualgroups.util.InternetUtils;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiUserFull;
 
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.calculatingMutual;
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadingFriends;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
 
 /**
  * Все группы друга.
@@ -47,7 +46,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
     }
 
     private void fetchFriendGroups() {
-        if (mDataManager.getFetchingState() == loadingFriends || mDataManager.getFetchingState() == calculatingMutual) {
+        if (mDataManager.getFetchingState() == loading) {
             return;
         }
         if (InternetUtils.isInternetConnected(this)) {
