@@ -18,6 +18,11 @@
 
     </android.support.v4.widget.SwipeRefreshLayout>
 
+    <FrameLayout android:id="@+id/target_fragment_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+    </FrameLayout>
+
     <TextView android:id="@+id/error_text_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

@@ -28,7 +28,7 @@
     <string name="group_leaving_error">Вы НЕ вышли из группы!</string>
     <string name="friend_deleted_successfully">Друг успешно удален.</string>
     <string name="group_left_successfully">Вы успешно вышли из группы.</string>
-    <string name="groups_of_friend_empty_list">Пользователь не вступал в группы или скрыл их список.</string>
+    <string name="groups_of_friend_empty_list">Пользователь не вступал\n в группы или скрыл\n их список.</string>
     <string name="view_groups">Посмотреть группы</string>
     <string name="groups_list_loaded">Список групп загружен!</string>
     <string name="group_join_successfully">Вы успешно вступили в группу.</string>

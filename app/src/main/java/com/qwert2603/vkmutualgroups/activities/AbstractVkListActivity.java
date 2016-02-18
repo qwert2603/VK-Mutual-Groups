@@ -73,6 +73,11 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
+        getFragmentManager()
+                .beginTransaction()
+                .add(R.id.target_fragment_container, mTargetFragment)
+                .commitAllowingStateLoss();
+
         setListFragment(null);
 
         mErrorTextView = (TextView) findViewById(R.id.error_text_view);
