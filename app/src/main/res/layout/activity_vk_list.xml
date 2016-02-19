@@ -1,6 +1,5 @@
 <android.support.design.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/coordinator_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -32,14 +31,11 @@
         android:textColor="@color/vk_black"
         android:textSize="24sp"/>
 
-    <com.getbase.floatingactionbutton.FloatingActionButton
+    <android.support.design.widget.FloatingActionButton
         android:id="@+id/action_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/floatingActionButtonMargin"
-        app:fab_colorNormal="@color/floatingActionButton"
-        app:fab_colorPressed="@color/floatingActionButton"
-        app:layout_behavior="com.qwert2603.vkmutualgroups.behaviors.FloatingActionButtonBehavior"/>
+        android:layout_margin="24dp" />
 
 </android.support.design.widget.CoordinatorLayout>

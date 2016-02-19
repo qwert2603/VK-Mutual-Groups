@@ -1,4 +1,4 @@
-package com.qwert2603.vkmutualgroups.activities;
+package com.qwert2603.vkmutualgroups.activities.vk_list_activities;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.NavUtils;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -19,7 +20,6 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
@@ -175,7 +175,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     }
 
     protected void setActionButtonIcon(int icon) {
-        mActionButton.setIcon(icon);
+        mActionButton.setImageResource(icon);
     }
 
     protected void setActionButtonOnClickListener(View.OnClickListener listener) {

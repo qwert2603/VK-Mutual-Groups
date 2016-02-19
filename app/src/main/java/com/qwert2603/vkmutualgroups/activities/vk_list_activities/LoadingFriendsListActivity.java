@@ -1,4 +1,4 @@
-package com.qwert2603.vkmutualgroups.activities;
+package com.qwert2603.vkmutualgroups.activities.vk_list_activities;
 
 import android.app.Fragment;
 import android.content.Intent;
@@ -10,20 +10,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
 import android.widget.SearchView;
-import android.widget.Toast;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
+import com.qwert2603.vkmutualgroups.activities.SettingsActivity;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
-import com.qwert2603.vkmutualgroups.photo.PhotoManager;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
-import com.vk.sdk.VKAccessToken;
-import com.vk.sdk.VKCallback;
-import com.vk.sdk.VKScope;
-import com.vk.sdk.VKSdk;
-import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
@@ -39,10 +33,7 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     @SuppressWarnings("unused")
     public static final String TAG = "LoadingFriendsListActi";
 
-    private static final String[] LOGIN_SCOPE = new String[] { VKScope.FRIENDS, VKScope.GROUPS, VKScope.MESSAGES };
-
     private DataManager mDataManager;
-    private PhotoManager mPhotoManager;
 
     private String mQuery = "";
 
@@ -51,7 +42,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
         super.onCreate(savedInstanceState);
 
         mDataManager = DataManager.get(this);
-        mPhotoManager = PhotoManager.get(this);
 
         setErrorTextViewText(getString(R.string.loading_failed));
         setErrorTextViewVisibility(View.INVISIBLE);
@@ -75,32 +65,8 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             }
         });
 
-        if (VKSdk.isLoggedIn()) {
-            if (mDataManager.getFetchingState() == notStarted || mDataManager.getFetchingState() == finished) {
-                loadFromDevice();
-            }
-        } else {
-            VKSdk.login(this, LOGIN_SCOPE);
-        }
-    }
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (! VKSdk.onActivityResult(requestCode, resultCode, data, new VKCallback<VKAccessToken>() {
-            @Override
-            public void onResult(VKAccessToken res) {
-                if (mDataManager.getFetchingState() == notStarted || mDataManager.getFetchingState() == finished) {
-                    fetchFromVK();
-                }
-            }
-
-            @Override
-            public void onError(VKError error) {
-                Toast.makeText(LoadingFriendsListActivity.this, R.string.login_failed, Toast.LENGTH_SHORT).show();
-                VKSdk.login(LoadingFriendsListActivity.this, LOGIN_SCOPE);
-            }
-        })) {
-            super.onActivityResult(requestCode, resultCode, data);
+        if (mDataManager.getFetchingState() == notStarted || mDataManager.getFetchingState() == finished) {
+            loadFromDevice();
         }
     }
 
@@ -243,16 +209,6 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             case R.id.menu_setting:
                 Intent intent = new Intent(this, SettingsActivity.class);
                 startActivity(intent);
-                return true;
-            case R.id.menu_logout:
-                if (VKSdk.isLoggedIn()) {
-                    VKSdk.logout();
-                    mDataManager.clear();
-                    mDataManager.clearDataOnDevice();
-                    mPhotoManager.clearPhotosOnDevice();
-                    removeFriendsListFragment();
-                    VKSdk.login(this, LOGIN_SCOPE);
-                }
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

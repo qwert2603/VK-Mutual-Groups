@@ -1,4 +1,4 @@
-package com.qwert2603.vkmutualgroups.activities;
+package com.qwert2603.vkmutualgroups.activities.vk_list_activities;
 
 import android.os.Bundle;
 import android.view.Menu;

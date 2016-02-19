@@ -1,4 +1,4 @@
-package com.qwert2603.vkmutualgroups.activities;
+package com.qwert2603.vkmutualgroups.activities.vk_list_activities;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -64,7 +64,7 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
         switch (item.getItemId()) {
             case R.id.menu_view_groups:
                 Intent intent = new Intent(this, FriendGroupsListActivity.class);
-                intent.putExtra(FriendGroupsListActivity.EXTRA_FRIEND, mFriend);
+                intent.putExtra(EXTRA_FRIEND, mFriend);
                 startActivity(intent);
                 return true;
             case R.id.menu_open_in_browser:

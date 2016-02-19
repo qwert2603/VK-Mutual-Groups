@@ -53,4 +53,5 @@
     <string name="clear_images_cache_on_device">Clear images cache on device</string>
     <string name="images_caching">Images caching</string>
     <string name="image_cache_cleared">Image cache cleared.</string>
+    <string name="exit">Exit</string>
 </resources>

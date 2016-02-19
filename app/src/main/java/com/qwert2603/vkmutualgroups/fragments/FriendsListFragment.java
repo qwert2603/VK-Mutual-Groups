@@ -12,9 +12,9 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.AbstractVkListActivity;
-import com.qwert2603.vkmutualgroups.activities.FriendGroupsListActivity;
-import com.qwert2603.vkmutualgroups.activities.MutualGroupsListActivity;
+import com.qwert2603.vkmutualgroups.activities.vk_list_activities.AbstractVkListActivity;
+import com.qwert2603.vkmutualgroups.activities.vk_list_activities.FriendGroupsListActivity;
+import com.qwert2603.vkmutualgroups.activities.vk_list_activities.MutualGroupsListActivity;
 import com.qwert2603.vkmutualgroups.adapters.AbstractAdapter;
 import com.qwert2603.vkmutualgroups.adapters.FriendAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;

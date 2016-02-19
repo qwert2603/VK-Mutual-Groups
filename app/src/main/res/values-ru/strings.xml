@@ -50,4 +50,5 @@
     <string name="images_caching">Кеширование изображений</string>
     <string name="image_cache_cleared">Кеш изображений очищен.</string>
     <string name="clear_cache">Очистить кеш</string>
+    <string name="exit">Выход</string>
 </resources>
