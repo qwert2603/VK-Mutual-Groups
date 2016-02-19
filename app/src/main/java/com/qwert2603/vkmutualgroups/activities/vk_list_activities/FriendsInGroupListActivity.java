@@ -11,6 +11,8 @@ import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
+
 /**
  * Друзья в группе.
  */
@@ -82,10 +84,14 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
                 navigateTo("http://vk.com/" + mGroup.screen_name);
                 return true;
             case R.id.menu_leave_group:
-                leaveGroup(mGroup);
+                if (mDataManager.getFetchingState() == finished) {
+                    leaveGroup(mGroup);
+                }
                 return true;
             case R.id.menu_join_group:
-                joinGroup(mGroup);
+                if (mDataManager.getFetchingState() == finished) {
+                    joinGroup(mGroup);
+                }
                 return true;
         }
         return super.onOptionsItemSelected(item);

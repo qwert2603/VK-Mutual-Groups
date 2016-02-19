@@ -2,6 +2,8 @@ package com.qwert2603.vkmutualgroups.data;
 
 import android.content.Context;
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -324,7 +326,7 @@ public class DataManager {
                         break;
                     case 2:
                         clearDataOnDevice();
-                        addFriendToData(friend, new Listener<Void>() {
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> addFriendToData(friend, new Listener<Void>() {
                             @Override
                             public void onCompleted(Void o) {
                                 listener.onCompleted(2);
@@ -335,7 +337,7 @@ public class DataManager {
                                 Log.e(TAG, "addFriend ## ERROR == " + e);
                                 listener.onError(e);
                             }
-                        });
+                        }), VKDataProvider.nextRequestDelay);
                         break;
                 }
             }
@@ -409,7 +411,7 @@ public class DataManager {
                         break;
                     case 1:
                         clearDataOnDevice();
-                        addGroupToData(group, new Listener<Void>() {
+                        new Handler(Looper.getMainLooper()).postDelayed(() -> addGroupToData(group, new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 listener.onCompleted(2);
@@ -420,7 +422,8 @@ public class DataManager {
                                 Log.e(TAG, "joinGroup ## ERROR == " + e);
                                 listener.onError(e);
                             }
-                        });
+                        }), VKDataProvider.nextRequestDelay);
+
                         break;
                 }
             }
@@ -505,7 +508,7 @@ public class DataManager {
                 if (checkAndClear()) {
                     return;
                 }
-                new AsyncTask<Void, Void, Void>(){
+                new AsyncTask<Void, Void, Void>() {
                     @Override
                     protected Void doInBackground(Void... params) {
                         addIsMemberFromData(data);
@@ -557,7 +560,7 @@ public class DataManager {
                 if (checkAndClear()) {
                     return;
                 }
-                new AsyncTask<Void, Void, Void>(){
+                new AsyncTask<Void, Void, Void>() {
                     @Override
                     protected Void doInBackground(Void... params) {
                         addIsMemberFromData(data);

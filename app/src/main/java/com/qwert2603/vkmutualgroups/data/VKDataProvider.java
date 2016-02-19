@@ -1,6 +1,8 @@
 package com.qwert2603.vkmutualgroups.data;
 
 import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -28,6 +30,12 @@ public class VKDataProvider implements DataProvider {
 
     @SuppressWarnings("unused")
     public static final String TAG = "VKDataProvider";
+
+    /**
+     * Задержка перед следующим запросом.
+     * Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
+     */
+    public static final long nextRequestDelay = 350;
 
     /**
      * Объект-сохранятель json в память устройства.
@@ -59,7 +67,7 @@ public class VKDataProvider implements DataProvider {
             public void onComplete(VKResponse response) {
                 data.mFriends = (VKUsersArray) response.parsedModel;
                 data.mFriends.fields = response.json;
-                loadGroups(data, listener);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> loadGroups(data, listener), nextRequestDelay);
             }
 
             @Override
@@ -76,7 +84,7 @@ public class VKDataProvider implements DataProvider {
             public void onComplete(VKResponse response) {
                 data.mGroups = (VKApiCommunityArray) response.parsedModel;
                 data.mGroups.fields = response.json;
-                loadIsMember(data, listener);
+                new Handler(Looper.getMainLooper()).postDelayed(() -> loadIsMember(data, listener), nextRequestDelay);
             }
 
             @Override
@@ -106,12 +114,6 @@ public class VKDataProvider implements DataProvider {
          * Не больше 25. (ограничение в 25 запросов к api в vkapi.execute).
          */
         private static final int groupPerRequest = 25;
-
-        /**
-         * Задержка перед следующим запросом.
-         * Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
-         */
-        private static final long nextRequestDelay = 350;
 
         /**
          * Данные с друзьями и группами, которые надо обработать.

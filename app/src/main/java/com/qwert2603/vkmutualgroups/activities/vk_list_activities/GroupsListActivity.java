@@ -9,6 +9,8 @@ import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.vk.sdk.api.model.VKApiUserFull;
 
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
+
 /**
  * Activity для отображения списка групп.
  */
@@ -71,10 +73,14 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
                 navigateTo("http://vk.com/" + mFriend.screen_name);
                 return true;
             case R.id.menu_delete_friend:
-                deleteFriend(mFriend);
+                if (mDataManager.getFetchingState() == finished) {
+                    deleteFriend(mFriend);
+                }
                 return true;
             case R.id.menu_add_friend:
-                addFriend(mFriend);
+                if (mDataManager.getFetchingState() == finished) {
+                    addFriend(mFriend);
+                }
                 return true;
         }
         return super.onOptionsItemSelected(item);
