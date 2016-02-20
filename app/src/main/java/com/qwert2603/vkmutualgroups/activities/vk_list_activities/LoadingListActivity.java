@@ -13,35 +13,65 @@ import android.widget.SearchView;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.SettingsActivity;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
+import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
+import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
+import com.vk.sdk.api.model.VKList;
 import com.vk.sdk.api.model.VKUsersArray;
+
+import java.io.Serializable;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.notStarted;
 
 /**
  * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
  */
-public class LoadingFriendsListActivity extends AbstractVkListActivity implements AbstractVkListFragment.Callbacks {
+public class LoadingListActivity extends AbstractVkListActivity implements AbstractVkListFragment.Callbacks {
 
     @SuppressWarnings("unused")
     public static final String TAG = "LoadingFriendsListActi";
 
+    public static final String EXTRA_FRAGMENT_TYPE = "com.qwert2603.vkmutualgroups.EXTRA_FRAGMENT_TYPE";
+
     private DataManager mDataManager;
 
     private String mQuery = "";
+
+    public enum FragmentType implements Serializable {
+        myFriends,
+        myGroups
+    }
+
+    /**
+     * Тип ткущего отображаемого фрагмента.
+     */
+    private FragmentType mCurrentFragmentType;
+
+    @Override
+    protected String getActionBarTitle() {
+        switch (mCurrentFragmentType) {
+            case myFriends:
+                return getString(R.string.my_friends);
+            case myGroups:
+                return getString(R.string.my_groups);
+            default:
+                return getString(R.string.app_name);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mDataManager = DataManager.get(this);
+
+        mCurrentFragmentType = FragmentType.myFriends;
 
         setErrorTextViewText(getString(R.string.loading_failed));
         setErrorTextViewVisibility(View.INVISIBLE);
@@ -51,22 +81,76 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
         setActionButtonVisibility(View.INVISIBLE);
         setActionButtonOnClickListener((v) -> {
             if (mDataManager.getFetchingState() == finished) {
-                switch (mDataManager.getFriendsSortState()) {
-                    case byAlphabet:
-                        mDataManager.sortFriendsByMutual();
-                        setActionButtonIcon(android.R.drawable.ic_menu_sort_by_size);
+                switch (mCurrentFragmentType) {
+                    case myFriends:
+                        switch (mDataManager.getFriendsSortState()) {
+                            case byAlphabet:
+                                mDataManager.sortFriendsByMutual();
+                                break;
+                            case byMutual:
+                                mDataManager.sortFriendsByAlphabet();
+                                break;
+                        }
                         break;
-                    case byMutual:
-                        mDataManager.sortFriendsByAlphabet();
-                        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
-                        break;
+                    case myGroups:
+                        switch (mDataManager.getGroupsSortState()) {
+                            case byDefault:
+                                mDataManager.sortGroupsByFriends();
+                                break;
+                            case byFriends:
+                                mDataManager.sortGroupsByDefault();
+                                break;
+                        }
                 }
+                updateActionButtonIcon();
                 refreshFriendsListFragment();
             }
         });
 
-        if (mDataManager.getFetchingState() == notStarted || mDataManager.getFetchingState() == finished) {
-            loadFromDevice();
+        switch (mDataManager.getFetchingState()) {
+            case notStarted:
+                loadFromDevice();
+                break;
+            case loading:
+                // nth
+                break;
+            case finished:
+                refreshFriendsListFragment();
+                break;
+        }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        mCurrentFragmentType = (FragmentType) intent.getSerializableExtra(EXTRA_FRAGMENT_TYPE);
+        mQuery = "";
+        updateActionBarTitle();
+        updateActionButtonIcon();
+        refreshFriendsListFragment();
+    }
+
+    private void updateActionButtonIcon() {
+        switch (mCurrentFragmentType) {
+            case myFriends:
+                switch (mDataManager.getFriendsSortState()) {
+                    case byAlphabet:
+                        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                        break;
+                    case byMutual:
+                        setActionButtonIcon(android.R.drawable.ic_menu_sort_by_size);
+                        break;
+                }
+                break;
+            case myGroups:
+                switch (mDataManager.getGroupsSortState()) {
+                    case byDefault:
+                        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
+                        break;
+                    case byFriends:
+                        setActionButtonIcon(android.R.drawable.ic_menu_sort_by_size);
+                        break;
+                }
         }
     }
 
@@ -140,26 +224,52 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
     private void refreshFriendsListFragment() {
         setRefreshLayoutEnable(true);
 
-        VKUsersArray friends = mDataManager.getUsersFriends();
-        if (friends != null) {
-            setActionButtonVisibility(View.VISIBLE);
-            VKUsersArray showingFriends;
-            if (mQuery == null || mQuery.equals("")) {
-                showingFriends = friends;
-            } else {
-                showingFriends = new VKUsersArray();
+        switch (mCurrentFragmentType) {
+            case myFriends:
+                VKUsersArray friends = mDataManager.getUsersFriends();
+                if (friends != null) {
+                    setActionButtonVisibility(View.VISIBLE);
+                    VKUsersArray showingFriends;
+                    if (mQuery == null || mQuery.equals("")) {
+                        showingFriends = friends;
+                    } else {
+                        showingFriends = new VKUsersArray();
 
-                // поиск не зависит от регистра.
-                mQuery = mQuery.toLowerCase();
-                for (VKApiUserFull friend : friends) {
-                    if (friend.first_name.toLowerCase().startsWith(mQuery) || friend.last_name.toLowerCase().startsWith(mQuery)) {
-                        showingFriends.add(friend);
+                        // поиск не зависит от регистра.
+                        mQuery = mQuery.toLowerCase();
+                        for (VKApiUserFull friend : friends) {
+                            if (friend.first_name.toLowerCase().startsWith(mQuery) || friend.last_name.toLowerCase().startsWith(mQuery)) {
+                                showingFriends.add(friend);
+                            }
+                        }
                     }
+                    setListFragment(FriendsListFragment.newInstance(showingFriends, getString(R.string.no_friends)));
+                } else {
+                    removeFriendsListFragment();
                 }
-            }
-            setListFragment(FriendsListFragment.newInstance(showingFriends, getString(R.string.no_friends)));
-        } else {
-            removeFriendsListFragment();
+                break;
+            case myGroups:
+                VKApiCommunityArray groups = mDataManager.getUsersGroups();
+                if (groups != null) {
+                    VKApiCommunityArray showingGroups;
+                    if (mQuery == null || mQuery.equals("")) {
+                        showingGroups = groups;
+                    } else {
+                        showingGroups = new VKApiCommunityArray();
+
+                        // поиск не зависит от регистра.
+                        mQuery = mQuery.toLowerCase();
+                        for (VKApiCommunityFull group : groups) {
+                            if (group.name.toLowerCase().contains(mQuery)) {
+                                showingGroups.add(group);
+                            }
+                        }
+                    }
+                    setListFragment(GroupsListFragment.newInstance(showingGroups, getString(R.string.no_groups)));
+                } else {
+                    removeFriendsListFragment();
+                }
+                break;
         }
     }
 
@@ -172,14 +282,13 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        getMenuInflater().inflate(R.menu.loading_friends_list_activity, menu);
+        getMenuInflater().inflate(R.menu.loading_list_activity, menu);
 
         MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
         SearchView searchView = (SearchView) searchMenuItem.getActionView();
         searchView.setQuery(mQuery, false);
         searchView.setSubmitButtonEnabled(false);
-        searchView.setQueryHint(getString(R.string.search_friends));
+        searchView.setQueryHint(getString(R.string.search));
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -194,31 +303,21 @@ public class LoadingFriendsListActivity extends AbstractVkListActivity implement
             }
         });
 
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_groups_list:
-                if (mDataManager.getFetchingState() == finished) {
-                    Intent intent = new Intent(this, UserGroupsListActivity.class);
-                    startActivity(intent);
-                }
-                return true;
-            case R.id.menu_setting:
-                Intent intent = new Intent(this, SettingsActivity.class);
-                startActivity(intent);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        VKUsersArray friends = mDataManager.getUsersFriends();
-        boolean b = ((friends != null) && friends.isEmpty())
+        VKList list = null;
+        switch (mCurrentFragmentType) {
+            case myFriends:
+                list = mDataManager.getUsersFriends();
+                break;
+            case myGroups:
+                list = mDataManager.getUsersGroups();
+                break;
+        }
+        boolean b = ((list != null) && list.isEmpty())
                 || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
 
         setRefreshLayoutEnable(b);

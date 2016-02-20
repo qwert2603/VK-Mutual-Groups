@@ -25,15 +25,16 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     private DataManager mDataManager;
 
     @Override
+    protected String getActionBarTitle() {
+        return mGroup.name;
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mGroup = getIntent().getParcelableExtra(EXTRA_GROUP);
         mDataManager = DataManager.get(this);
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(mGroup.name);
-        }
 
         setErrorTextViewVisibility(View.INVISIBLE);
         setRefreshLayoutEnable(false);
@@ -60,8 +61,6 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-
         getMenuInflater().inflate(R.menu.one_group, menu);
 
         if (mGroup.id == 0) {
@@ -74,7 +73,7 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
         } else {
             menu.findItem(R.id.menu_leave_group).setVisible(false);
         }
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override

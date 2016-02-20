@@ -6,7 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.Toast;
 
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.vk_list_activities.LoadingFriendsListActivity;
+import com.qwert2603.vkmutualgroups.activities.vk_list_activities.LoadingListActivity;
 import com.vk.sdk.VKAccessToken;
 import com.vk.sdk.VKCallback;
 import com.vk.sdk.VKScope;
@@ -28,7 +28,7 @@ public class LoginActivity extends AppCompatActivity {
         if (! VKSdk.onActivityResult(requestCode, resultCode, data, new VKCallback<VKAccessToken>() {
             @Override
             public void onResult(VKAccessToken res) {
-                startActivity(new Intent(LoginActivity.this, LoadingFriendsListActivity.class));
+                startActivity(new Intent(LoginActivity.this, LoadingListActivity.class));
                 finish();
             }
 

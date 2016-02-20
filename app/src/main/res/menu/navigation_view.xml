@@ -1,0 +1,15 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:id="@+id/menu_my_friends"
+        android:title="@string/my_friends"/>
+
+    <item android:id="@+id/menu_my_groups"
+        android:title="@string/group_list" />
+
+    <item android:id="@+id/menu_setting"
+        android:title="@string/settings" />
+
+    <item android:id="@+id/menu_log_out"
+        android:title="@string/log_out" />
+
+</menu>

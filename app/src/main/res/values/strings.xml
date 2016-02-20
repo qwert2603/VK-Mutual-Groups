@@ -54,4 +54,7 @@
     <string name="images_caching">Images caching</string>
     <string name="image_cache_cleared">Image cache cleared.</string>
     <string name="exit">Exit</string>
+    <string name="my_friends">My friends</string>
+    <string name="open">Open</string>
+    <string name="close">Close</string>
 </resources>

@@ -84,9 +84,9 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
+        boolean res = super.onCreateOptionsMenu(menu);
         menu.findItem(R.id.menu_view_groups).setVisible(false);
-        return true;
+        return res;
     }
 
     @Override

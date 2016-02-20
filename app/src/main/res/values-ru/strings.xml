@@ -51,4 +51,7 @@
     <string name="image_cache_cleared">Кеш изображений очищен.</string>
     <string name="clear_cache">Очистить кеш</string>
     <string name="exit">Выход</string>
+    <string name="close">Закрыть</string>
+    <string name="my_friends">Мои друзья</string>
+    <string name="open">Открыть</string>
 </resources>

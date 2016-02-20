@@ -4,14 +4,17 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.ListFragment;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.NavUtils;
+import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.ActionMode;
 import android.view.Menu;
@@ -22,12 +25,17 @@ import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
+import com.qwert2603.vkmutualgroups.activities.SettingsActivity;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.ConfirmationDialogFragment;
 import com.qwert2603.vkmutualgroups.fragments.SendMessageDialogFragment;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
+
+import static com.qwert2603.vkmutualgroups.activities.vk_list_activities.LoadingListActivity.FragmentType.myFriends;
+import static com.qwert2603.vkmutualgroups.activities.vk_list_activities.LoadingListActivity.FragmentType.myGroups;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
@@ -61,6 +69,13 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     private FloatingActionButton mActionButton;
     private CoordinatorLayout mCoordinatorLayout;
 
+    private DrawerLayout mDrawerLayout;
+    private NavigationView mNavigationView;
+    private ActionBarDrawerToggle mActionBarDrawerToggle;
+
+    protected abstract String getActionBarTitle();
+
+    @SuppressWarnings("ConstantConditions")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,9 +84,53 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         mDataManager = DataManager.get(this);
         mArgs = new Bundle();
 
-        if (getSupportActionBar() != null && NavUtils.getParentActivityName(this) != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        }
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mNavigationView = (NavigationView) findViewById(R.id.navigation_view);
+        mActionBarDrawerToggle = new ActionBarDrawerToggle(this, mDrawerLayout, R.string.open, R.string.close) {
+            @Override
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                invalidateOptionsMenu();
+                getSupportActionBar().setTitle(R.string.app_name);
+            }
+
+            @Override
+            public void onDrawerClosed(View drawerView) {
+                super.onDrawerClosed(drawerView);
+                invalidateOptionsMenu();
+                getSupportActionBar().setTitle(getActionBarTitle());
+            }
+        };
+        mDrawerLayout.setDrawerListener(mActionBarDrawerToggle);
+        mNavigationView.setNavigationItemSelectedListener(item -> {
+            mDrawerLayout.closeDrawer(mNavigationView);
+            switch (item.getItemId()) {
+                case R.id.menu_my_friends:
+                    if (mDataManager.getFetchingState() == finished) {
+                        Intent intent = new Intent(this, LoadingListActivity.class);
+                        intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myFriends);
+                        startActivity(intent);
+                    }
+                    return true;
+                case R.id.menu_my_groups:
+                    if (mDataManager.getFetchingState() == finished) {
+                        Intent intent = new Intent(this, LoadingListActivity.class);
+                        intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myGroups);
+                        startActivity(intent);
+                    }
+                    return true;
+                case R.id.menu_setting:
+                    Intent intent = new Intent(this, SettingsActivity.class);
+                    startActivity(intent);
+                    return true;
+                case R.id.menu_log_out:
+                    // TODO: 20.02.2016
+                    return true;
+            }
+            return false;
+        });
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
 
         getFragmentManager()
                 .beginTransaction()
@@ -91,9 +150,27 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        mActionBarDrawerToggle.syncState();
+        updateActionBarTitle();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         notifyDataSetChanged();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mActionBarDrawerToggle.onConfigurationChanged(newConfig);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    protected void updateActionBarTitle() {
+        getSupportActionBar().setTitle(getActionBarTitle());
     }
 
     protected void setListFragment(AbstractVkListFragment fragment) {
@@ -201,26 +278,13 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     @Override
     @CallSuper
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-        if (NavUtils.getParentActivityName(this) != null) {
-            getMenuInflater().inflate(R.menu.navigable_activity, menu);
-        }
-        return true;
+        return !mDrawerLayout.isDrawerOpen(mNavigationView) && super.onCreateOptionsMenu(menu);
     }
 
     @Override
     @CallSuper
     public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                finish();
-                return true;
-            case R.id.menu_to_the_begin:
-                NavUtils.navigateUpFromSameTask(this);
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
+        return mActionBarDrawerToggle.onOptionsItemSelected(item) || super.onOptionsItemSelected(item);
     }
 
     public void navigateTo(String url) {

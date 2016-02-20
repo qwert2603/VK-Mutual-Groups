@@ -9,6 +9,7 @@ import com.qwert2603.vkmutualgroups.fragments.SettingsFragment;
 
 public class SettingsActivity extends AppCompatActivity {
 
+    @SuppressWarnings("ConstantConditions")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -20,6 +21,14 @@ public class SettingsActivity extends AppCompatActivity {
                     .add(R.id.fragment_container, new SettingsFragment())
                     .commit();
         }
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
+    /*@Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == android.R.id.home) {
+            finish();
+        }
+        return super.onOptionsItemSelected(item);
+    }*/
 }

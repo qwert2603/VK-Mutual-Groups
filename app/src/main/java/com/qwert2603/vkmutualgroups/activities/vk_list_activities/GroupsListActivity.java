@@ -23,15 +23,16 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
     private DataManager mDataManager;
 
     @Override
+    protected String getActionBarTitle() {
+        return getString(R.string.friend_name, mFriend.first_name, mFriend.last_name);
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
         mDataManager = DataManager.get(this);
-
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(getString(R.string.friend_name, mFriend.first_name, mFriend.last_name));
-        }
     }
 
     @Override
@@ -42,8 +43,6 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        super.onCreateOptionsMenu(menu);
-
         getMenuInflater().inflate(R.menu.one_friend, menu);
 
         menu.findItem(R.id.menu_message).setVisible(false);
@@ -58,16 +57,18 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
         } else {
             menu.findItem(R.id.menu_delete_friend).setVisible(false);
         }
-        return true;
+        return super.onCreateOptionsMenu(menu);
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_view_groups:
-                Intent intent = new Intent(this, FriendGroupsListActivity.class);
-                intent.putExtra(EXTRA_FRIEND, mFriend);
-                startActivity(intent);
+                if (mDataManager.getFetchingState() == finished) {
+                    Intent intent = new Intent(this, FriendGroupsListActivity.class);
+                    intent.putExtra(EXTRA_FRIEND, mFriend);
+                    startActivity(intent);
+                }
                 return true;
             case R.id.menu_open_in_browser:
                 navigateTo("http://vk.com/" + mFriend.screen_name);
