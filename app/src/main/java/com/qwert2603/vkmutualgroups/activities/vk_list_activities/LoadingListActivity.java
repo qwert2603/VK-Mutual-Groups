@@ -30,7 +30,8 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finish
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
 
 /**
- * Activity, отображающая фрагмент-список друзей пользователя, предварительно его загружая.
+ * Activity, загружающая данные и отображающая список друзей или групп.
+ * Позволяем проводить поиск по отображаемому списку.
  */
 public class LoadingListActivity extends AbstractVkListActivity implements AbstractVkListFragment.Callbacks {
 
@@ -49,20 +50,21 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     }
 
     /**
-     * Тип ткущего отображаемого фрагмента.
+     * Тип текущего отображаемого фрагмента.
      */
     private FragmentType mCurrentFragmentType;
 
     @Override
     protected String getActionBarTitle() {
-        switch (mCurrentFragmentType) {
-            case myFriends:
-                return getString(R.string.my_friends);
-            case myGroups:
-                return getString(R.string.my_groups);
-            default:
-                return getString(R.string.app_name);
+        if (mCurrentFragmentType != null) {
+            switch (mCurrentFragmentType) {
+                case myFriends:
+                    return getString(R.string.my_friends);
+                case myGroups:
+                    return getString(R.string.my_groups);
+            }
         }
+        return getString(R.string.app_name);
     }
 
     @Override
@@ -107,6 +109,14 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
             }
         });
 
+        onFirstLoading();
+    }
+
+    /**
+     * Проверить, загружены ли данные.
+     * Если загружены, то оторазить их, иначе - загрузить.
+     */
+    private void onFirstLoading() {
         switch (mDataManager.getFetchingState()) {
             case notStarted:
                 loadFromDevice();
@@ -124,6 +134,10 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         mCurrentFragmentType = (FragmentType) intent.getSerializableExtra(EXTRA_FRAGMENT_TYPE);
+        if (mCurrentFragmentType == null) {
+            mCurrentFragmentType = FragmentType.myFriends;
+            onFirstLoading();
+        }
         mQuery = "";
         invalidateOptionsMenu();
         updateActionBarTitle();
@@ -171,7 +185,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
 
             @Override
             public void onError(String e) {
-                Log.e("AASSDD", e);
+                Log.e(TAG, e);
                 setRefreshLayoutRefreshing(false);
                 fetchFromVK();
             }
@@ -194,7 +208,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
 
             @Override
             public void onError(String e) {
-                Log.e("AASSDD", e);
+                Log.e(TAG, e);
                 Fragment fragment = getListFragment();
                 if (fragment instanceof AbstractVkListFragment) {
                     ((AbstractVkListFragment) fragment).notifyDataSetChanged();
@@ -215,8 +229,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         if (InternetUtils.isInternetConnected(this)) {
             fetchFromVK();
             notifyDataSetChanged();
-        }
-        else {
+        } else {
             showSnackbar(R.string.no_internet_connection, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> refreshData());
             setRefreshLayoutRefreshing(false);
         }
@@ -287,13 +300,14 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
 
         MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
         SearchView searchView = (SearchView) searchMenuItem.getActionView();
-        searchView.setQuery(mQuery, false);
+        Log.d(TAG, "mQuery == " + mQuery);
+        searchView.setQuery(mQuery, true);
         searchView.setSubmitButtonEnabled(false);
         searchView.setQueryHint(getString(R.string.search));
         searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                return false;
+                return true;
             }
 
             @Override
@@ -306,6 +320,14 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
 
         return super.onCreateOptionsMenu(menu);
     }
+
+
+    /**
+     * todo:
+     * 2. когда ничего не найдено не работает обновление.
+     * 3. строка поиска не очищается при смене друзья/группы.
+     * 4. показывать snackbar когда идет загрузка и пункты меню не работают.
+     */
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {

@@ -30,6 +30,7 @@ import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.ConfirmationDialogFragment;
 import com.qwert2603.vkmutualgroups.fragments.SendMessageDialogFragment;
+import com.qwert2603.vkmutualgroups.util.VkLogOutUtil;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
@@ -124,7 +125,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                     startActivity(intent);
                     return true;
                 case R.id.menu_log_out:
-                    // TODO: 20.02.2016
+                    VkLogOutUtil.logOut(this);
                     return true;
             }
             return false;

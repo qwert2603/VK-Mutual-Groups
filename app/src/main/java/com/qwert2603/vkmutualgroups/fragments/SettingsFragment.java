@@ -9,10 +9,8 @@ import android.preference.PreferenceManager;
 import android.widget.Toast;
 
 import com.qwert2603.vkmutualgroups.R;
-import com.qwert2603.vkmutualgroups.activities.LoginActivity;
-import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
-import com.vk.sdk.VKSdk;
+import com.qwert2603.vkmutualgroups.util.VkLogOutUtil;
 
 public class SettingsFragment extends PreferenceFragment {
 
@@ -75,15 +73,7 @@ public class SettingsFragment extends PreferenceFragment {
                     Toast.makeText(getActivity(), R.string.image_cache_cleared, Toast.LENGTH_SHORT).show();
                     break;
                 case REQUEST_LOG_OUT:
-                    if (VKSdk.isLoggedIn()) {
-                        VKSdk.logout();
-                        DataManager dataManager = DataManager.get(getActivity());
-                        dataManager.clear();
-                        dataManager.clearDataOnDevice();
-                        mPhotoManager.clearPhotosOnDevice();
-                        startActivity(new Intent(getActivity(), LoginActivity.class));
-                        getActivity().finish();
-                    }
+                    VkLogOutUtil.logOut(getActivity());
                     break;
             }
         }

@@ -3,6 +3,7 @@ package com.qwert2603.vkmutualgroups.activities;
 import android.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.view.MenuItem;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.fragments.SettingsFragment;
@@ -24,11 +25,11 @@ public class SettingsActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     }
 
-    /*@Override
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == android.R.id.home) {
             finish();
         }
         return super.onOptionsItemSelected(item);
-    }*/
+    }
 }
