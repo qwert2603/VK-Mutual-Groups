@@ -125,6 +125,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         super.onNewIntent(intent);
         mCurrentFragmentType = (FragmentType) intent.getSerializableExtra(EXTRA_FRAGMENT_TYPE);
         mQuery = "";
+        invalidateOptionsMenu();
         updateActionBarTitle();
         updateActionButtonIcon();
         refreshFriendsListFragment();
