@@ -111,6 +111,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                         Intent intent = new Intent(this, LoadingListActivity.class);
                         intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myFriends);
                         startActivity(intent);
+                    } else {
+                        showSnackbar(R.string.loading_is_on);
                     }
                     return true;
                 case R.id.menu_my_groups:
@@ -118,6 +120,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
                         Intent intent = new Intent(this, LoadingListActivity.class);
                         intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myGroups);
                         startActivity(intent);
+                    } else {
+                        showSnackbar(R.string.loading_is_on);
                     }
                     return true;
                 case R.id.menu_setting:
@@ -279,7 +283,13 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     @Override
     @CallSuper
     public boolean onCreateOptionsMenu(Menu menu) {
-        return !mDrawerLayout.isDrawerOpen(mNavigationView) && super.onCreateOptionsMenu(menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    @CallSuper
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        return !mDrawerLayout.isDrawerOpen(mNavigationView) && super.onPrepareOptionsMenu(menu);
     }
 
     @Override

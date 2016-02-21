@@ -44,7 +44,11 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.one_friend, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.menu_message).setVisible(false);
 
         if (mFriend.id == 0) {
@@ -53,11 +57,14 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
         }
 
         if (mDataManager.getUsersFriendById(mFriend.id) != null) {
+            menu.findItem(R.id.menu_delete_friend).setVisible(true);
             menu.findItem(R.id.menu_add_friend).setVisible(false);
+
         } else {
             menu.findItem(R.id.menu_delete_friend).setVisible(false);
+            menu.findItem(R.id.menu_add_friend).setVisible(true);
         }
-        return super.onCreateOptionsMenu(menu);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -68,6 +75,8 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
                     Intent intent = new Intent(this, FriendGroupsListActivity.class);
                     intent.putExtra(EXTRA_FRIEND, mFriend);
                     startActivity(intent);
+                } else {
+                    showSnackbar(R.string.loading_is_on);
                 }
                 return true;
             case R.id.menu_open_in_browser:
@@ -76,11 +85,15 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
             case R.id.menu_delete_friend:
                 if (mDataManager.getFetchingState() == finished) {
                     deleteFriend(mFriend);
+                } else {
+                    showSnackbar(R.string.loading_is_on);
                 }
                 return true;
             case R.id.menu_add_friend:
                 if (mDataManager.getFetchingState() == finished) {
                     addFriend(mFriend);
+                } else {
+                    showSnackbar(R.string.loading_is_on);
                 }
                 return true;
         }

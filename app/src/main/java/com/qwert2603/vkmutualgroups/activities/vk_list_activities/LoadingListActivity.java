@@ -21,7 +21,6 @@ import com.qwert2603.vkmutualgroups.util.InternetUtils;
 import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
-import com.vk.sdk.api.model.VKList;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import java.io.Serializable;
@@ -43,6 +42,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     private DataManager mDataManager;
 
     private String mQuery = "";
+    private boolean mSearchResultEmpty = true;
 
     public enum FragmentType implements Serializable {
         myFriends,
@@ -244,10 +244,13 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
                 if (friends != null) {
                     setActionButtonVisibility(View.VISIBLE);
                     VKUsersArray showingFriends;
+                    String emptyText;
                     if (mQuery == null || mQuery.equals("")) {
                         showingFriends = friends;
+                        emptyText = getString(R.string.no_friends);
                     } else {
                         showingFriends = new VKUsersArray();
+                        emptyText = getString(R.string.nothing_found);
 
                         // поиск не зависит от регистра.
                         mQuery = mQuery.toLowerCase();
@@ -257,19 +260,25 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
                             }
                         }
                     }
-                    setListFragment(FriendsListFragment.newInstance(showingFriends, getString(R.string.no_friends)));
+                    mSearchResultEmpty = showingFriends.isEmpty();
+                    setListFragment(FriendsListFragment.newInstance(showingFriends, emptyText));
                 } else {
+                    mSearchResultEmpty = true;
                     removeFriendsListFragment();
                 }
                 break;
             case myGroups:
                 VKApiCommunityArray groups = mDataManager.getUsersGroups();
                 if (groups != null) {
+                    setActionButtonVisibility(View.VISIBLE);
                     VKApiCommunityArray showingGroups;
+                    String emptyText;
                     if (mQuery == null || mQuery.equals("")) {
+                        emptyText = getString(R.string.no_groups);
                         showingGroups = groups;
                     } else {
                         showingGroups = new VKApiCommunityArray();
+                        emptyText = getString(R.string.nothing_found);
 
                         // поиск не зависит от регистра.
                         mQuery = mQuery.toLowerCase();
@@ -279,8 +288,10 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
                             }
                         }
                     }
-                    setListFragment(GroupsListFragment.newInstance(showingGroups, getString(R.string.no_groups)));
+                    mSearchResultEmpty = showingGroups.isEmpty();
+                    setListFragment(GroupsListFragment.newInstance(showingGroups, emptyText));
                 } else {
+                    mSearchResultEmpty = true;
                     removeFriendsListFragment();
                 }
                 break;
@@ -297,7 +308,11 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.loading_list_activity, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
         SearchView searchView = (SearchView) searchMenuItem.getActionView();
         Log.d(TAG, "mQuery == " + mQuery);
@@ -317,30 +332,12 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
                 return true;
             }
         });
-
-        return super.onCreateOptionsMenu(menu);
+        return super.onPrepareOptionsMenu(menu);
     }
-
-
-    /**
-     * todo:
-     * 2. когда ничего не найдено не работает обновление.
-     * 3. строка поиска не очищается при смене друзья/группы.
-     * 4. показывать snackbar когда идет загрузка и пункты меню не работают.
-     */
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        VKList list = null;
-        switch (mCurrentFragmentType) {
-            case myFriends:
-                list = mDataManager.getUsersFriends();
-                break;
-            case myGroups:
-                list = mDataManager.getUsersGroups();
-                break;
-        }
-        boolean b = ((list != null) && list.isEmpty())
+        boolean b = mSearchResultEmpty
                 || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
 
         setRefreshLayoutEnable(b);

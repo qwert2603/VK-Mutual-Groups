@@ -62,18 +62,24 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.one_group, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
         if (mGroup.id == 0) {
             menu.findItem(R.id.menu_join_group).setVisible(false);
             menu.findItem(R.id.menu_leave_group).setVisible(false);
         }
 
         if (mDataManager.getUsersGroupById(mGroup.id) != null) {
+            menu.findItem(R.id.menu_leave_group).setVisible(true);
             menu.findItem(R.id.menu_join_group).setVisible(false);
         } else {
             menu.findItem(R.id.menu_leave_group).setVisible(false);
+            menu.findItem(R.id.menu_join_group).setVisible(true);
         }
-        return super.onCreateOptionsMenu(menu);
+        return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
@@ -85,11 +91,15 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
             case R.id.menu_leave_group:
                 if (mDataManager.getFetchingState() == finished) {
                     leaveGroup(mGroup);
+                } else {
+                    showSnackbar(R.string.loading_is_on);
                 }
                 return true;
             case R.id.menu_join_group:
                 if (mDataManager.getFetchingState() == finished) {
                     joinGroup(mGroup);
+                } else {
+                    showSnackbar(R.string.loading_is_on);
                 }
                 return true;
         }
