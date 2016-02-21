@@ -100,10 +100,10 @@ public abstract class AbstractVkListFragment<T extends VKApiModel & Identifiable
             }
         });
 
-        TextView empty_list_text_view = (TextView) view.findViewById(android.R.id.empty);
+        TextView empty_list_text_view = (TextView) view.findViewById(R.id.empty_text_view);
         empty_list_text_view.setText(getEmptyListText());
 
-        mListView.setEmptyView(empty_list_text_view);
+        mListView.setEmptyView(view.findViewById(android.R.id.empty));
 
         return view;
     }

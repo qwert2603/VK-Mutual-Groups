@@ -16,6 +16,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,7 +37,6 @@ import com.vk.sdk.api.model.VKApiUserFull;
 
 import static com.qwert2603.vkmutualgroups.activities.vk_list_activities.LoadingListActivity.FragmentType.myFriends;
 import static com.qwert2603.vkmutualgroups.activities.vk_list_activities.LoadingListActivity.FragmentType.myGroups;
-import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
  * Activity, отображающая фрагмент-список (друзей или групп).
@@ -74,6 +74,27 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     private NavigationView mNavigationView;
     private ActionBarDrawerToggle mActionBarDrawerToggle;
 
+    private DataManager.DataLoadingListener mDataLoadingListener = new DataManager.DataLoadingListener() {
+        @Override
+        public void onLoadingStarted() {
+            setRefreshLayoutRefreshing(true);
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void onCompleted(Void v) {
+            setRefreshLayoutRefreshing(false);
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void onError(String e) {
+            Log.e(TAG, e);
+            setRefreshLayoutRefreshing(false);
+            notifyDataSetChanged();
+        }
+    };
+
     protected abstract String getActionBarTitle();
 
     @SuppressWarnings("ConstantConditions")
@@ -83,6 +104,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         setContentView(R.layout.activity_vk_list);
 
         mDataManager = DataManager.get(this);
+        mDataManager.addDataLoadingListener(mDataLoadingListener);
+
         mArgs = new Bundle();
 
         mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -107,26 +130,18 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
             mDrawerLayout.closeDrawer(mNavigationView);
             switch (item.getItemId()) {
                 case R.id.menu_my_friends:
-                    if (mDataManager.getFetchingState() == finished) {
-                        Intent intent = new Intent(this, LoadingListActivity.class);
-                        intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myFriends);
-                        startActivity(intent);
-                    } else {
-                        showSnackbar(R.string.loading_is_on);
-                    }
+                    Intent intent = new Intent(this, LoadingListActivity.class);
+                    intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myFriends);
+                    startActivity(intent);
                     return true;
                 case R.id.menu_my_groups:
-                    if (mDataManager.getFetchingState() == finished) {
-                        Intent intent = new Intent(this, LoadingListActivity.class);
-                        intent.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myGroups);
-                        startActivity(intent);
-                    } else {
-                        showSnackbar(R.string.loading_is_on);
-                    }
+                    Intent intent2 = new Intent(this, LoadingListActivity.class);
+                    intent2.putExtra(LoadingListActivity.EXTRA_FRAGMENT_TYPE, myGroups);
+                    startActivity(intent2);
                     return true;
                 case R.id.menu_setting:
-                    Intent intent = new Intent(this, SettingsActivity.class);
-                    startActivity(intent);
+                    Intent intent3 = new Intent(this, SettingsActivity.class);
+                    startActivity(intent3);
                     return true;
                 case R.id.menu_log_out:
                     VkLogOutUtil.logOut(this);
@@ -159,6 +174,12 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         super.onPostCreate(savedInstanceState);
         mActionBarDrawerToggle.syncState();
         updateActionBarTitle();
+    }
+
+    @Override
+    protected void onDestroy() {
+        mDataManager.removeDataLoadingListener(mDataLoadingListener);
+        super.onDestroy();
     }
 
     @Override

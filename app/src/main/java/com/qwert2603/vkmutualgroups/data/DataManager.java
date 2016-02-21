@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
@@ -283,6 +284,41 @@ public class DataManager {
     }
 
     /**
+     * Слушатель событияй начала/окончания/ошибки загрузки.
+     */
+    public interface DataLoadingListener extends Listener<Void> {
+        void onLoadingStarted();
+    }
+
+    private HashSet<DataLoadingListener> mDataLoadingListeners = new HashSet<>();
+
+    public void addDataLoadingListener(DataLoadingListener listener) {
+        mDataLoadingListeners.add(listener);
+    }
+
+    public void removeDataLoadingListener(DataLoadingListener listener) {
+        mDataLoadingListeners.remove(listener);
+    }
+
+    private void notifyOnLoadingStarted() {
+        for (DataLoadingListener listener : mDataLoadingListeners) {
+            listener.onLoadingStarted();
+        }
+    }
+
+    private void notifyOnLoadingCompleted() {
+        for (DataLoadingListener listener : mDataLoadingListeners) {
+            listener.onCompleted(null);
+        }
+    }
+
+    private void notifyOnLoadingError(String e) {
+        for (DataLoadingListener listener : mDataLoadingListeners) {
+            listener.onError(e);
+        }
+    }
+
+    /**
      * Удалить из друзей.
      */
     public void deleteFriend(int friendId, Listener<Void> listener) {
@@ -502,6 +538,7 @@ public class DataManager {
         data.mGroups = mUsersGroupsByDefault;
 
         mFetchingState = FetchingState.loading;
+        notifyOnLoadingStarted();
         new VKDataProvider(null).loadIsMember(data, new Listener<Data>() {
             @Override
             public void onCompleted(Data data1) {
@@ -521,6 +558,7 @@ public class DataManager {
                     protected void onPostExecute(Void aVoid) {
                         mFetchingState = FetchingState.finished;
                         listener.onCompleted(null);
+                        notifyOnLoadingCompleted();
                     }
                 }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
@@ -530,6 +568,7 @@ public class DataManager {
                 mNeedClearing = true;
                 checkAndClear();
                 listener.onError(e);
+                notifyOnLoadingError(e);
                 Log.e(TAG, e);
             }
         });
@@ -554,6 +593,7 @@ public class DataManager {
         data.mGroups = groups;
 
         mFetchingState = FetchingState.loading;
+        notifyOnLoadingStarted();
         new VKDataProvider(null).loadIsMember(data, new Listener<Data>() {
             @Override
             public void onCompleted(Data data1) {
@@ -573,6 +613,7 @@ public class DataManager {
                     protected void onPostExecute(Void aVoid) {
                         mFetchingState = FetchingState.finished;
                         listener.onCompleted(null);
+                        notifyOnLoadingCompleted();
                     }
                 }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
@@ -582,6 +623,7 @@ public class DataManager {
                 mNeedClearing = true;
                 checkAndClear();
                 listener.onError(e);
+                notifyOnLoadingError(e);
                 Log.e(TAG, e);
             }
         });
@@ -628,7 +670,7 @@ public class DataManager {
     }
 
     /**
-     * Проверить и, если надо, выполнить {@link #clear()} и  {@link #clearDataOnDevice()} ()}.
+     * Проверить и, если надо, выполнить {@link #clear()} и {@link #clearDataOnDevice()} ()}.
      */
     private boolean checkAndClear() {
         if (mNeedClearing) {
@@ -640,34 +682,27 @@ public class DataManager {
         return false;
     }
 
-    /**
-     * Загрузить данные с помощью vkapi.
-     */
-    public void fetchFromVK(Listener<Void> listener) {
-        load(new VKDataProvider(DeviceDataSaver.get(mContext)), listener);
-    }
 
     /**
-     * Загрузить данные с устройства.
+     * Загрузить данные с устройства, если они там есть. Иначе - загрузить с vk.com.
+     * @param refresh - загрузить ли данные заново с vk.com.
      */
-    public void loadFromDevice(Listener<Void> listener) {
-        load(DeviceDataProvider.get(mContext), listener);
-    }
-
-    /**
-     * Последовательно:
-     * - загрузить друзей пользователя,
-     * - его группы,
-     * - посчитать кол-во общих групп с друзьями и друзей в группах.
-     * listener оповещается о завершении скачивания и подсчета и о прогрессе, и об ошибках.
-     */
-    private void load(DataProvider dataProvider, Listener<Void> listener) {
+    public void load(boolean refresh) {
         if (mFetchingState == FetchingState.loading) {
-            listener.onError("Loading is already on!");
+            Log.e(TAG, "Loading is already on!");
             return;
         }
         clear();
         mFetchingState = FetchingState.loading;
+        notifyOnLoadingStarted();
+
+        DataProvider dataProvider;
+        DeviceDataProvider deviceDataProvider = DeviceDataProvider.get(mContext);
+        if (!refresh && deviceDataProvider.isDataExist()) {
+            dataProvider = deviceDataProvider;
+        } else {
+            dataProvider = new VKDataProvider(DeviceDataSaver.get(mContext));
+        }
 
         dataProvider.load(new Listener<Data>() {
             @Override
@@ -693,7 +728,7 @@ public class DataManager {
                     @Override
                     protected void onPostExecute(Void aVoid) {
                         mFetchingState = FetchingState.finished;
-                        listener.onCompleted(null);
+                        notifyOnLoadingCompleted();
                     }
                 }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
@@ -702,7 +737,7 @@ public class DataManager {
             public void onError(String e) {
                 mNeedClearing = true;
                 checkAndClear();
-                listener.onError(e);
+                notifyOnLoadingError(e);
                 Log.e(TAG, e);
             }
         });

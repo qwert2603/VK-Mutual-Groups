@@ -11,9 +11,8 @@
     <string name="no_mutual_groups">No mutual groups.</string>
     <string name="no_friends">No friends.</string>
     <string name="no_friends_in_group">No friends in group.</string>
-    <string name="group_list">My Groups</string>
     <string name="to_the_begin">To the begin</string>
-    <string name="my_groups">My groups</string>
+    <string name="my_groups">My Groups</string>
     <string name="loading_completed">Loading completed!</string>
     <string name="no_internet_connection">No internet connection!</string>
     <string name="send_message">Send message</string>
@@ -54,9 +53,10 @@
     <string name="images_caching">Images caching</string>
     <string name="image_cache_cleared">Image cache cleared.</string>
     <string name="exit">Exit</string>
-    <string name="my_friends">My friends</string>
+    <string name="my_friends">My Friends</string>
     <string name="open">Open</string>
     <string name="close">Close</string>
     <string name="nothing_found">Nothing found.</string>
     <string name="loading_is_on">Loading is on!</string>
+    <string name="data_was_not_loaded_else">Data was not loaded else!</string>
 </resources>

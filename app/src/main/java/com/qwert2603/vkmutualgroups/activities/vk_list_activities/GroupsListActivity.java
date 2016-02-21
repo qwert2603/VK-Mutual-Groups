@@ -10,6 +10,7 @@ import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
 
 /**
  * Activity для отображения списка групп.
@@ -69,31 +70,32 @@ public abstract class GroupsListActivity extends AbstractVkListActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        DataManager.FetchingState fetchingState = mDataManager.getFetchingState();
         switch (item.getItemId()) {
             case R.id.menu_view_groups:
-                if (mDataManager.getFetchingState() == finished) {
+                if (fetchingState == finished) {
                     Intent intent = new Intent(this, FriendGroupsListActivity.class);
                     intent.putExtra(EXTRA_FRIEND, mFriend);
                     startActivity(intent);
                 } else {
-                    showSnackbar(R.string.loading_is_on);
+                    showSnackbar(fetchingState == loading ? R.string.loading_is_on : R.string.data_was_not_loaded_else);
                 }
                 return true;
             case R.id.menu_open_in_browser:
                 navigateTo("http://vk.com/" + mFriend.screen_name);
                 return true;
             case R.id.menu_delete_friend:
-                if (mDataManager.getFetchingState() == finished) {
+                if (fetchingState == finished) {
                     deleteFriend(mFriend);
                 } else {
-                    showSnackbar(R.string.loading_is_on);
+                    showSnackbar(fetchingState == loading ? R.string.loading_is_on : R.string.data_was_not_loaded_else);
                 }
                 return true;
             case R.id.menu_add_friend:
-                if (mDataManager.getFetchingState() == finished) {
+                if (fetchingState == finished) {
                     addFriend(mFriend);
                 } else {
-                    showSnackbar(R.string.loading_is_on);
+                    showSnackbar(fetchingState == loading ? R.string.loading_is_on : R.string.data_was_not_loaded_else);
                 }
                 return true;
         }

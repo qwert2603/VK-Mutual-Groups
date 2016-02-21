@@ -45,9 +45,6 @@ public class VKDataProvider implements DataProvider {
 
     public VKDataProvider(@Nullable DataSaver dataSaver) {
         mDataSaver = dataSaver;
-        if (mDataSaver != null) {
-            mDataSaver.clear();
-        }
     }
 
     /**

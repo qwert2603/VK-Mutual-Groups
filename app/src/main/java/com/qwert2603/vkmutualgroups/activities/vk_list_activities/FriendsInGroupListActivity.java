@@ -12,6 +12,7 @@ import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
+import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
 
 /**
  * Друзья в группе.
@@ -84,22 +85,23 @@ public class FriendsInGroupListActivity extends AbstractVkListActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        DataManager.FetchingState fetchingState = mDataManager.getFetchingState();
         switch (item.getItemId()) {
             case R.id.menu_open_in_browser:
                 navigateTo("http://vk.com/" + mGroup.screen_name);
                 return true;
             case R.id.menu_leave_group:
-                if (mDataManager.getFetchingState() == finished) {
+                if (fetchingState == finished) {
                     leaveGroup(mGroup);
                 } else {
-                    showSnackbar(R.string.loading_is_on);
+                    showSnackbar(fetchingState == loading ? R.string.loading_is_on : R.string.data_was_not_loaded_else);
                 }
                 return true;
             case R.id.menu_join_group:
-                if (mDataManager.getFetchingState() == finished) {
+                if (fetchingState == finished) {
                     joinGroup(mGroup);
                 } else {
-                    showSnackbar(R.string.loading_is_on);
+                    showSnackbar(fetchingState == loading ? R.string.loading_is_on : R.string.data_was_not_loaded_else);
                 }
                 return true;
         }

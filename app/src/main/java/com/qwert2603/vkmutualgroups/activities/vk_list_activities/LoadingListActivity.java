@@ -11,7 +11,6 @@ import android.view.View;
 import android.widget.AbsListView;
 import android.widget.SearchView;
 
-import com.qwert2603.vkmutualgroups.Listener;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
@@ -30,7 +29,7 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadin
 
 /**
  * Activity, загружающая данные и отображающая список друзей или групп.
- * Позволяем проводить поиск по отображаемому списку.
+ * Позволяет проводить поиск по отображаемому списку.
  */
 public class LoadingListActivity extends AbstractVkListActivity implements AbstractVkListFragment.Callbacks {
 
@@ -54,6 +53,37 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
      */
     private FragmentType mCurrentFragmentType;
 
+    private DataManager.DataLoadingListener mDataLoadingListener = new DataManager.DataLoadingListener() {
+        @Override
+        public void onLoadingStarted() {
+            setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
+            setRefreshLayoutRefreshing(true);
+            setErrorTextViewVisibility(View.INVISIBLE);
+            notifyDataSetChanged();
+        }
+
+        @Override
+        public void onCompleted(Void v) {
+            refreshFriendsListFragment();
+            setRefreshLayoutRefreshing(false);
+            showSnackbar(R.string.loading_completed);
+        }
+
+        @Override
+        public void onError(String e) {
+            Log.e(TAG, e);
+            Fragment fragment = getListFragment();
+            if (fragment instanceof AbstractVkListFragment) {
+                ((AbstractVkListFragment) fragment).notifyDataSetChanged();
+                showSnackbar(R.string.loading_failed, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> refreshData());
+            } else {
+                setErrorTextViewVisibility(View.VISIBLE);
+            }
+            setRefreshLayoutRefreshing(false);
+            setRefreshLayoutEnable(true);
+        }
+    };
+
     @Override
     protected String getActionBarTitle() {
         if (mCurrentFragmentType != null) {
@@ -72,6 +102,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         super.onCreate(savedInstanceState);
 
         mDataManager = DataManager.get(this);
+        mDataManager.addDataLoadingListener(mDataLoadingListener);
 
         mCurrentFragmentType = FragmentType.myFriends;
 
@@ -112,6 +143,12 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         onFirstLoading();
     }
 
+    @Override
+    protected void onDestroy() {
+        mDataManager.removeDataLoadingListener(mDataLoadingListener);
+        super.onDestroy();
+    }
+
     /**
      * Проверить, загружены ли данные.
      * Если загружены, то оторазить их, иначе - загрузить.
@@ -119,7 +156,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     private void onFirstLoading() {
         switch (mDataManager.getFetchingState()) {
             case notStarted:
-                loadFromDevice();
+                mDataManager.load(false);
                 break;
             case loading:
                 // nth
@@ -169,66 +206,12 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         }
     }
 
-    private void loadFromDevice() {
-        long startTime = System.currentTimeMillis();
-        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
-        setRefreshLayoutRefreshing(true);
-        setErrorTextViewVisibility(View.INVISIBLE);
-        mDataManager.loadFromDevice(new Listener<Void>() {
-            @Override
-            public void onCompleted(Void v) {
-                Log.d(TAG, "loadFromDevice ## onCompleted ## " + (System.currentTimeMillis() - startTime));
-                refreshFriendsListFragment();
-                setRefreshLayoutRefreshing(false);
-                showSnackbar(R.string.loading_completed);
-            }
-
-            @Override
-            public void onError(String e) {
-                Log.e(TAG, e);
-                setRefreshLayoutRefreshing(false);
-                fetchFromVK();
-            }
-        });
-    }
-
-    private void fetchFromVK() {
-        long startTime = System.currentTimeMillis();
-        setActionButtonIcon(android.R.drawable.ic_menu_sort_alphabetically);
-        setRefreshLayoutRefreshing(true);
-        setErrorTextViewVisibility(View.INVISIBLE);
-        mDataManager.fetchFromVK(new Listener<Void>() {
-            @Override
-            public void onCompleted(Void v) {
-                Log.d(TAG, "fetchFromVK ## onCompleted ## " + (System.currentTimeMillis() - startTime));
-                refreshFriendsListFragment();
-                setRefreshLayoutRefreshing(false);
-                showSnackbar(R.string.loading_completed);
-            }
-
-            @Override
-            public void onError(String e) {
-                Log.e(TAG, e);
-                Fragment fragment = getListFragment();
-                if (fragment instanceof AbstractVkListFragment) {
-                    ((AbstractVkListFragment) fragment).notifyDataSetChanged();
-                    showSnackbar(R.string.loading_failed, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> refreshData());
-                } else {
-                    setErrorTextViewVisibility(View.VISIBLE);
-                }
-                setRefreshLayoutRefreshing(false);
-                setRefreshLayoutEnable(true);
-            }
-        });
-    }
-
     private void refreshData() {
         if (mDataManager.getFetchingState() == loading) {
             return;
         }
         if (InternetUtils.isInternetConnected(this)) {
-            fetchFromVK();
-            notifyDataSetChanged();
+            mDataManager.load(true);
         } else {
             showSnackbar(R.string.no_internet_connection, Snackbar.LENGTH_SHORT, R.string.refresh, (v) -> refreshData());
             setRefreshLayoutRefreshing(false);
@@ -315,7 +298,6 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     public boolean onPrepareOptionsMenu(Menu menu) {
         MenuItem searchMenuItem = menu.findItem(R.id.menu_search);
         SearchView searchView = (SearchView) searchMenuItem.getActionView();
-        Log.d(TAG, "mQuery == " + mQuery);
         searchView.setQuery(mQuery, true);
         searchView.setSubmitButtonEnabled(false);
         searchView.setQueryHint(getString(R.string.search));

@@ -4,7 +4,7 @@
         android:title="@string/my_friends"/>
 
     <item android:id="@+id/menu_my_groups"
-        android:title="@string/group_list" />
+        android:title="@string/my_groups" />
 
     <item android:id="@+id/menu_setting"
         android:title="@string/settings" />

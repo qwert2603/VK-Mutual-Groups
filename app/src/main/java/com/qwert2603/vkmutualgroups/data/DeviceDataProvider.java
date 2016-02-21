@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
@@ -23,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 
 /**
@@ -53,8 +55,27 @@ public class DeviceDataProvider implements DataProvider, DeviceDataNames {
         mLoadingThread.getLooper();
     }
 
+    /**
+     * Есть ли на устройстве сохраненные данные.
+     */
+    public boolean isDataExist() {
+        return getDataTimestamp().getTime() >= 0;
+    }
+
+    /**
+     * Время последнего сохранения данных.
+     * Если их нет, то -1;
+     */
+    public Date getDataTimestamp() {
+        return new Date(PreferenceManager.getDefaultSharedPreferences(mContext).getLong(PREF_DATA_TIMESTAMP, -1));
+    }
+
     @Override
     public void load(Listener<Data> listener) {
+        if (! isDataExist()) {
+            listener.onError("No data on device!");
+            return;
+        }
         mLoadingThread.load(listener);
     }
 

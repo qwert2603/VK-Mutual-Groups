@@ -3,6 +3,7 @@ package com.qwert2603.vkmutualgroups.data;
 /**
  * Имена файлов с данными на устройстве.
  * И ключи для создания и парсинга JSON объектов с информацией о друзьях в группах.
+ * И ключ Preference - время последнего сохранения.
  */
 public interface DeviceDataNames {
     String FILENAME_SUFFIX = ".json";
@@ -12,4 +13,9 @@ public interface DeviceDataNames {
 
     String JSON_FRIEND_ID = "friend_id";
     String JSON_GROUPS_ID_LIST = "groups_id_list";
+
+    /**
+     * Время последнего сохранения.
+     */
+    String PREF_DATA_TIMESTAMP = "data_timestamp";
 }

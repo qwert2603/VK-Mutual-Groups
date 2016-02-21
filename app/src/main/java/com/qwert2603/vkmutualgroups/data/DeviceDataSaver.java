@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -112,6 +113,8 @@ public class DeviceDataSaver implements DataSaver, DeviceDataNames {
         @SuppressWarnings("ResultOfMethodCallIgnored")
         private void handleSave(Data data) {
             try {
+                handleClear();
+
                 File fileFriends = new File(mContext.getFilesDir(), FILENAME_FRIENDS);
                 JSONObject jsonObjectFriends = data.mFriends.fields;
                 doSave(fileFriends, jsonObjectFriends);
@@ -133,10 +136,18 @@ public class DeviceDataSaver implements DataSaver, DeviceDataNames {
                     jsonArrayIsMember.put(jsonObjectFriend);
                 }
                 doSave(fileIsMember, jsonArrayIsMember);
+                setTimestamp(System.currentTimeMillis());
             } catch (IOException | JSONException e) {
                 Log.e(TAG, e.toString(), e);
                 handleClear();
             }
+        }
+
+        private void setTimestamp(long timeInMillis) {
+            PreferenceManager.getDefaultSharedPreferences(mContext)
+                    .edit()
+                    .putLong(PREF_DATA_TIMESTAMP, timeInMillis)
+                    .apply();
         }
 
         private void doSave(File file, Object object) throws IOException {
@@ -163,6 +174,7 @@ public class DeviceDataSaver implements DataSaver, DeviceDataNames {
             groups.delete();
             File is_member = new File(mContext.getFilesDir(), FILENAME_IS_MEMBER);
             is_member.delete();
+            setTimestamp(-1);
         }
     }
 
