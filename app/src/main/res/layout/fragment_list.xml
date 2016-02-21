@@ -18,7 +18,7 @@
             android:textSize="24sp"
             android:textColor="@android:color/black" />
 
-        <!-- Для корректной работы RefreshLayout при пустои списке. -->
+        <!-- Для корректной работы RefreshLayout при пустом списке. -->
         <ListView
             android:layout_width="match_parent"
             android:layout_height="match_parent"/>
