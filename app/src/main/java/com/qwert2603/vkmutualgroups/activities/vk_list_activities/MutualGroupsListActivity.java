@@ -1,6 +1,7 @@
 package com.qwert2603.vkmutualgroups.activities.vk_list_activities;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 
 import com.qwert2603.vkmutualgroups.R;
@@ -18,12 +19,32 @@ public class MutualGroupsListActivity extends GroupsListActivity {
 
     private DataManager mDataManager;
 
+    private DataManager.DataLoadingListener mDataLoadingListener = new DataManager.DataLoadingListener() {
+        @Override
+        public void onLoadingStarted() {
+            updateActionButtonVisibility();
+        }
+
+        @Override
+        public void onCompleted(Void v) {
+            updateActionButtonVisibility();
+        }
+
+        @Override
+        public void onError(String e) {
+            Log.e(TAG, e);
+            updateActionButtonVisibility();
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         mFriend = getIntent().getParcelableExtra(EXTRA_FRIEND);
+
         mDataManager = DataManager.get(this);
+        mDataManager.addDataLoadingListener(mDataLoadingListener);
 
         setErrorTextViewVisibility(View.INVISIBLE);
         setRefreshLayoutEnable(false);
@@ -45,6 +66,12 @@ public class MutualGroupsListActivity extends GroupsListActivity {
     }
 
     @Override
+    protected void onDestroy() {
+        mDataManager.removeDataLoadingListener(mDataLoadingListener);
+        super.onDestroy();
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         updateActionButtonVisibility();
@@ -57,7 +84,9 @@ public class MutualGroupsListActivity extends GroupsListActivity {
     }
 
     private void updateActionButtonVisibility() {
-        setActionButtonVisibility((mDataManager.getUsersFriendById(mFriend.id) != null) ? View.VISIBLE : View.INVISIBLE);
+        boolean b = (mDataManager.getFetchingState() == DataManager.FetchingState.finished)
+                && (mDataManager.getUsersFriendById(mFriend.id) != null);
+        setActionButtonVisibility(b ? View.VISIBLE : View.INVISIBLE);
     }
 
 }
