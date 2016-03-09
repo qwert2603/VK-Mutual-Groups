@@ -17,6 +17,7 @@ import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
+import com.qwert2603.vkmutualgroups.util.VkRequestsSender;
 import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
@@ -109,7 +110,7 @@ public class SendMessageDialogFragment extends DialogFragment {
             VKParameters parameters = VKParameters.from(
                     VKApiConst.USER_ID, mFriend.id, VKApiConst.MESSAGE, editText.getText());
             VKRequest request = new VKRequest("messages.send", parameters);
-            request.executeWithListener(new VKRequest.VKRequestListener() {
+            VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
                 @Override
                 public void onComplete(VKResponse response) {
                     getTargetFragment().onActivityResult(getTargetRequestCode(), Activity.RESULT_OK, null);

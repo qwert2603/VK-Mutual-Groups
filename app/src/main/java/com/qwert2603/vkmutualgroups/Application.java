@@ -16,7 +16,7 @@ public class Application extends android.app.Application {
         for (String s : VKUtil.getCertificateFingerprint(this, this.getPackageName())) {
             Log.d("CertificateFingerprint", "CertificateFingerprint == " + s);
         }
-        InternalStorageViewer.print(this);
+        //InternalStorageViewer.print(this);
     }
 
 }

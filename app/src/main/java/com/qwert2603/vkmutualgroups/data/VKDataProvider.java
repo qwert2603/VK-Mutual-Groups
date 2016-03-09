@@ -1,12 +1,11 @@
 package com.qwert2603.vkmutualgroups.data;
 
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.qwert2603.vkmutualgroups.util.VkRequestsSender;
 import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;
@@ -32,12 +31,6 @@ public class VKDataProvider implements DataProvider {
     public static final String TAG = "VKDataProvider";
 
     /**
-     * Задержка перед следующим запросом.
-     * Чтобы запросы не посылались слишком часто. (Не больше 3 в секунду).
-     */
-    public static final long nextRequestDelay = 350;
-
-    /**
      * Объект-сохранятель json в память устройства.
      * Если == null, сохранение не происходит.
      */
@@ -58,13 +51,13 @@ public class VKDataProvider implements DataProvider {
 
     private void loadFriends(Data data, Listener<Data> listener) {
         VKParameters friendsParameters = VKParameters.from(VKApiConst.FIELDS, "photo_50, can_write_private_message");
-        VKRequest requestFriends = VKApi.friends().get(friendsParameters);
-        requestFriends.executeWithListener(new VKRequest.VKRequestListener() {
+        VKRequest request = VKApi.friends().get(friendsParameters);
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 data.mFriends = (VKUsersArray) response.parsedModel;
                 data.mFriends.fields = response.json;
-                new Handler(Looper.getMainLooper()).postDelayed(() -> loadGroups(data, listener), nextRequestDelay);
+                loadGroups(data, listener);
             }
 
             @Override
@@ -75,13 +68,13 @@ public class VKDataProvider implements DataProvider {
     }
 
     private void loadGroups(Data data, Listener<Data> listener) {
-        VKRequest requestGroups = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
-        requestGroups.executeWithListener(new VKRequest.VKRequestListener() {
+        VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 data.mGroups = (VKApiCommunityArray) response.parsedModel;
                 data.mGroups.fields = response.json;
-                new Handler(Looper.getMainLooper()).postDelayed(() -> loadIsMember(data, listener), nextRequestDelay);
+                loadIsMember(data, listener);
             }
 
             @Override
@@ -133,11 +126,6 @@ public class VKDataProvider implements DataProvider {
          */
         private volatile int mRequestsRemain;
 
-        /**
-         * Время, когда можно отправлять следующий запрос.
-         */
-        private volatile long mNextRequestTime = 0;
-
         public LoadTask(Data data, Listener<Data> listener) {
             mData = data;
             mListener = listener;
@@ -159,7 +147,7 @@ public class VKDataProvider implements DataProvider {
                     String code = getCodeToExecute(varFriends, varGroups);
                     VKRequest request = new VKRequest("execute", VKParameters.from("code", code));
                     request.setUseLooperForCallListener(false);
-                    request.executeWithListener(new VKRequest.VKRequestListener() {
+                    VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
                         @Override
                         public void onComplete(VKResponse response) {
                             try {
@@ -177,7 +165,6 @@ public class VKDataProvider implements DataProvider {
                             --mRequestsRemain;
                         }
                     });
-                    waitNextRequestDelay();
                 }
             }
 
@@ -191,13 +178,6 @@ public class VKDataProvider implements DataProvider {
             }
 
             return null;
-        }
-
-        private void waitNextRequestDelay() {
-            while (System.currentTimeMillis() < mNextRequestTime) {
-                Thread.yield();
-            }
-            mNextRequestTime = System.currentTimeMillis() + nextRequestDelay;
         }
 
         /**

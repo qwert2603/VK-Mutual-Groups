@@ -2,12 +2,11 @@ package com.qwert2603.vkmutualgroups.data;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.os.Handler;
-import android.os.Looper;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.qwert2603.vkmutualgroups.util.VkRequestsSender;
 import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;
@@ -178,7 +177,7 @@ public class DataManager {
     public void fetchUsersGroups(int userId, Listener<VKApiCommunityArray> listener) {
         VKParameters parameters = VKParameters.from(VKApiConst.USER_ID, userId, VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50");
         VKRequest request = VKApi.groups().get(parameters);
-        request.executeWithListener(new VKRequest.VKRequestListener() {
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 listener.onCompleted((VKApiCommunityArray) response.parsedModel);
@@ -323,7 +322,7 @@ public class DataManager {
      */
     public void deleteFriend(int friendId, Listener<Void> listener) {
         VKRequest request = VKApi.friends().delete(VKParameters.from(VKApiConst.USER_ID, friendId));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 deleteFriendFromData(friendId);
@@ -347,7 +346,7 @@ public class DataManager {
      */
     public void addFriend(VKApiUserFull friend, Listener<Integer> listener) {
         VKRequest request = VKApi.friends().add(VKParameters.from(VKApiConst.USER_ID, friend.id));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 int result = 0;
@@ -362,7 +361,7 @@ public class DataManager {
                         break;
                     case 2:
                         clearDataOnDevice();
-                        new Handler(Looper.getMainLooper()).postDelayed(() -> addFriendToData(friend, new Listener<Void>() {
+                        addFriendToData(friend, new Listener<Void>() {
                             @Override
                             public void onCompleted(Void o) {
                                 listener.onCompleted(2);
@@ -373,7 +372,7 @@ public class DataManager {
                                 Log.e(TAG, "addFriend ## ERROR == " + e);
                                 listener.onError(e);
                             }
-                        }), VKDataProvider.nextRequestDelay);
+                        });
                         break;
                 }
             }
@@ -391,7 +390,7 @@ public class DataManager {
      */
     public void leaveGroup(int groupId, Listener<Void> listener) {
         VKRequest request = VKApi.groups().leave(VKParameters.from(VKApiConst.GROUP_ID, groupId));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 deleteGroupFromData(groupId);
@@ -415,7 +414,7 @@ public class DataManager {
      */
     public void joinGroup(VKApiCommunityFull group, Listener<Integer> listener) {
         VKRequest request = VKApi.groups().join(VKParameters.from(VKApiConst.GROUP_ID, group.id));
-        request.executeWithListener(new VKRequest.VKRequestListener() {
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 checkIsMember(group, listener);
@@ -431,8 +430,8 @@ public class DataManager {
 
     private void checkIsMember(VKApiCommunityFull group, Listener<Integer> listener) {
         VKParameters parameters = VKParameters.from(VKApiConst.GROUP_ID, group.id, VKApiConst.EXTENDED, 0);
-        VKRequest requestIsMember = VKApi.groups().isMember(parameters);
-        requestIsMember.executeWithListener(new VKRequest.VKRequestListener() {
+        VKRequest request = VKApi.groups().isMember(parameters);
+        VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
             public void onComplete(VKResponse response) {
                 int result = -1;
@@ -447,7 +446,7 @@ public class DataManager {
                         break;
                     case 1:
                         clearDataOnDevice();
-                        new Handler(Looper.getMainLooper()).postDelayed(() -> addGroupToData(group, new Listener<Void>() {
+                        addGroupToData(group, new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
                                 listener.onCompleted(2);
@@ -458,7 +457,7 @@ public class DataManager {
                                 Log.e(TAG, "joinGroup ## ERROR == " + e);
                                 listener.onError(e);
                             }
-                        }), VKDataProvider.nextRequestDelay);
+                        });
 
                         break;
                 }
