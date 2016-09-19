@@ -2,7 +2,6 @@ package com.qwert2603.vkmutualgroups;
 
 import android.util.Log;
 
-import com.qwert2603.vkmutualgroups.util.InternalStorageViewer;
 import com.vk.sdk.VKSdk;
 import com.vk.sdk.util.VKUtil;
 
