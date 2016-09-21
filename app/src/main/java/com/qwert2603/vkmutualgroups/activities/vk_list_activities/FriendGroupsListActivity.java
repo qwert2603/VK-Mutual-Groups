@@ -27,6 +27,8 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
     private DataManager mDataManager;
 
+    private boolean mIsLoading = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,11 +52,13 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
             return;
         }
         if (InternetUtils.isInternetConnected(this)) {
+            mIsLoading=true;
             setRefreshLayoutRefreshing(true);
             setErrorTextViewVisibility(View.INVISIBLE);
             mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
                 @Override
                 public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
+                    mIsLoading=false;
                     mGroups = vkApiCommunityFulls;
                     setErrorTextViewVisibility(View.INVISIBLE);
                     setListFragment(GroupsListFragment.newInstance(mGroups, getString(R.string.groups_of_friend_empty_list)));
@@ -65,6 +69,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
                 @Override
                 public void onError(String e) {
+                    mIsLoading=false;
                     if (!(getListFragment() instanceof AbstractVkListFragment)) {
                         setErrorTextViewVisibility(View.VISIBLE);
                     }
@@ -90,8 +95,7 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        boolean b = mGroups == null
-                || mGroups.isEmpty()
+        boolean b =  mIsLoading || mGroups == null || mGroups.isEmpty()
                 || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
 
         setRefreshLayoutEnable(b);

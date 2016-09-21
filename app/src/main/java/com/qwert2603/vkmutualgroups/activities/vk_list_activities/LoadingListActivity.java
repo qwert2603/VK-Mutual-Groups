@@ -333,10 +333,9 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
 
     @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-        // TODO: 21.09.16 не скрывать крутящуюся зарузку при скроллинге вниз во время загрузки
-        boolean b = mSearchResultEmpty
+        boolean isLoading = mDataManager.getFetchingState() == DataManager.FetchingState.loading;
+        boolean b = isLoading || mSearchResultEmpty
                 || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
-
         setRefreshLayoutEnable(b);
     }
 
