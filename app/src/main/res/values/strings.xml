@@ -59,4 +59,8 @@
     <string name="nothing_found">Nothing found.</string>
     <string name="loading_is_on">Loading is on!</string>
     <string name="data_was_not_loaded_else">Data was not loaded else!</string>
+
+    <string name="clear_errors">clear errors</string>
+    <string name="show_errors">Show errors</string>
+    <string name="send_to_developer">send to developer</string>
 </resources>

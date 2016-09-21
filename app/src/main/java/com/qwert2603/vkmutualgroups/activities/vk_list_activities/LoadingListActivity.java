@@ -13,6 +13,8 @@ import android.widget.SearchView;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
+import com.qwert2603.vkmutualgroups.errors_show.ErrorsHolder;
+import com.qwert2603.vkmutualgroups.errors_show.ErrorsShowDialog;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
@@ -72,6 +74,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         @Override
         public void onError(String e) {
             Log.e(TAG, e);
+            ErrorsHolder.get().addError(LoadingListActivity.this, new Throwable(e));
             Fragment fragment = getListFragment();
             if (fragment instanceof AbstractVkListFragment) {
                 ((AbstractVkListFragment) fragment).notifyDataSetChanged();
@@ -311,6 +314,9 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
             public boolean onQueryTextChange(String newText) {
                 mQuery = newText;
                 refreshFriendsListFragment();
+                if (mQuery.equals("mode show errors on")) {
+                    menu.findItem(R.id.show_errors).setVisible(true);
+                }
                 return true;
             }
         });
@@ -318,7 +324,16 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     }
 
     @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.show_errors) {
+            ErrorsShowDialog.newInstance().show(getFragmentManager(), "show_errors");
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
     public void onListViewScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+        // TODO: 21.09.16 не скрывать крутящуюся зарузку при скроллинге вниз во время загрузки
         boolean b = mSearchResultEmpty
                 || (firstVisibleItem == 0) && (view.getChildAt(0) != null) && (view.getChildAt(0).getTop() == 0);
 

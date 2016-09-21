@@ -7,4 +7,9 @@
         app:actionViewClass="android.widget.SearchView"
         app:showAsAction="ifRoom"/>
 
+    <item
+        android:id="@+id/show_errors"
+        android:title="@string/show_errors"
+        android:visible="false"/>
+
 </menu>

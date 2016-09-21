@@ -56,4 +56,7 @@
     <string name="nothing_found">Ничего не найдено.</string>
     <string name="loading_is_on">Идет загрузка!</string>
     <string name="data_was_not_loaded_else">Данные не были загружены!</string>
+    <string name="clear_errors">очистить ошибки</string>
+    <string name="send_to_developer">отправить разработчику</string>
+    <string name="show_errors">показать ошибки</string>
 </resources>
