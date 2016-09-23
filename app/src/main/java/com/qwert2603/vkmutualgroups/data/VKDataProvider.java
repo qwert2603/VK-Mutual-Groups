@@ -209,6 +209,7 @@ public class VKDataProvider implements DataProvider {
 
         /**
          * Получить значение для переменной в запросе - id друзей
+         *
          * @param friendStart - друг, начиная с которого формируется список id.
          */
         private String getVarFriends(Data data, int friendStart) {
@@ -224,6 +225,7 @@ public class VKDataProvider implements DataProvider {
 
         /**
          * Получить значение для переменной в запросе - id групп
+         *
          * @param groupStart - группа, начиная с которого формируется список id.
          */
         private String getVarGroups(Data data, int groupStart) {
@@ -262,16 +264,19 @@ public class VKDataProvider implements DataProvider {
             for (int i = 0; i < responseJSONArrayLength; ++i) {
                 JSONObject groupJSONObject = responseJSONArray.getJSONObject(i);
                 int groupId = groupJSONObject.getInt("group_id");
-                JSONArray membersJSONArray = groupJSONObject.getJSONArray("members");
-                int membersJSONArrayLength = membersJSONArray.length();
-                for (int j = 0; j < membersJSONArrayLength; ++j) {
-                    JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
-                    if (memberJSONObject.getInt("member") == 1) {
-                        int friendId = memberJSONObject.getInt("user_id");
-                        if (data.mIsMember.get(friendId) == null) {
-                            data.mIsMember.put(friendId, new ArrayList<>());
+                Object members = groupJSONObject.get("members");
+                if (members instanceof JSONArray) {
+                    JSONArray membersJSONArray = ((JSONArray) members);
+                    int membersJSONArrayLength = membersJSONArray.length();
+                    for (int j = 0; j < membersJSONArrayLength; ++j) {
+                        JSONObject memberJSONObject = membersJSONArray.getJSONObject(j);
+                        if (memberJSONObject.getInt("member") == 1) {
+                            int friendId = memberJSONObject.getInt("user_id");
+                            if (data.mIsMember.get(friendId) == null) {
+                                data.mIsMember.put(friendId, new ArrayList<>());
+                            }
+                            data.mIsMember.get(friendId).add(groupId);
                         }
-                        data.mIsMember.get(friendId).add(groupId);
                     }
                 }
             }

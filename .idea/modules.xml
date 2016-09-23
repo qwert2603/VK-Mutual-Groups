@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/VK-Common-Groups.iml" filepath="$PROJECT_DIR$/VK-Common-Groups.iml" />
       <module fileurl="file://$PROJECT_DIR$/VK-Mutual-Groups.iml" filepath="$PROJECT_DIR$/VK-Mutual-Groups.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>

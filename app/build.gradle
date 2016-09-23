@@ -8,8 +8,8 @@ android {
         applicationId "com.qwert2603.vkmutualpublics"
         minSdkVersion 15
         targetSdkVersion 24
-        versionCode 43
-        versionName "1.10.2"
+        versionCode 44
+        versionName "1.10.3"
     }
     buildTypes {
         release {
