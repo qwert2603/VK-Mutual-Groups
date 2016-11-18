@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.qwert2603.vkmutualgroups.util.VkRequestsSender;
 import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKApiConst;
@@ -13,9 +14,9 @@ import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
-import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
+import com.vk.sdk.api.model.VKList;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import org.json.JSONException;
@@ -71,12 +72,12 @@ public class DataManager {
     /**
      * Группы пользователя в порядке по умолчанию.
      */
-    private VKApiCommunityArray mUsersGroupsByDefault;
+    private VKApiCommunityArray_Fix mUsersGroupsByDefault;
 
     /**
      * Группы пользователя в порядке уменьшения кол-ва друзей в них.
      */
-    private VKApiCommunityArray mUsersGroupsByFriends;
+    private VKApiCommunityArray_Fix mUsersGroupsByFriends;
 
     /**
      * Карта: "id группы" - "объект этой группы".
@@ -86,7 +87,7 @@ public class DataManager {
     /**
      * Карта: "id друга" - "общие с ним группы"
      */
-    private Map<Integer, VKApiCommunityArray> mGroupsMutualWithFriend;
+    private Map<Integer, VKApiCommunityArray_Fix> mGroupsMutualWithFriend;
 
     /**
      * Карта: "id группы" - "друзья в ней"
@@ -159,7 +160,7 @@ public class DataManager {
      * Группы пользователя, отсортированные в соответствии с {@link #mGroupsSortState}.
      */
     @Nullable
-    public VKApiCommunityArray getUsersGroups() {
+    public VKApiCommunityArray_Fix getUsersGroups() {
         switch (mGroupsSortState) {
             case notSorted:
                 return null;
@@ -174,13 +175,14 @@ public class DataManager {
     /**
      * Загрузить список групп пользователя (друга, например) по его id.
      */
-    public void fetchUsersGroups(int userId, Listener<VKApiCommunityArray> listener) {
+    public void fetchUsersGroups(int userId, Listener<VKApiCommunityArray_Fix> listener) {
         VKParameters parameters = VKParameters.from(VKApiConst.USER_ID, userId, VKApiConst.EXTENDED, 1, VKApiConst.FIELDS, "photo_50");
         VKRequest request = VKApi.groups().get(parameters);
         VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
+            @SuppressWarnings("unchecked")
             public void onComplete(VKResponse response) {
-                listener.onCompleted((VKApiCommunityArray) response.parsedModel);
+                listener.onCompleted(new VKApiCommunityArray_Fix((VKList<VKApiCommunityFull>) response.parsedModel));
             }
 
             @Override
@@ -195,7 +197,7 @@ public class DataManager {
      * Группы, общие с другом.
      */
     @Nullable
-    public VKApiCommunityArray getGroupsMutualWithFriend(int userId) {
+    public VKApiCommunityArray_Fix getGroupsMutualWithFriend(int userId) {
         return mGroupsMutualWithFriend.get(userId);
     }
 
@@ -480,7 +482,7 @@ public class DataManager {
         mUsersFriendsByAlphabet.remove(friend);
         mUsersFriendsByMutual.remove(friend);
 
-        VKApiCommunityArray groups = mGroupsMutualWithFriend.get(friend.id);
+        VKApiCommunityArray_Fix groups = mGroupsMutualWithFriend.get(friend.id);
         if (groups != null) {
             for (VKApiCommunityFull group : groups) {
                 mFriendsInGroup.get(group.id).remove(friend);
@@ -527,7 +529,7 @@ public class DataManager {
         mUsersFriendsByMutual.add(friend);
 
         mUserFriendsMap.put(friend.id, friend);
-        mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray());
+        mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray_Fix());
 
         VKUsersArray friends = new VKUsersArray();
         friends.add(friend);
@@ -584,7 +586,7 @@ public class DataManager {
         mUserGroupsMap.put(group.id, group);
         mFriendsInGroup.put(group.id, new VKUsersArray());
 
-        VKApiCommunityArray groups = new VKApiCommunityArray();
+        VKApiCommunityArray_Fix groups = new VKApiCommunityArray_Fix();
         groups.add(group);
 
         Data data = new Data();
@@ -763,7 +765,7 @@ public class DataManager {
         mFriendsSortState = FriendsSortState.byAlphabet;
 
         for (VKApiUserFull friend : mUsersFriendsByAlphabet) {
-            mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray());
+            mGroupsMutualWithFriend.put(friend.id, new VKApiCommunityArray_Fix());
             mUserFriendsMap.put(friend.id, friend);
         }
     }
@@ -792,7 +794,7 @@ public class DataManager {
         doSortFriendsByMutuals();
 
         // Копировать группы в mUsersGroupsByFriends и отсортировать их по убыванию кол-ва друзей.
-        mUsersGroupsByFriends = new VKApiCommunityArray();
+        mUsersGroupsByFriends = new VKApiCommunityArray_Fix();
         for (VKApiCommunityFull group : mUsersGroupsByDefault) {
             mUsersGroupsByFriends.add(group);
         }
@@ -819,8 +821,8 @@ public class DataManager {
         Collections.sort(mUsersFriendsByMutual, Collections.reverseOrder(new Comparator<VKApiUserFull>() {
             @Override
             public int compare(VKApiUserFull lhs, VKApiUserFull rhs) {
-                VKApiCommunityArray lg = mGroupsMutualWithFriend.get(lhs.id);
-                VKApiCommunityArray rg = mGroupsMutualWithFriend.get(rhs.id);
+                VKApiCommunityArray_Fix lg = mGroupsMutualWithFriend.get(lhs.id);
+                VKApiCommunityArray_Fix rg = mGroupsMutualWithFriend.get(rhs.id);
                 if (lg == null || rg == null) {
                     Log.e(TAG, "ERROR!!! UNKNOWN FRIEND!!! SORT FAILED!!!");
                     return 0;

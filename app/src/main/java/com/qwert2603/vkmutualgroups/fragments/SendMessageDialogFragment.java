@@ -17,13 +17,13 @@ import android.widget.TextView;
 
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.qwert2603.vkmutualgroups.util.VkRequestsSender;
 import com.vk.sdk.api.VKApiConst;
 import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
-import com.vk.sdk.api.model.VKApiCommunityArray;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 
@@ -89,7 +89,7 @@ public class SendMessageDialogFragment extends DialogFragment {
 
         final EditText editText = (EditText) view.findViewById(R.id.edit_text);
         String text = "";
-        VKApiCommunityArray groupsMutualWithFriend = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend.id);
+        VKApiCommunityArray_Fix groupsMutualWithFriend = DataManager.get(getActivity()).getGroupsMutualWithFriend(mFriend.id);
         if (groupsMutualWithFriend != null) {
             int mutual = groupsMutualWithFriend.size();
             text = getResources().getQuantityString(R.plurals.we_have_26_mutual_groups, mutual, mutual);

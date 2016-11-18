@@ -7,7 +7,7 @@ import android.view.View;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 /**
@@ -52,7 +52,7 @@ public class MutualGroupsListActivity extends GroupsListActivity {
         setActionButtonIcon(R.drawable.message);
         setActionButtonOnClickListener((v) -> sendMessage(mFriend.id));
 
-        VKApiCommunityArray groups;
+        VKApiCommunityArray_Fix groups;
         if (mFriend.id != 0) {
             groups = mDataManager.getGroupsMutualWithFriend(mFriend.id);
         } else {
@@ -60,7 +60,7 @@ public class MutualGroupsListActivity extends GroupsListActivity {
         }
 
         if (groups == null) {
-            groups = new VKApiCommunityArray();
+            groups = new VKApiCommunityArray_Fix();
         }
         setListFragment(GroupsListFragment.newInstance(groups, getString(R.string.no_mutual_groups)));
     }

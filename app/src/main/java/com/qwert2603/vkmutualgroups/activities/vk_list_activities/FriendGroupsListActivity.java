@@ -12,7 +12,7 @@ import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKApiUserFull;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loading;
@@ -23,7 +23,7 @@ import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.loadin
 public class FriendGroupsListActivity extends GroupsListActivity implements AbstractVkListFragment.Callbacks {
 
     private VKApiUserFull mFriend;
-    private VKApiCommunityArray mGroups;
+    private VKApiCommunityArray_Fix mGroups;
 
     private DataManager mDataManager;
 
@@ -55,9 +55,9 @@ public class FriendGroupsListActivity extends GroupsListActivity implements Abst
             mIsLoading=true;
             setRefreshLayoutRefreshing(true);
             setErrorTextViewVisibility(View.INVISIBLE);
-            mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray>() {
+            mDataManager.fetchUsersGroups(mFriend.id, new Listener<VKApiCommunityArray_Fix>() {
                 @Override
-                public void onCompleted(VKApiCommunityArray vkApiCommunityFulls) {
+                public void onCompleted(VKApiCommunityArray_Fix vkApiCommunityFulls) {
                     mIsLoading=false;
                     mGroups = vkApiCommunityFulls;
                     setErrorTextViewVisibility(View.INVISIBLE);

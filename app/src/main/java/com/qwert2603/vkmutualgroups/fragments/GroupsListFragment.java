@@ -18,13 +18,13 @@ import com.qwert2603.vkmutualgroups.adapters.AbstractAdapter;
 import com.qwert2603.vkmutualgroups.adapters.GroupAdapter;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 
 import static com.qwert2603.vkmutualgroups.data.DataManager.FetchingState.finished;
 
 /**
- * Отображает список групп, переданный в {@link #newInstance(VKApiCommunityArray, String)}
+ * Отображает список групп, переданный в {@link #newInstance(VKApiCommunityArray_Fix, String)}
  */
 public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFull> {
 
@@ -34,7 +34,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     private static final String groupsKey = "groupsKey";
     private static final String emptyListTextKey = "emptyListTextKey";
 
-    public static GroupsListFragment newInstance(VKApiCommunityArray groups, String emptyListText) {
+    public static GroupsListFragment newInstance(VKApiCommunityArray_Fix groups, String emptyListText) {
         GroupsListFragment result = new GroupsListFragment();
         Bundle args = new Bundle();
         args.putParcelable(groupsKey, groups);
@@ -46,7 +46,7 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
     private DataManager mDataManager;
     private PhotoManager mPhotoManager;
 
-    private VKApiCommunityArray mGroups;
+    private VKApiCommunityArray_Fix mGroups;
 
     private GroupAdapter mGroupsAdapter;
 
@@ -77,6 +77,14 @@ public class GroupsListFragment extends AbstractVkListFragment<VKApiCommunityFul
 
         mDataManager = DataManager.get(getActivity());
         mPhotoManager = PhotoManager.get(getActivity());
+
+//        mGroups = new VKApiCommunityArray();
+//        Parcelable parcelable = getArguments().getParcelable(groupsKey);
+//        if (parcelable != null) {
+//            for (Object group : ((VKList) parcelable)) {
+//                mGroups.add((VKApiCommunityFull) group);
+//            }
+//        }
 
         mGroups = getArguments().getParcelable(groupsKey);
     }

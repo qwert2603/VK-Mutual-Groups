@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.qwert2603.vkmutualgroups.util.VkRequestsSender;
 import com.vk.sdk.api.VKApi;
 import com.vk.sdk.api.VKApiConst;
@@ -12,7 +13,8 @@ import com.vk.sdk.api.VKError;
 import com.vk.sdk.api.VKParameters;
 import com.vk.sdk.api.VKRequest;
 import com.vk.sdk.api.VKResponse;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.vk.sdk.api.model.VKApiCommunityFull;
+import com.vk.sdk.api.model.VKList;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import org.json.JSONArray;
@@ -71,8 +73,9 @@ public class VKDataProvider implements DataProvider {
         VKRequest request = VKApi.groups().get(VKParameters.from(VKApiConst.EXTENDED, 1));
         VkRequestsSender.sendRequest(request, new VKRequest.VKRequestListener() {
             @Override
+            @SuppressWarnings("unchecked")
             public void onComplete(VKResponse response) {
-                data.mGroups = (VKApiCommunityArray) response.parsedModel;
+                data.mGroups = new VKApiCommunityArray_Fix((VKList<VKApiCommunityFull>) response.parsedModel);
                 data.mGroups.fields = response.json;
                 loadIsMember(data, listener);
             }

@@ -19,7 +19,7 @@ import com.qwert2603.vkmutualgroups.fragments.AbstractVkListFragment;
 import com.qwert2603.vkmutualgroups.fragments.FriendsListFragment;
 import com.qwert2603.vkmutualgroups.fragments.GroupsListFragment;
 import com.qwert2603.vkmutualgroups.util.InternetUtils;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
@@ -107,7 +107,11 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
         mDataManager = DataManager.get(this);
         mDataManager.addDataLoadingListener(mDataLoadingListener);
 
-        mCurrentFragmentType = FragmentType.myFriends;
+        if (savedInstanceState != null) {
+            mCurrentFragmentType = (FragmentType) savedInstanceState.getSerializable(EXTRA_FRAGMENT_TYPE);
+        } else {
+            mCurrentFragmentType = FragmentType.myFriends;
+        }
 
         setErrorTextViewText(getString(R.string.loading_failed));
         setErrorTextViewVisibility(View.INVISIBLE);
@@ -143,6 +147,7 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
             }
         });
 
+        updateActionButtonIcon();
         onFirstLoading();
     }
 
@@ -150,6 +155,12 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
     protected void onDestroy() {
         mDataManager.removeDataLoadingListener(mDataLoadingListener);
         super.onDestroy();
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable(EXTRA_FRAGMENT_TYPE, mCurrentFragmentType);
     }
 
     /**
@@ -254,16 +265,16 @@ public class LoadingListActivity extends AbstractVkListActivity implements Abstr
                 }
                 break;
             case myGroups:
-                VKApiCommunityArray groups = mDataManager.getUsersGroups();
+                VKApiCommunityArray_Fix groups = mDataManager.getUsersGroups();
                 if (groups != null) {
                     setActionButtonVisibility(View.VISIBLE);
-                    VKApiCommunityArray showingGroups;
+                    VKApiCommunityArray_Fix showingGroups;
                     String emptyText;
                     if (mQuery == null || mQuery.equals("")) {
                         emptyText = getString(R.string.no_groups);
                         showingGroups = groups;
                     } else {
-                        showingGroups = new VKApiCommunityArray();
+                        showingGroups = new VKApiCommunityArray_Fix();
                         emptyText = getString(R.string.nothing_found);
 
                         // поиск не зависит от регистра.

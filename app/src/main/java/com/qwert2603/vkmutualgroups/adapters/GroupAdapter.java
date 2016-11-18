@@ -5,7 +5,7 @@ import android.app.Activity;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKApiCommunityFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
@@ -14,7 +14,7 @@ public class GroupAdapter extends AbstractAdapter<VKApiCommunityFull> {
     private PhotoManager mPhotoManager;
     private Activity mActivity;
 
-    public GroupAdapter(Activity activity, VKApiCommunityArray groups) {
+    public GroupAdapter(Activity activity, VKApiCommunityArray_Fix groups) {
         super(activity, groups);
         mActivity = activity;
         mDataManager = DataManager.get(mActivity);

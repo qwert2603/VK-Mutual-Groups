@@ -2,14 +2,14 @@ apply plugin: 'com.android.application'
 apply plugin: 'me.tatarka.retrolambda'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.2"
+    compileSdkVersion 25
+    buildToolsVersion "25.0.0"
     defaultConfig {
         applicationId "com.qwert2603.vkmutualpublics"
         minSdkVersion 15
-        targetSdkVersion 24
-        versionCode 44
-        versionName "1.10.3"
+        targetSdkVersion 25
+        versionCode 45
+        versionName "1.11"
     }
     buildTypes {
         release {
@@ -25,7 +25,7 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:appcompat-v7:24.2.1'
+    compile 'com.android.support:appcompat-v7:25.0.1'
     compile "com.vk:androidsdk:1.6.7"
-    compile 'com.android.support:design:24.2.1'
+    compile 'com.android.support:design:25.0.1'
 }

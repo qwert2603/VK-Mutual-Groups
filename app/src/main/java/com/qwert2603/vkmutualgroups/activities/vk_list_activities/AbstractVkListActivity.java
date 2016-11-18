@@ -97,6 +97,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         }
     };
 
+    private TargetFragment mTargetFragment;
+
     protected abstract String getActionBarTitle();
 
     @SuppressWarnings("ConstantConditions")
@@ -154,6 +156,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
 
+        mTargetFragment = TargetFragment.newInstance(AbstractVkListActivity.this);
         getFragmentManager()
                 .beginTransaction()
                 .add(R.id.target_fragment_container, mTargetFragment)
@@ -303,7 +306,7 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     }
 
     protected void showSnackbar(int stringRes, int duration, int actionText, View.OnClickListener listener) {
-        if (! isResumed) {
+        if (!isResumed) {
             return;
         }
         Snackbar snackbar = Snackbar.make(mCoordinatorLayout, stringRes, duration);
@@ -387,87 +390,99 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
         dialogFragment.show(getFragmentManager(), ConfirmationDialogFragment.TAG);
     }
 
-    private final Fragment mTargetFragment = new Fragment() {
+    public static class TargetFragment extends Fragment {
+
+        public static TargetFragment newInstance(AbstractVkListActivity abstractVkListActivity) {
+            TargetFragment targetFragment = new TargetFragment();
+            targetFragment.mAbstractVkListActivity = abstractVkListActivity;
+            return targetFragment;
+        }
+
+        private AbstractVkListActivity mAbstractVkListActivity;
+
+        public TargetFragment() {
+        }
+
         @Override
         public void onActivityResult(int requestCode, int resultCode, Intent data) {
             if (resultCode == Activity.RESULT_OK) {
                 switch (requestCode) {
                     case REQUEST_SEND_MESSAGE:
-                        showSnackbar(R.string.message_sent);
+                        mAbstractVkListActivity.showSnackbar(R.string.message_sent);
                         break;
                     case REQUEST_DELETE_FRIEND:
-                        mDataManager.deleteFriend(mArgs.getInt(friendToDeleteId), new Listener<Void>() {
+                        mAbstractVkListActivity.mDataManager.deleteFriend(mAbstractVkListActivity.mArgs.getInt(friendToDeleteId), new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
-                                showSnackbar(R.string.friend_deleted_successfully);
-                                notifyDataSetChanged();
+                                mAbstractVkListActivity.showSnackbar(R.string.friend_deleted_successfully);
+                                mAbstractVkListActivity.notifyDataSetChanged();
                             }
 
                             @Override
                             public void onError(String e) {
-                                showSnackbar(R.string.friend_deleting_error);
+                                mAbstractVkListActivity.showSnackbar(R.string.friend_deleting_error);
                             }
                         });
                         break;
                     case REQUEST_ADD_FRIEND:
-                        mDataManager.addFriend(mArgs.getParcelable(friendToAdd), new Listener<Integer>() {
+                        mAbstractVkListActivity.mDataManager.addFriend(mAbstractVkListActivity.mArgs.getParcelable(friendToAdd), new Listener<Integer>() {
                             @Override
                             public void onCompleted(Integer integer) {
                                 switch (integer) {
                                     case 1:
-                                        showSnackbar(R.string.friend_request_sent_successfully, Snackbar.LENGTH_LONG);
+                                        mAbstractVkListActivity.showSnackbar(R.string.friend_request_sent_successfully, Snackbar.LENGTH_LONG);
                                         break;
                                     case 2:
-                                        showSnackbar(R.string.friend_added_successfully);
+                                        mAbstractVkListActivity.showSnackbar(R.string.friend_added_successfully);
                                         break;
                                 }
-                                notifyDataSetChanged();
+                                mAbstractVkListActivity.notifyDataSetChanged();
                             }
 
                             @Override
                             public void onError(String e) {
-                                showSnackbar(R.string.friend_adding_error);
+                                mAbstractVkListActivity.showSnackbar(R.string.friend_adding_error);
                             }
                         });
                         break;
                     case REQUEST_LEAVE_GROUP:
-                        mDataManager.leaveGroup(mArgs.getInt(groupToLeaveId), new Listener<Void>() {
+                        mAbstractVkListActivity.mDataManager.leaveGroup(mAbstractVkListActivity.mArgs.getInt(groupToLeaveId), new Listener<Void>() {
                             @Override
                             public void onCompleted(Void aVoid) {
-                                showSnackbar(R.string.group_left_successfully);
-                                notifyDataSetChanged();
+                                mAbstractVkListActivity.showSnackbar(R.string.group_left_successfully);
+                                mAbstractVkListActivity.notifyDataSetChanged();
                             }
 
                             @Override
                             public void onError(String e) {
-                                showSnackbar(R.string.group_leaving_error);
+                                mAbstractVkListActivity.showSnackbar(R.string.group_leaving_error);
                             }
                         });
                         break;
                     case REQUEST_JOIN_GROUP:
-                        mDataManager.joinGroup(mArgs.getParcelable(groupToJoin), new Listener<Integer>() {
+                        mAbstractVkListActivity.mDataManager.joinGroup(mAbstractVkListActivity.mArgs.getParcelable(groupToJoin), new Listener<Integer>() {
                             @Override
                             public void onCompleted(Integer integer) {
                                 switch (integer) {
                                     case 1:
-                                        showSnackbar(R.string.group_request_sent_successfully, Snackbar.LENGTH_LONG);
+                                        mAbstractVkListActivity.showSnackbar(R.string.group_request_sent_successfully, Snackbar.LENGTH_LONG);
                                         break;
                                     case 2:
-                                        showSnackbar(R.string.group_join_successfully);
+                                        mAbstractVkListActivity.showSnackbar(R.string.group_join_successfully);
                                         break;
                                 }
-                                notifyDataSetChanged();
+                                mAbstractVkListActivity.notifyDataSetChanged();
                             }
 
                             @Override
                             public void onError(String e) {
-                                showSnackbar(R.string.group_joining_error);
+                                mAbstractVkListActivity.showSnackbar(R.string.group_joining_error);
                             }
                         });
                         break;
                 }
             }
         }
-    };
+    }
 
 }

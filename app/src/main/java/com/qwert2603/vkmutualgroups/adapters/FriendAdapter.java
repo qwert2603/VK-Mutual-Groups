@@ -5,7 +5,7 @@ import android.app.Activity;
 import com.qwert2603.vkmutualgroups.R;
 import com.qwert2603.vkmutualgroups.data.DataManager;
 import com.qwert2603.vkmutualgroups.photo.PhotoManager;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKApiUserFull;
 import com.vk.sdk.api.model.VKUsersArray;
 
@@ -28,7 +28,7 @@ public class FriendAdapter extends AbstractAdapter<VKApiUserFull> {
 
     @Override
     protected String getMutualsText(VKApiUserFull item) {
-        VKApiCommunityArray groups = mDataManager.getGroupsMutualWithFriend(item.id);
+        VKApiCommunityArray_Fix groups = mDataManager.getGroupsMutualWithFriend(item.id);
         if (groups != null) {
             return mActivity.getString(R.string.mutual, groups.size());
         } else {

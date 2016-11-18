@@ -10,7 +10,7 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.qwert2603.vkmutualgroups.Listener;
-import com.vk.sdk.api.model.VKApiCommunityArray;
+import com.qwert2603.vkmutualgroups.util.VKApiCommunityArray_Fix;
 import com.vk.sdk.api.model.VKUsersArray;
 
 import org.json.JSONArray;
@@ -121,7 +121,7 @@ public class DeviceDataProvider implements DataProvider, DeviceDataNames {
                 data.mFriends = friends;
 
                 File groupsFile = new File(mContext.getFilesDir(), FILENAME_GROUPS);
-                VKApiCommunityArray groups = new VKApiCommunityArray();
+                VKApiCommunityArray_Fix groups = new VKApiCommunityArray_Fix();
                 JSONObject jsonObjectGroups = new JSONObject(loadFile(groupsFile));
                 groups.parse(jsonObjectGroups);
                 data.mGroups = groups;
