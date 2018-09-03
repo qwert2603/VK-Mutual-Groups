@@ -11,9 +11,9 @@ public class Application extends android.app.Application {
     public void onCreate() {
         super.onCreate();
         VKSdk.initialize(this);
-        for (String s : VKUtil.getCertificateFingerprint(this, this.getPackageName())) {
-            Log.d("CertificateFingerprint", "CertificateFingerprint == " + s);
-        }
+//        for (String s : VKUtil.getCertificateFingerprint(this, this.getPackageName())) {
+//            Log.d("CertificateFingerprint", "CertificateFingerprint == " + s);
+//        }
         //InternalStorageViewer.print(this);
     }
 
