@@ -286,7 +286,8 @@ public abstract class AbstractVkListActivity extends AppCompatActivity {
     }
 
     protected void setActionButtonVisibility(int visibility) {
-        mActionButton.setVisibility(visibility);
+        mActionButton.setTranslationX(visibility == View.VISIBLE ? 0 : 10000);
+//        mActionButton.setVisibility(visibility);
     }
 
     protected void setActionButtonIcon(int icon) {
